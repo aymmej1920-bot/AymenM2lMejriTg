@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Truck, Users, Route, Fuel, FileText, Wrench, BarChart3, Plus, Download, Upload, LogOut } from 'lucide-react';
+import { Truck, Users, Route, Fuel, FileText, Wrench, BarChart3, Download, Upload, LogOut } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Vehicles from './components/Vehicles';
 import Drivers from './components/Drivers';

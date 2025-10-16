@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Edit2, Wrench, AlertTriangle, Clock } from 'lucide-react';
+import { Plus, Wrench, AlertTriangle, Clock } from 'lucide-react';
 import { FleetData, MaintenanceEntry } from '../types';
 
 interface MaintenanceProps {

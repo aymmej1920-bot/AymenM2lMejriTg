@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, Edit2, Trash2 } from 'lucide-react';
 import { FleetData, Vehicle } from '../types';
 
 interface VehiclesProps {
