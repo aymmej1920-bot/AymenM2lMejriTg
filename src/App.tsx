@@ -8,8 +8,10 @@ import FuelManagement from './components/FuelManagement';
 import Documents from './components/Documents';
 import Maintenance from './components/Maintenance';
 import Summary from './components/Summary';
-import AuthModal from './components/AuthModal';
+import Login from './pages/Login';
 import { FleetData, AuthUser } from './types';
+import { useSession } from './components/SessionContextProvider';
+import { supabase } from './integrations/supabase/client';
 
 const initialData: FleetData = {
   vehicles: [
@@ -96,24 +98,29 @@ const initialData: FleetData = {
 };
 
 function App() {
+  const { session, isLoading } = useSession();
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [fleetData, setFleetData] = useState<FleetData>(initialData);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
 
   useEffect(() => {
-    // Vérifier si l'utilisateur est déjà connecté
-    const savedUser = localStorage.getItem('fleetManagerUser');
-    if (savedUser) {
-      const user = JSON.parse(savedUser);
-      setCurrentUser(user);
-      setIsAuthenticated(true);
-      loadSavedData();
+    if (session?.user) {
+      setCurrentUser({
+        id: session.user.id,
+        email: session.user.email || '',
+        name: session.user.user_metadata.first_name || session.user.email?.split('@')[0] || 'User',
+      });
+      loadSavedData(session.user.id);
+    } else {
+      setCurrentUser(null);
+      setFleetData(initialData); // Reset data if no user
     }
-  }, []);
+  }, [session]);
 
-  const loadSavedData = () => {
-    const savedData = localStorage.getItem('fleetDataPro');
+  const loadSavedData = (userId: string) => {
+    // In a real app, you would fetch user-specific data from Supabase here.
+    // For now, we'll keep the localStorage logic but scope it by user ID.
+    const savedData = localStorage.getItem(`fleetDataPro_${userId}`);
     if (savedData) {
       try {
         const parsed = JSON.parse(savedData);
@@ -126,31 +133,15 @@ function App() {
 
   const saveData = (newData: FleetData) => {
     setFleetData(newData);
-    localStorage.setItem('fleetDataPro', JSON.stringify(newData));
-  };
-
-  const handleLogin = (email: string, password: string) => {
-    // Authentification simplifiée - en production, utilisez un système d'auth réel
-    if (email && password.length >= 6) {
-      const user: AuthUser = {
-        id: '1',
-        email: email,
-        name: email.split('@')[0]
-      };
-      setCurrentUser(user);
-      setIsAuthenticated(true);
-      localStorage.setItem('fleetManagerUser', JSON.stringify(user));
-      loadSavedData();
-      return true;
+    if (currentUser?.id) {
+      localStorage.setItem(`fleetDataPro_${currentUser.id}`, JSON.stringify(newData));
     }
-    return false;
   };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    localStorage.removeItem(`fleetDataPro_${currentUser?.id}`);
     setCurrentUser(null);
-    localStorage.removeItem('fleetManagerUser');
-    localStorage.removeItem('fleetDataPro');
     setFleetData(initialData);
   };
 
@@ -160,7 +151,7 @@ function App() {
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `fleet_data_${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `fleet_data_${currentUser?.id}_${new Date().toISOString().split('T')[0]}.json`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -175,7 +166,9 @@ function App() {
         const importedData = JSON.parse(e.target?.result as string);
         if (importedData.vehicles && importedData.drivers) {
           setFleetData(importedData);
-          localStorage.setItem('fleetDataPro', JSON.stringify(importedData));
+          if (currentUser?.id) {
+            localStorage.setItem(`fleetDataPro_${currentUser.id}`, JSON.stringify(importedData));
+          }
           alert('Données importées avec succès !');
         } else {
           alert('Format de fichier invalide !');
@@ -198,8 +191,16 @@ function App() {
     { id: 'summary', name: 'Résumé', icon: BarChart3 }
   ];
 
-  if (!isAuthenticated) {
-    return <AuthModal onLogin={handleLogin} />;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center">
+        <div className="text-white text-2xl font-bold">Chargement...</div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Login />;
   }
 
   const renderContent = () => {
