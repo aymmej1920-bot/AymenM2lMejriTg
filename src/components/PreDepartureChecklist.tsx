@@ -78,7 +78,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
 
     if (hasChecklistForMonth(vehicle_id, submissionMonth, submissionYear)) {
       showError('Une checklist pour ce véhicule a déjà été soumise ce mois-ci.');
-      return;
+      // La soumission n'est plus bloquée ici, elle continue.
     }
 
     onAdd(formState);
