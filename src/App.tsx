@@ -81,7 +81,7 @@ function App() {
         id: userId,
         email: session?.user?.email || '',
         name: profileData?.first_name || session?.user?.email?.split('@')[0] || 'User',
-        role: profileData?.role || 'utilisateur',
+        role: (profileData?.role?.trim() || 'utilisateur') as 'admin' | 'direction' | 'utilisateur',
       });
 
     } catch (error) {
