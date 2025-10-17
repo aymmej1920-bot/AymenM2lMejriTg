@@ -23,14 +23,13 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
     wipers_ok: false,
     horn_ok: false,
     mirrors_ok: false,
-    ac_working_ok: false, // Nouveau champ
-    windows_working_ok: false, // Nouveau champ
+    ac_working_ok: false,
+    windows_working_ok: false,
     observations: '',
     issues_to_address: '',
   });
 
   const canAdd = userRole === 'admin' || userRole === 'utilisateur';
-  // const isReadOnly = userRole === 'direction'; // Supprimé car non utilisé
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type, checked } = e.target as HTMLInputElement;
@@ -62,8 +61,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
       wipers_ok: false,
       horn_ok: false,
       mirrors_ok: false,
-      ac_working_ok: false, // Réinitialiser le nouveau champ
-      windows_working_ok: false, // Réinitialiser le nouveau champ
+      ac_working_ok: false,
+      windows_working_ok: false,
       observations: '',
       issues_to_address: '',
     });
@@ -82,6 +81,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
 
     if (hasChecklistForMonth(vehicle_id, submissionMonth, submissionYear)) {
       showError('Une checklist pour ce véhicule a déjà été soumise ce mois-ci.');
+      return; // Prevent submission if a checklist already exists for the month
     }
 
     onAdd(formState);
@@ -107,6 +107,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
         <h2 className="text-4xl font-bold text-gray-800">Checklists Avant Départ</h2>
         {canAdd && (
           <button
+            key="add-checklist-button"
             onClick={handleAddChecklist}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
           >
@@ -148,8 +149,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Essuie-glaces</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Klaxon</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Rétroviseurs</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Climatiseur</th> {/* Nouveau header */}
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Vitres</th> {/* Nouveau header */}
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Climatiseur</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Vitres</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Observations</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">À Traiter</th>
               </tr>
@@ -171,8 +172,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                     <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.wipers_ok)}</td>
                     <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.horn_ok)}</td>
                     <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.mirrors_ok)}</td>
-                    <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.ac_working_ok)}</td> {/* Nouvelle cellule */}
-                    <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.windows_working_ok)}</td> {/* Nouvelle cellule */}
+                    <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.ac_working_ok)}</td>
+                    <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.windows_working_ok)}</td>
                     <td className="px-6 py-4 text-sm text-gray-600 max-w-xs overflow-hidden text-ellipsis">{checklist.observations || '-'}</td>
                     <td className="px-6 py-4 text-sm text-red-600 max-w-xs overflow-hidden text-ellipsis">{checklist.issues_to_address || '-'}</td>
                   </tr>
@@ -330,7 +331,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                     />
                     <label className="text-sm font-medium text-gray-700">Rétroviseurs OK</label>
                   </div>
-                  <div className="flex items-center space-x-2"> {/* Nouveau champ */}
+                  <div className="flex items-center space-x-2">
                     <input
                       type="checkbox"
                       name="ac_working_ok"
@@ -341,7 +342,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                     />
                     <label className="text-sm font-medium text-gray-700">Climatiseur OK</label>
                   </div>
-                  <div className="flex items-center space-x-2"> {/* Nouveau champ */}
+                  <div className="flex items-center space-x-2">
                     <input
                       type="checkbox"
                       name="windows_working_ok"

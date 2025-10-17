@@ -71,6 +71,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, userRole, onAdd, 
         <h2 className="text-4xl font-bold text-gray-800">Gestion du Carburant</h2>
         {canAddEdit && (
           <button
+            key="add-fuel-button"
             onClick={handleAddFuel}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
           >
@@ -147,6 +148,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, userRole, onAdd, 
                     <td className="px-6 py-4 text-sm">
                       <div className="flex space-x-2">
                         <button
+                          key={fuel.id + "-edit"}
                           onClick={() => handleEditFuel(fuel)}
                           className="text-blue-600 hover:text-blue-900 transition-colors"
                           disabled={!canAddEdit}
@@ -154,6 +156,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, userRole, onAdd, 
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
+                          key={fuel.id + "-delete"}
                           onClick={() => handleDeleteFuel(fuel.id)}
                           className="text-red-600 hover:text-red-900 transition-colors"
                           disabled={!canManage} // Only admin can delete

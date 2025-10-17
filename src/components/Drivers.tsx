@@ -87,6 +87,7 @@ const Drivers: React.FC<DriversProps> = ({ data, userRole, onAdd, onUpdate, onDe
         <h2 className="text-4xl font-bold text-gray-800">Gestion des Conducteurs</h2>
         {canManage && (
           <button
+            key="add-driver-button"
             onClick={handleAddDriver}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
           >
@@ -134,6 +135,7 @@ const Drivers: React.FC<DriversProps> = ({ data, userRole, onAdd, onUpdate, onDe
                   <td className="px-6 py-4 text-sm">
                     <div className="flex space-x-2">
                       <button
+                        key={driver.id + "-edit"}
                         onClick={() => handleEditDriver(driver)}
                         className="text-blue-600 hover:text-blue-900 transition-colors"
                         disabled={!canManage}
@@ -141,6 +143,7 @@ const Drivers: React.FC<DriversProps> = ({ data, userRole, onAdd, onUpdate, onDe
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
+                        key={driver.id + "-delete"}
                         onClick={() => handleDeleteDriver(driver.id)}
                         className="text-red-600 hover:text-red-900 transition-colors"
                         disabled={!canManage}

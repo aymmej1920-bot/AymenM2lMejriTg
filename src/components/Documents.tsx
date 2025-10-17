@@ -88,6 +88,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, userRole, onAdd, onUpdate, 
         <h2 className="text-4xl font-bold text-gray-800">Suivi des Documents</h2>
         {canManage && (
           <button
+            key="add-document-button"
             onClick={handleAddDocument}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
           >
@@ -152,6 +153,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, userRole, onAdd, onUpdate, 
                     <td className="px-6 py-4 text-sm">
                       <div className="flex space-x-2">
                         <button
+                          key={doc.id + "-edit"}
                           onClick={() => handleEditDocument(doc)}
                           className="text-blue-600 hover:text-blue-900 transition-colors"
                           disabled={!canManage}
@@ -159,6 +161,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, userRole, onAdd, onUpdate, 
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
+                          key={doc.id + "-delete"}
                           onClick={() => handleDeleteDocument(doc.id)}
                           className="text-red-600 hover:text-red-900 transition-colors"
                           disabled={!canManage}

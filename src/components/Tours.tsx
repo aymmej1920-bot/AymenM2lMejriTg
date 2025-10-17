@@ -91,6 +91,7 @@ const Tours: React.FC<ToursProps> = ({ data, userRole, onAdd, onUpdate, onDelete
         <h2 className="text-4xl font-bold text-gray-800">Suivi des Tournées</h2>
         {canAddEdit && (
           <button
+            key="add-tour-button"
             onClick={handleAddTour}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
           >
@@ -140,6 +141,7 @@ const Tours: React.FC<ToursProps> = ({ data, userRole, onAdd, onUpdate, onDelete
                       <td className="px-4 py-4 text-sm">
                         <div className="flex space-x-2">
                           <button
+                            key={tour.id + "-edit"}
                             onClick={() => handleEditTour(tour)}
                             className="text-blue-600 hover:text-blue-900 transition-colors"
                             disabled={!canAddEdit}
@@ -147,6 +149,7 @@ const Tours: React.FC<ToursProps> = ({ data, userRole, onAdd, onUpdate, onDelete
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
+                            key={tour.id + "-delete"}
                             onClick={() => handleDeleteTour(tour.id)}
                             className="text-red-600 hover:text-red-900 transition-colors"
                             disabled={!canManage} // Only admin can delete

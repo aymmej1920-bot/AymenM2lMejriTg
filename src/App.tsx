@@ -8,7 +8,7 @@ import FuelManagement from './components/FuelManagement';
 import Documents from './components/Documents';
 import Maintenance from './components/Maintenance';
 import Summary from './components/Summary';
-import PreDepartureChecklistComponent from './components/PreDepartureChecklist'; // Import new component
+import PreDepartureChecklistComponent from './components/PreDepartureChecklist';
 import Login from './pages/Login';
 import { FleetData, AuthUser, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist } from './types';
 import { useSession } from './components/SessionContextProvider';
@@ -25,7 +25,7 @@ function App() {
     fuel: [],
     documents: [],
     maintenance: [],
-    pre_departure_checklists: [], // Initialize new data
+    pre_departure_checklists: [],
   });
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
@@ -48,7 +48,7 @@ function App() {
         { data: fuelData, error: fuelError },
         { data: documentsData, error: documentsError },
         { data: maintenanceData, error: maintenanceError },
-        { data: checklistsData, error: checklistsError }, // Fetch new data
+        { data: checklistsData, error: checklistsError },
       ] = await Promise.all([
         supabase.from('vehicles').select('*').eq('user_id', userId),
         supabase.from('drivers').select('*').eq('user_id', userId),
@@ -56,7 +56,7 @@ function App() {
         supabase.from('fuel_entries').select('*').eq('user_id', userId),
         supabase.from('documents').select('*').eq('user_id', userId),
         supabase.from('maintenance_entries').select('*').eq('user_id', userId),
-        supabase.from('pre_departure_checklists').select('*').eq('user_id', userId), // Fetch new data
+        supabase.from('pre_departure_checklists').select('*').eq('user_id', userId),
       ]);
 
       if (vehiclesError) throw vehiclesError;
@@ -65,7 +65,7 @@ function App() {
       if (fuelError) throw fuelError;
       if (documentsError) throw documentsError;
       if (maintenanceError) throw maintenanceError;
-      if (checklistsError) throw checklistsError; // Handle error for new data
+      if (checklistsError) throw checklistsError;
 
       setFleetData({
         vehicles: vehiclesData as Vehicle[],
@@ -74,7 +74,7 @@ function App() {
         fuel: fuelData as FuelEntry[],
         documents: documentsData as Document[],
         maintenance: maintenanceData as MaintenanceEntry[],
-        pre_departure_checklists: checklistsData as PreDepartureChecklist[], // Set new data
+        pre_departure_checklists: checklistsData as PreDepartureChecklist[],
       });
 
       setCurrentUser({
@@ -104,7 +104,7 @@ function App() {
         fuel: [],
         documents: [],
         maintenance: [],
-        pre_departure_checklists: [], // Reset new data
+        pre_departure_checklists: [],
       });
       setDataLoading(false);
     }
@@ -130,7 +130,6 @@ function App() {
       dismissToast(loadingToastId);
       showSuccess(`Données ${action === 'insert' ? 'ajoutées' : action === 'update' ? 'mises à jour' : 'supprimées'} avec succès !`);
       
-      // Re-fetch data to ensure UI is consistent with DB
       fetchData(currentUser.id);
     } catch (error) {
       console.error(`Error ${action}ing data in ${tableName}:`, error);
@@ -150,7 +149,7 @@ function App() {
       fuel: [],
       documents: [],
       maintenance: [],
-      pre_departure_checklists: [], // Reset new data
+      pre_departure_checklists: [],
     });
     dismissToast(loadingToastId);
     showSuccess('Déconnexion réussie.');
@@ -164,7 +163,7 @@ function App() {
     { id: 'fuel', name: 'Carburant', icon: Fuel },
     { id: 'documents', name: 'Documents', icon: FileText },
     { id: 'maintenance', name: 'Maintenance', icon: Wrench },
-    { id: 'checklists', name: 'Checklists', icon: ClipboardCheck }, // New tab
+    { id: 'checklists', name: 'Checklists', icon: ClipboardCheck },
     { id: 'summary', name: 'Résumé', icon: BarChart3 }
   ];
 
@@ -181,41 +180,41 @@ function App() {
   }
 
   const renderContent = () => {
-    const userRole = currentUser?.role || 'utilisateur'; // Default to utilisateur if not set
+    const userRole = currentUser?.role || 'utilisateur';
 
     switch (currentTab) {
       case 'dashboard':
-        return <Dashboard data={fleetData} userRole={userRole} />;
+        return <Dashboard key="dashboard-view" data={fleetData} userRole={userRole} />;
       case 'vehicles':
-        return <Vehicles data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('vehicles', newData, 'update')} onDelete={(id) => handleUpdateData('vehicles', { id }, 'delete')} onAdd={(newData) => handleUpdateData('vehicles', newData, 'insert')} />;
+        return <Vehicles key="vehicles-view" data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('vehicles', newData, 'update')} onDelete={(id) => handleUpdateData('vehicles', { id }, 'delete')} onAdd={(newData) => handleUpdateData('vehicles', newData, 'insert')} />;
       case 'drivers':
-        return <Drivers data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('drivers', newData, 'update')} onDelete={(id) => handleUpdateData('drivers', { id }, 'delete')} onAdd={(newData) => handleUpdateData('drivers', newData, 'insert')} />;
+        return <Drivers key="drivers-view" data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('drivers', newData, 'update')} onDelete={(id) => handleUpdateData('drivers', { id }, 'delete')} onAdd={(newData) => handleUpdateData('drivers', newData, 'insert')} />;
       case 'tours':
-        return <Tours data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('tours', newData, 'update')} onDelete={(id) => handleUpdateData('tours', { id }, 'delete')} onAdd={(newData) => handleUpdateData('tours', newData, 'insert')} />;
+        return <Tours key="tours-view" data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('tours', newData, 'update')} onDelete={(id) => handleUpdateData('tours', { id }, 'delete')} onAdd={(newData) => handleUpdateData('tours', newData, 'insert')} />;
       case 'fuel':
-        return <FuelManagement data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('fuel_entries', newData, 'update')} onDelete={(id) => handleUpdateData('fuel_entries', { id }, 'delete')} onAdd={(newData) => handleUpdateData('fuel_entries', newData, 'insert')} />;
+        return <FuelManagement key="fuel-view" data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('fuel_entries', newData, 'update')} onDelete={(id) => handleUpdateData('fuel_entries', { id }, 'delete')} onAdd={(newData) => handleUpdateData('fuel_entries', newData, 'insert')} />;
       case 'documents':
-        return <Documents data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('documents', newData, 'update')} onDelete={(id) => handleUpdateData('documents', { id }, 'delete')} onAdd={(newData) => handleUpdateData('documents', newData, 'insert')} />;
+        return <Documents key="documents-view" data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('documents', newData, 'update')} onDelete={(id) => handleUpdateData('documents', { id }, 'delete')} onAdd={(newData) => handleUpdateData('documents', newData, 'insert')} />;
       case 'maintenance':
         return <Maintenance 
+          key="maintenance-view"
           data={fleetData} 
           userRole={userRole} 
           onUpdate={(newData) => handleUpdateData('vehicles', newData, 'update')} 
           onAdd={(newData) => handleUpdateData('maintenance_entries', newData, 'insert')} 
-          preDepartureChecklists={fleetData.pre_departure_checklists} // Pass checklists data
+          preDepartureChecklists={fleetData.pre_departure_checklists}
         />;
-      case 'checklists': // New case for checklists
-        return <PreDepartureChecklistComponent data={fleetData} userRole={userRole} onAdd={(newData) => handleUpdateData('pre_departure_checklists', newData, 'insert')} />;
+      case 'checklists':
+        return <PreDepartureChecklistComponent key="checklists-view" data={fleetData} userRole={userRole} onAdd={(newData) => handleUpdateData('pre_departure_checklists', newData, 'insert')} />;
       case 'summary':
-        return <Summary data={fleetData} />;
+        return <Summary key="summary-view" data={fleetData} />;
       default:
-        return <Dashboard data={fleetData} userRole={userRole} />;
+        return <Dashboard key="default-dashboard-view" data={fleetData} userRole={userRole} />;
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
@@ -242,7 +241,6 @@ function App() {
         </div>
       </header>
 
-      {/* Navigation */}
       <nav className="bg-white shadow-md sticky top-0 z-40">
         <div className="container mx-auto px-6">
           <div className="flex space-x-1 overflow-x-auto py-2">
@@ -267,7 +265,6 @@ function App() {
         </div>
       </nav>
 
-      {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         {renderContent()}
       </main>

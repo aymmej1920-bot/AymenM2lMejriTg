@@ -88,6 +88,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, userRole, onAdd, onUpda
         <h2 className="text-4xl font-bold text-gray-800">Suivi Maintenance & Vidanges</h2>
         {canManage && (
           <button
+            key="add-maintenance-button"
             onClick={() => handleAddMaintenance()}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
           >
@@ -99,7 +100,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, userRole, onAdd, onUpda
 
       {/* Alertes maintenance */}
       {(userRole === 'admin' || userRole === 'direction') && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"> {/* Adjusted grid for new alert */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="bg-orange-50 border-l-4 border-orange-400 p-6 rounded-r-lg shadow-lg">
             <div className="flex items-center">
               <Clock className="w-6 h-6 text-orange-400 mr-4" />
@@ -217,6 +218,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, userRole, onAdd, onUpda
                   {!isReadOnly && (
                     <td className="px-6 py-4 text-sm">
                       <button
+                        key={vehicle.id + "-maintenance"}
                         onClick={() => handleAddMaintenance(vehicle.id)}
                         className="text-blue-600 hover:text-blue-900 transition-colors flex items-center space-x-1"
                         disabled={!canManage}
