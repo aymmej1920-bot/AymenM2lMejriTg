@@ -82,6 +82,8 @@ export interface PreDepartureChecklist {
   wipers_ok: boolean;
   horn_ok: boolean;
   mirrors_ok: boolean;
+  ac_working_ok: boolean; // Nouveau champ
+  windows_working_ok: boolean; // Nouveau champ
   observations: string | null;
   issues_to_address: string | null;
   created_at?: string;

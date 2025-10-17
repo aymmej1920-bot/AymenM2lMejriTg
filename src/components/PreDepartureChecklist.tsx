@@ -23,6 +23,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
     wipers_ok: false,
     horn_ok: false,
     mirrors_ok: false,
+    ac_working_ok: false, // Nouveau champ
+    windows_working_ok: false, // Nouveau champ
     observations: '',
     issues_to_address: '',
   });
@@ -60,6 +62,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
       wipers_ok: false,
       horn_ok: false,
       mirrors_ok: false,
+      ac_working_ok: false, // Réinitialiser le nouveau champ
+      windows_working_ok: false, // Réinitialiser le nouveau champ
       observations: '',
       issues_to_address: '',
     });
@@ -78,7 +82,6 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
 
     if (hasChecklistForMonth(vehicle_id, submissionMonth, submissionYear)) {
       showError('Une checklist pour ce véhicule a déjà été soumise ce mois-ci.');
-      // La soumission n'est plus bloquée ici, elle continue.
     }
 
     onAdd(formState);
@@ -130,48 +133,54 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
       )}
 
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        <table className="min-w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Véhicule</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Conducteur</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Pneus</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Feux</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Huile</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Fluides</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Freins</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Essuie-glaces</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Klaxon</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Rétroviseurs</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Observations</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">À Traiter</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {data.pre_departure_checklists.map((checklist) => {
-              const vehicle = data.vehicles.find(v => v.id === checklist.vehicle_id);
-              const driver = data.drivers.find(d => d.id === checklist.driver_id);
-              return (
-                <tr key={checklist.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 text-sm text-gray-900">{checklist.date}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{vehicle?.plate || 'N/A'}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{driver?.name || 'N/A'}</td>
-                  <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.tire_pressure_ok)}</td>
-                  <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.lights_ok)}</td>
-                  <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.oil_level_ok)}</td>
-                  <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.fluid_levels_ok)}</td>
-                  <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.brakes_ok)}</td>
-                  <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.wipers_ok)}</td>
-                  <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.horn_ok)}</td>
-                  <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.mirrors_ok)}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600 max-w-xs overflow-hidden text-ellipsis">{checklist.observations || '-'}</td>
-                  <td className="px-6 py-4 text-sm text-red-600 max-w-xs overflow-hidden text-ellipsis">{checklist.issues_to_address || '-'}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Véhicule</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Conducteur</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Pneus</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Feux</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Huile</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Fluides</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Freins</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Essuie-glaces</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Klaxon</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Rétroviseurs</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Climatiseur</th> {/* Nouveau header */}
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Vitres</th> {/* Nouveau header */}
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Observations</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">À Traiter</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {data.pre_departure_checklists.map((checklist) => {
+                const vehicle = data.vehicles.find(v => v.id === checklist.vehicle_id);
+                const driver = data.drivers.find(d => d.id === checklist.driver_id);
+                return (
+                  <tr key={checklist.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 text-sm text-gray-900">{checklist.date}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{vehicle?.plate || 'N/A'}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{driver?.name || 'N/A'}</td>
+                    <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.tire_pressure_ok)}</td>
+                    <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.lights_ok)}</td>
+                    <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.oil_level_ok)}</td>
+                    <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.fluid_levels_ok)}</td>
+                    <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.brakes_ok)}</td>
+                    <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.wipers_ok)}</td>
+                    <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.horn_ok)}</td>
+                    <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.mirrors_ok)}</td>
+                    <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.ac_working_ok)}</td> {/* Nouvelle cellule */}
+                    <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.windows_working_ok)}</td> {/* Nouvelle cellule */}
+                    <td className="px-6 py-4 text-sm text-gray-600 max-w-xs overflow-hidden text-ellipsis">{checklist.observations || '-'}</td>
+                    <td className="px-6 py-4 text-sm text-red-600 max-w-xs overflow-hidden text-ellipsis">{checklist.issues_to_address || '-'}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Modal */}
@@ -320,6 +329,28 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       disabled={!canAdd}
                     />
                     <label className="text-sm font-medium text-gray-700">Rétroviseurs OK</label>
+                  </div>
+                  <div className="flex items-center space-x-2"> {/* Nouveau champ */}
+                    <input
+                      type="checkbox"
+                      name="ac_working_ok"
+                      checked={formState.ac_working_ok}
+                      onChange={handleInputChange}
+                      className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
+                      disabled={!canAdd}
+                    />
+                    <label className="text-sm font-medium text-gray-700">Climatiseur OK</label>
+                  </div>
+                  <div className="flex items-center space-x-2"> {/* Nouveau champ */}
+                    <input
+                      type="checkbox"
+                      name="windows_working_ok"
+                      checked={formState.windows_working_ok}
+                      onChange={handleInputChange}
+                      className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
+                      disabled={!canAdd}
+                    />
+                    <label className="text-sm font-medium text-gray-700">Vitres OK</label>
                   </div>
                 </div>
 
