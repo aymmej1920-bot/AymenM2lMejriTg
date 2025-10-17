@@ -12,7 +12,7 @@ import Login from './pages/Login';
 import { FleetData, AuthUser, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry } from './types';
 import { useSession } from './components/SessionContextProvider';
 import { supabase } from './integrations/supabase/client';
-import { showSuccess, showError, showLoading, dismissToast } from './utils/toast'; // Import toast utilities
+import { showSuccess, showError, showLoading, dismissToast } from './utils/toast';
 
 function App() {
   const { session, isLoading } = useSession();
@@ -31,6 +31,14 @@ function App() {
   const fetchData = useCallback(async (userId: string) => {
     setDataLoading(true);
     try {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, role')
+        .eq('id', userId)
+        .single();
+
+      if (profileError) throw profileError;
+
       const [
         { data: vehiclesData, error: vehiclesError },
         { data: driversData, error: driversError },
@@ -62,21 +70,24 @@ function App() {
         documents: documentsData as Document[],
         maintenance: maintenanceData as MaintenanceEntry[],
       });
+
+      setCurrentUser({
+        id: userId,
+        email: session?.user?.email || '',
+        name: profileData?.first_name || session?.user?.email?.split('@')[0] || 'User',
+        role: profileData?.role || 'utilisateur',
+      });
+
     } catch (error) {
-      console.error('Error fetching fleet data:', error);
-      showError('Erreur lors du chargement des données de flotte.');
+      console.error('Error fetching fleet data or profile:', error);
+      showError('Erreur lors du chargement des données de flotte ou du profil.');
     } finally {
       setDataLoading(false);
     }
-  }, []);
+  }, [session]);
 
   useEffect(() => {
     if (session?.user) {
-      setCurrentUser({
-        id: session.user.id,
-        email: session.user.email || '',
-        name: session.user.user_metadata.first_name || session.user.email?.split('@')[0] || 'User',
-      });
       fetchData(session.user.id);
     } else {
       setCurrentUser(null);
@@ -161,25 +172,27 @@ function App() {
   }
 
   const renderContent = () => {
+    const userRole = currentUser?.role || 'utilisateur'; // Default to utilisateur if not set
+
     switch (currentTab) {
       case 'dashboard':
-        return <Dashboard data={fleetData} />;
+        return <Dashboard data={fleetData} userRole={userRole} />;
       case 'vehicles':
-        return <Vehicles data={fleetData} onUpdate={(newData) => handleUpdateData('vehicles', newData, 'update')} onDelete={(id) => handleUpdateData('vehicles', { id }, 'delete')} onAdd={(newData) => handleUpdateData('vehicles', newData, 'insert')} />;
+        return <Vehicles data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('vehicles', newData, 'update')} onDelete={(id) => handleUpdateData('vehicles', { id }, 'delete')} onAdd={(newData) => handleUpdateData('vehicles', newData, 'insert')} />;
       case 'drivers':
-        return <Drivers data={fleetData} onUpdate={(newData) => handleUpdateData('drivers', newData, 'update')} onDelete={(id) => handleUpdateData('drivers', { id }, 'delete')} onAdd={(newData) => handleUpdateData('drivers', newData, 'insert')} />;
+        return <Drivers data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('drivers', newData, 'update')} onDelete={(id) => handleUpdateData('drivers', { id }, 'delete')} onAdd={(newData) => handleUpdateData('drivers', newData, 'insert')} />;
       case 'tours':
-        return <Tours data={fleetData} onUpdate={(newData) => handleUpdateData('tours', newData, 'update')} onDelete={(id) => handleUpdateData('tours', { id }, 'delete')} onAdd={(newData) => handleUpdateData('tours', newData, 'insert')} />;
+        return <Tours data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('tours', newData, 'update')} onDelete={(id) => handleUpdateData('tours', { id }, 'delete')} onAdd={(newData) => handleUpdateData('tours', newData, 'insert')} />;
       case 'fuel':
-        return <FuelManagement data={fleetData} onUpdate={(newData) => handleUpdateData('fuel_entries', newData, 'update')} onDelete={(id) => handleUpdateData('fuel_entries', { id }, 'delete')} onAdd={(newData) => handleUpdateData('fuel_entries', newData, 'insert')} />;
+        return <FuelManagement data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('fuel_entries', newData, 'update')} onDelete={(id) => handleUpdateData('fuel_entries', { id }, 'delete')} onAdd={(newData) => handleUpdateData('fuel_entries', newData, 'insert')} />;
       case 'documents':
-        return <Documents data={fleetData} onUpdate={(newData) => handleUpdateData('documents', newData, 'update')} onDelete={(id) => handleUpdateData('documents', { id }, 'delete')} onAdd={(newData) => handleUpdateData('documents', newData, 'insert')} />;
+        return <Documents data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('documents', newData, 'update')} onDelete={(id) => handleUpdateData('documents', { id }, 'delete')} onAdd={(newData) => handleUpdateData('documents', newData, 'insert')} />;
       case 'maintenance':
-        return <Maintenance data={fleetData} onUpdate={(newData) => handleUpdateData('maintenance_entries', newData, 'update')} onAdd={(newData) => handleUpdateData('maintenance_entries', newData, 'insert')} />;
+        return <Maintenance data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('maintenance_entries', newData, 'update')} onAdd={(newData) => handleUpdateData('maintenance_entries', newData, 'insert')} />;
       case 'summary':
         return <Summary data={fleetData} />;
       default:
-        return <Dashboard data={fleetData} />;
+        return <Dashboard data={fleetData} userRole={userRole} />;
     }
   };
 
@@ -199,7 +212,7 @@ function App() {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-sm">Bienvenue, {currentUser?.name}</span>
+              <span className="text-sm">Bienvenue, {currentUser?.name} ({currentUser?.role})</span>
               <button
                 onClick={handleLogout}
                 className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-all duration-300 flex items-center space-x-2"

@@ -5,14 +5,18 @@ import { showSuccess } from '../utils/toast'; // Import toast utilities
 
 interface DriversProps {
   data: FleetData;
+  userRole: 'admin' | 'direction' | 'utilisateur';
   onAdd: (driver: Omit<Driver, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (driver: Driver) => void;
   onDelete: (id: string) => void;
 }
 
-const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) => {
+const Drivers: React.FC<DriversProps> = ({ data, userRole, onAdd, onUpdate, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
+
+  const canManage = userRole === 'admin';
+  const isReadOnly = userRole === 'direction' || userRole === 'utilisateur';
 
   const handleAddDriver = () => {
     setEditingDriver(null);
@@ -33,6 +37,8 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!canManage) return; // Prevent submission if not admin
+
     const formData = new FormData(e.currentTarget);
     
     const driverData: Omit<Driver, 'user_id' | 'created_at'> = {
@@ -79,13 +85,15 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Gestion des Conducteurs</h2>
-        <button
-          onClick={handleAddDriver}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Ajouter Conducteur</span>
-        </button>
+        {canManage && (
+          <button
+            onClick={handleAddDriver}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Ajouter Conducteur</span>
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -97,7 +105,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Expiration</th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Statut</th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Téléphone</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+              {!isReadOnly && <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -122,22 +130,26 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
                     <span>{driver.phone}</span>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-sm">
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleEditDriver(driver)}
-                      className="text-blue-600 hover:text-blue-900 transition-colors"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteDriver(driver.id)}
-                      className="text-red-600 hover:text-red-900 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
+                {!isReadOnly && (
+                  <td className="px-6 py-4 text-sm">
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleEditDriver(driver)}
+                        className="text-blue-600 hover:text-blue-900 transition-colors"
+                        disabled={!canManage}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteDriver(driver.id)}
+                        className="text-red-600 hover:text-red-900 transition-colors"
+                        disabled={!canManage}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -161,6 +173,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
                     defaultValue={editingDriver?.name || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
+                    readOnly={!canManage}
                   />
                 </div>
                 <div>
@@ -171,6 +184,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
                     defaultValue={editingDriver?.license || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
+                    readOnly={!canManage}
                   />
                 </div>
                 <div>
@@ -181,6 +195,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
                     defaultValue={editingDriver?.expiration || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
+                    readOnly={!canManage}
                   />
                 </div>
                 <div>
@@ -190,6 +205,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
                     defaultValue={editingDriver?.status || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
+                    disabled={!canManage}
                   >
                     <option value="Disponible">Disponible</option>
                     <option value="En mission">En mission</option>
@@ -205,6 +221,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
                     defaultValue={editingDriver?.phone || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
+                    readOnly={!canManage}
                   />
                 </div>
                 <div className="flex justify-end space-x-4 mt-8">
@@ -215,12 +232,14 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
                   >
                     Annuler
                   </button>
-                  <button
-                    type="submit"
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
-                  >
-                    Sauvegarder
-                  </button>
+                  {canManage && (
+                    <button
+                      type="submit"
+                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
+                    >
+                      Sauvegarder
+                    </button>
+                  )}
                 </div>
               </form>
             </div>

@@ -5,14 +5,18 @@ import { showSuccess } from '../utils/toast'; // Import toast utilities
 
 interface DocumentsProps {
   data: FleetData;
+  userRole: 'admin' | 'direction' | 'utilisateur';
   onAdd: (document: Omit<Document, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (document: Document) => void;
   onDelete: (id: string) => void;
 }
 
-const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }) => {
+const Documents: React.FC<DocumentsProps> = ({ data, userRole, onAdd, onUpdate, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
+
+  const canManage = userRole === 'admin';
+  const isReadOnly = userRole === 'direction' || userRole === 'utilisateur';
 
   const handleAddDocument = () => {
     setEditingDocument(null);
@@ -33,6 +37,8 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!canManage) return; // Prevent submission if not admin
+
     const formData = new FormData(e.currentTarget);
     
     const documentData: Omit<Document, 'user_id' | 'created_at'> = {
@@ -80,17 +86,19 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Suivi des Documents</h2>
-        <button
-          onClick={handleAddDocument}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Ajouter Document</span>
-        </button>
+        {canManage && (
+          <button
+            onClick={handleAddDocument}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Ajouter Document</span>
+          </button>
+        )}
       </div>
 
       {/* Alerts */}
-      {expiringDocs.length > 0 && (
+      {expiringDocs.length > 0 && (userRole === 'admin' || userRole === 'direction') && (
         <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
           <div className="flex items-center">
             <AlertTriangle className="w-5 h-5 text-red-400 mr-3" />
@@ -114,7 +122,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Expiration</th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Jours Restants</th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Statut</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+              {!isReadOnly && <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -140,22 +148,26 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
                       {status.text}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleEditDocument(doc)}
-                        className="text-blue-600 hover:text-blue-900 transition-colors"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteDocument(doc.id)}
-                        className="text-red-600 hover:text-red-900 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
+                  {!isReadOnly && (
+                    <td className="px-6 py-4 text-sm">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleEditDocument(doc)}
+                          className="text-blue-600 hover:text-blue-900 transition-colors"
+                          disabled={!canManage}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteDocument(doc.id)}
+                          className="text-red-600 hover:text-red-900 transition-colors"
+                          disabled={!canManage}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -179,6 +191,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
                     defaultValue={editingDocument?.vehicle_id || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
+                    disabled={!canManage}
                   >
                     <option value="">Sélectionner un véhicule</option>
                     {data.vehicles.map(vehicle => (
@@ -195,6 +208,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
                     defaultValue={editingDocument?.type || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
+                    disabled={!canManage}
                   >
                     <option value="">Sélectionner un type</option>
                     <option value="Assurance">Assurance</option>
@@ -212,6 +226,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
                     defaultValue={editingDocument?.number || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
+                    readOnly={!canManage}
                   />
                 </div>
                 <div>
@@ -222,6 +237,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
                     defaultValue={editingDocument?.expiration || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
+                    readOnly={!canManage}
                   />
                 </div>
                 <div className="flex justify-end space-x-4 mt-8">
@@ -232,12 +248,14 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
                   >
                     Annuler
                   </button>
-                  <button
-                    type="submit"
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
-                  >
-                    Sauvegarder
-                  </button>
+                  {canManage && (
+                    <button
+                      type="submit"
+                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
+                    >
+                      Sauvegarder
+                    </button>
+                  )}
                 </div>
               </form>
             </div>

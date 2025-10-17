@@ -5,14 +5,18 @@ import { showSuccess } from '../utils/toast'; // Import toast utilities
 
 interface VehiclesProps {
   data: FleetData;
+  userRole: 'admin' | 'direction' | 'utilisateur';
   onAdd: (vehicle: Omit<Vehicle, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (vehicle: Vehicle) => void;
   onDelete: (id: string) => void;
 }
 
-const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) => {
+const Vehicles: React.FC<VehiclesProps> = ({ data, userRole, onAdd, onUpdate, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
+
+  const canManage = userRole === 'admin';
+  const isReadOnly = userRole === 'direction' || userRole === 'utilisateur';
 
   const handleAddVehicle = () => {
     setEditingVehicle(null);
@@ -33,6 +37,8 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!canManage) return; // Prevent submission if not admin
+
     const formData = new FormData(e.currentTarget);
     
     const vehicleData: Omit<Vehicle, 'user_id' | 'created_at'> = {
@@ -81,13 +87,15 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Gestion des Véhicules</h2>
-        <button
-          onClick={handleAddVehicle}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Ajouter Véhicule</span>
-        </button>
+        {canManage && (
+          <button
+            onClick={handleAddVehicle}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Ajouter Véhicule</span>
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -100,7 +108,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Kilométrage</th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Dernière Vidange</th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Prochaine Vidange</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+              {!isReadOnly && <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -126,22 +134,26 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
                       <span className="text-xs">({serviceStatus.text})</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleEditVehicle(vehicle)}
-                        className="text-blue-600 hover:text-blue-900 transition-colors"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteVehicle(vehicle.id)}
-                        className="text-red-600 hover:text-red-900 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
+                  {!isReadOnly && (
+                    <td className="px-6 py-4 text-sm">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleEditVehicle(vehicle)}
+                          className="text-blue-600 hover:text-blue-900 transition-colors"
+                          disabled={!canManage}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteVehicle(vehicle.id)}
+                          className="text-red-600 hover:text-red-900 transition-colors"
+                          disabled={!canManage}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -166,6 +178,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
                     defaultValue={editingVehicle?.plate || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
+                    readOnly={!canManage}
                   />
                 </div>
                 <div>
@@ -175,6 +188,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
                     defaultValue={editingVehicle?.type || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
+                    disabled={!canManage}
                   >
                     <option value="Camionnette">Camionnette</option>
                     <option value="Camion">Camion</option>
@@ -189,6 +203,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
                     defaultValue={editingVehicle?.status || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
+                    disabled={!canManage}
                   >
                     <option value="Disponible">Disponible</option>
                     <option value="En mission">En mission</option>
@@ -203,6 +218,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
                     defaultValue={editingVehicle?.mileage || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
+                    readOnly={!canManage}
                   />
                 </div>
                 <div>
@@ -213,6 +229,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
                     defaultValue={editingVehicle?.last_service_date || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
+                    readOnly={!canManage}
                   />
                 </div>
                 <div>
@@ -223,6 +240,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
                     defaultValue={editingVehicle?.last_service_mileage || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
+                    readOnly={!canManage}
                   />
                 </div>
                 <div className="flex justify-end space-x-4 mt-8">
@@ -233,12 +251,14 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
                   >
                     Annuler
                   </button>
-                  <button
-                    type="submit"
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
-                  >
-                    Sauvegarder
-                  </button>
+                  {canManage && (
+                    <button
+                      type="submit"
+                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
+                    >
+                      Sauvegarder
+                    </button>
+                  )}
                 </div>
               </form>
             </div>

@@ -5,13 +5,17 @@ import { showSuccess } from '../utils/toast'; // Import toast utilities
 
 interface MaintenanceProps {
   data: FleetData;
+  userRole: 'admin' | 'direction' | 'utilisateur';
   onAdd: (maintenanceEntry: Omit<MaintenanceEntry, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (vehicle: { id: string; last_service_date: string; last_service_mileage: number; mileage: number }) => void;
 }
 
-const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate }) => {
+const Maintenance: React.FC<MaintenanceProps> = ({ data, userRole, onAdd, onUpdate }) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
+
+  const canManage = userRole === 'admin';
+  const isReadOnly = userRole === 'direction' || userRole === 'utilisateur';
 
   const handleAddMaintenance = (vehicleId?: string) => {
     setSelectedVehicleId(vehicleId || '');
@@ -20,6 +24,8 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate }) => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!canManage) return; // Prevent submission if not admin
+
     const formData = new FormData(e.currentTarget);
     
     const maintenanceData: Omit<MaintenanceEntry, 'id' | 'user_id' | 'created_at'> = {
@@ -76,41 +82,45 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate }) => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Suivi Maintenance & Vidanges</h2>
-        <button
-          onClick={() => handleAddMaintenance()}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Ajouter Maintenance</span>
-        </button>
+        {canManage && (
+          <button
+            onClick={() => handleAddMaintenance()}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Ajouter Maintenance</span>
+          </button>
+        )}
       </div>
 
       {/* Alertes maintenance */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-orange-50 border-l-4 border-orange-400 p-6 rounded-r-lg shadow-lg">
-          <div className="flex items-center">
-            <Clock className="w-6 h-6 text-orange-400 mr-4" />
-            <div>
-              <h3 className="text-lg font-semibold text-orange-700">Vidanges à Prévoir</h3>
-              <p className="text-orange-600">
-                {upcomingMaintenanceCount} véhicule(s) approchent des 10,000 km
-              </p>
+      {(userRole === 'admin' || userRole === 'direction') && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-orange-50 border-l-4 border-orange-400 p-6 rounded-r-lg shadow-lg">
+            <div className="flex items-center">
+              <Clock className="w-6 h-6 text-orange-400 mr-4" />
+              <div>
+                <h3 className="text-lg font-semibold text-orange-700">Vidanges à Prévoir</h3>
+                <p className="text-orange-600">
+                  {upcomingMaintenanceCount} véhicule(s) approchent des 10,000 km
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="bg-red-50 border-l-4 border-red-400 p-6 rounded-r-lg shadow-lg">
-          <div className="flex items-center">
-            <AlertTriangle className="w-6 h-6 text-red-400 mr-4" />
-            <div>
-              <h3 className="text-lg font-semibold text-red-700">Maintenance Urgente</h3>
-              <p className="text-red-600">
-                {urgentMaintenanceCount} véhicule(s) dépassent les limites
-              </p>
+          <div className="bg-red-50 border-l-4 border-red-400 p-6 rounded-r-lg shadow-lg">
+            <div className="flex items-center">
+              <AlertTriangle className="w-6 h-6 text-red-400 mr-4" />
+              <div>
+                <h3 className="text-lg font-semibold text-red-700">Maintenance Urgente</h3>
+                <p className="text-red-600">
+                  {urgentMaintenanceCount} véhicule(s) dépassent les limites
+                </p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
         <table className="min-w-full">
@@ -122,7 +132,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate }) => {
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Km Dernière Vidange</th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Prochaine Vidange</th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Statut</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+              {!isReadOnly && <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -144,15 +154,18 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate }) => {
                       <span>{status.text}</span>
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm">
-                    <button
-                      onClick={() => handleAddMaintenance(vehicle.id)}
-                      className="text-blue-600 hover:text-blue-900 transition-colors flex items-center space-x-1"
-                    >
-                      <Wrench className="w-4 h-4" />
-                      <span>Maintenance</span>
-                    </button>
-                  </td>
+                  {!isReadOnly && (
+                    <td className="px-6 py-4 text-sm">
+                      <button
+                        onClick={() => handleAddMaintenance(vehicle.id)}
+                        className="text-blue-600 hover:text-blue-900 transition-colors flex items-center space-x-1"
+                        disabled={!canManage}
+                      >
+                        <Wrench className="w-4 h-4" />
+                        <span>Maintenance</span>
+                      </button>
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -161,7 +174,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate }) => {
       </div>
 
       {/* Historique des maintenances */}
-      {data.maintenance.length > 0 && (
+      {data.maintenance.length > 0 && (userRole === 'admin' || userRole === 'direction') && (
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-gray-800">Historique des Maintenances</h3>
@@ -216,6 +229,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate }) => {
                     defaultValue={selectedVehicleId}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
+                    disabled={!canManage}
                   >
                     <option value="">Sélectionner un véhicule</option>
                     {data.vehicles.map(vehicle => (
@@ -231,6 +245,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate }) => {
                     name="type"
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
+                    disabled={!canManage}
                   >
                     <option value="Vidange">Vidange</option>
                     <option value="Révision">Révision</option>
@@ -246,6 +261,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate }) => {
                     defaultValue={new Date().toISOString().split('T')[0]}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
+                    readOnly={!canManage}
                   />
                 </div>
                 <div>
@@ -255,6 +271,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate }) => {
                     name="mileage"
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
+                    readOnly={!canManage}
                   />
                 </div>
                 <div>
@@ -265,6 +282,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate }) => {
                     name="cost"
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
+                    readOnly={!canManage}
                   />
                 </div>
                 <div className="flex justify-end space-x-4 mt-8">
@@ -275,12 +293,14 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate }) => {
                   >
                     Annuler
                   </button>
-                  <button
-                    type="submit"
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
-                  >
-                    Sauvegarder
-                  </button>
+                  {canManage && (
+                    <button
+                      type="submit"
+                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
+                    >
+                      Sauvegarder
+                    </button>
+                  )}
                 </div>
               </form>
             </div>

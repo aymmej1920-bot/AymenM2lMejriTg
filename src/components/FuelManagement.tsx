@@ -5,14 +5,19 @@ import { showSuccess } from '../utils/toast'; // Import toast utilities
 
 interface FuelManagementProps {
   data: FleetData;
+  userRole: 'admin' | 'direction' | 'utilisateur';
   onAdd: (fuelEntry: Omit<FuelEntry, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (fuelEntry: FuelEntry) => void;
   onDelete: (id: string) => void;
 }
 
-const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, onDelete }) => {
+const FuelManagement: React.FC<FuelManagementProps> = ({ data, userRole, onAdd, onUpdate, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingFuel, setEditingFuel] = useState<FuelEntry | null>(null);
+
+  const canManage = userRole === 'admin';
+  const canAddEdit = userRole === 'admin' || userRole === 'utilisateur';
+  const isReadOnly = userRole === 'direction';
 
   const totalLiters = data.fuel.reduce((sum, f) => sum + f.liters, 0);
   const totalCost = data.fuel.reduce((sum, f) => sum + (f.liters * f.price_per_liter), 0);
@@ -37,6 +42,8 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!canAddEdit) return; // Prevent submission if not admin or utilisateur
+
     const formData = new FormData(e.currentTarget);
     
     const fuelData: Omit<FuelEntry, 'user_id' | 'created_at'> = {
@@ -62,13 +69,15 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Gestion du Carburant</h2>
-        <button
-          onClick={handleAddFuel}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Ajouter Plein</span>
-        </button>
+        {canAddEdit && (
+          <button
+            onClick={handleAddFuel}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Ajouter Plein</span>
+          </button>
+        )}
       </div>
 
       {/* Summary Cards */}
@@ -120,7 +129,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Prix/L</th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Coût Total</th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Kilométrage</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+              {!isReadOnly && <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -134,22 +143,26 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                   <td className="px-6 py-4 text-sm">{fuel.price_per_liter.toFixed(2)} TND</td>
                   <td className="px-6 py-4 text-sm font-bold text-green-600">{(fuel.liters * fuel.price_per_liter).toFixed(2)} TND</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{fuel.mileage.toLocaleString()} km</td>
-                  <td className="px-6 py-4 text-sm">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleEditFuel(fuel)}
-                        className="text-blue-600 hover:text-blue-900 transition-colors"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteFuel(fuel.id)}
-                        className="text-red-600 hover:text-red-900 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
+                  {!isReadOnly && (
+                    <td className="px-6 py-4 text-sm">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleEditFuel(fuel)}
+                          className="text-blue-600 hover:text-blue-900 transition-colors"
+                          disabled={!canAddEdit}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteFuel(fuel.id)}
+                          className="text-red-600 hover:text-red-900 transition-colors"
+                          disabled={!canManage} // Only admin can delete
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -174,6 +187,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                     defaultValue={editingFuel?.date || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
+                    readOnly={!canAddEdit}
                   />
                 </div>
                 <div>
@@ -183,6 +197,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                     defaultValue={editingFuel?.vehicle_id || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
+                    disabled={!canAddEdit}
                   >
                     <option value="">Sélectionner un véhicule</option>
                     {data.vehicles.map(vehicle => (
@@ -201,6 +216,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                     defaultValue={editingFuel?.liters || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
+                    readOnly={!canAddEdit}
                   />
                 </div>
                 <div>
@@ -212,6 +228,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                     defaultValue={editingFuel?.price_per_liter || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
+                    readOnly={!canAddEdit}
                   />
                 </div>
                 <div>
@@ -222,6 +239,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                     defaultValue={editingFuel?.mileage || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
+                    readOnly={!canAddEdit}
                   />
                 </div>
                 <div className="flex justify-end space-x-4 mt-8">
@@ -232,12 +250,14 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                   >
                     Annuler
                   </button>
-                  <button
-                    type="submit"
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
-                  >
-                    Sauvegarder
-                  </button>
+                  {canAddEdit && (
+                    <button
+                      type="submit"
+                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
+                    >
+                      Sauvegarder
+                    </button>
+                  )}
                 </div>
               </form>
             </div>

@@ -4,9 +4,10 @@ import { FleetData } from '../types';
 
 interface DashboardProps {
   data: FleetData;
+  userRole: 'admin' | 'direction' | 'utilisateur';
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ data }) => {
+const Dashboard: React.FC<DashboardProps> = ({ data, userRole }) => {
   const totalVehicles = data.vehicles.length;
   const availableVehicles = data.vehicles.filter(v => v.status === 'Disponible').length;
   const inMissionVehicles = data.vehicles.filter(v => v.status === 'En mission').length;
@@ -95,7 +96,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       </div>
 
       {/* Alertes */}
-      {(maintenanceAlerts.length > 0 || expiringDocs.length > 0) && (
+      {(maintenanceAlerts.length > 0 || expiringDocs.length > 0) && (userRole === 'admin' || userRole === 'direction') && (
         <div className="space-y-4">
           {maintenanceAlerts.length > 0 && (
             <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-r-lg">

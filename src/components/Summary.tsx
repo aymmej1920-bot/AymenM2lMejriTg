@@ -4,6 +4,7 @@ import { FleetData } from '../types';
 
 interface SummaryProps {
   data: FleetData;
+  // userRole: 'admin' | 'direction' | 'utilisateur'; // Removed as it's not used in this component
 }
 
 const Summary: React.FC<SummaryProps> = ({ data }) => {
