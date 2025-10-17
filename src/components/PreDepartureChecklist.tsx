@@ -34,7 +34,15 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const target = e.target;
     const name = target.name;
-    const value = target.type === 'checkbox' ? (target as HTMLInputElement).checked : target.value;
+    let value: string | boolean;
+
+    if (target.type === 'checkbox') {
+      value = (target as HTMLInputElement).checked;
+    } else if (target.type === 'radio') {
+      value = target.value === 'true'; // Convert string 'true'/'false' to boolean
+    } else {
+      value = target.value;
+    }
 
     setFormState(prevState => ({
       ...prevState,
@@ -246,115 +254,315 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      name="tire_pressure_ok"
-                      checked={formState.tire_pressure_ok}
-                      onChange={handleInputChange}
-                      className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
-                      disabled={!canAdd}
-                    />
-                    <label className="text-sm font-medium text-gray-700">Pression des pneus OK</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-gray-700">Pression des pneus</label>
+                    <div className="flex space-x-4">
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="radio"
+                          id="tire_pressure_ok_ok"
+                          name="tire_pressure_ok"
+                          value="true"
+                          checked={formState.tire_pressure_ok === true}
+                          onChange={handleInputChange}
+                          className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                          disabled={!canAdd}
+                        />
+                        <label htmlFor="tire_pressure_ok_ok" className="text-sm text-gray-700">OK</label>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="radio"
+                          id="tire_pressure_ok_nok"
+                          name="tire_pressure_ok"
+                          value="false"
+                          checked={formState.tire_pressure_ok === false}
+                          onChange={handleInputChange}
+                          className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
+                          disabled={!canAdd}
+                        />
+                        <label htmlFor="tire_pressure_ok_nok" className="text-sm text-gray-700">NOK</label>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      name="lights_ok"
-                      checked={formState.lights_ok}
-                      onChange={handleInputChange}
-                      className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
-                      disabled={!canAdd}
-                    />
-                    <label className="text-sm font-medium text-gray-700">Feux OK</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-gray-700">Feux</label>
+                    <div className="flex space-x-4">
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="radio"
+                          id="lights_ok_ok"
+                          name="lights_ok"
+                          value="true"
+                          checked={formState.lights_ok === true}
+                          onChange={handleInputChange}
+                          className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                          disabled={!canAdd}
+                        />
+                        <label htmlFor="lights_ok_ok" className="text-sm text-gray-700">OK</label>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="radio"
+                          id="lights_ok_nok"
+                          name="lights_ok"
+                          value="false"
+                          checked={formState.lights_ok === false}
+                          onChange={handleInputChange}
+                          className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
+                          disabled={!canAdd}
+                        />
+                        <label htmlFor="lights_ok_nok" className="text-sm text-gray-700">NOK</label>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      name="oil_level_ok"
-                      checked={formState.oil_level_ok}
-                      onChange={handleInputChange}
-                      className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
-                      disabled={!canAdd}
-                    />
-                    <label className="text-sm font-medium text-gray-700">Niveau d'huile OK</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-gray-700">Niveau d'huile</label>
+                    <div className="flex space-x-4">
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="radio"
+                          id="oil_level_ok_ok"
+                          name="oil_level_ok"
+                          value="true"
+                          checked={formState.oil_level_ok === true}
+                          onChange={handleInputChange}
+                          className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                          disabled={!canAdd}
+                        />
+                        <label htmlFor="oil_level_ok_ok" className="text-sm text-gray-700">OK</label>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="radio"
+                          id="oil_level_ok_nok"
+                          name="oil_level_ok"
+                          value="false"
+                          checked={formState.oil_level_ok === false}
+                          onChange={handleInputChange}
+                          className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
+                          disabled={!canAdd}
+                        />
+                        <label htmlFor="oil_level_ok_nok" className="text-sm text-gray-700">NOK</label>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      name="fluid_levels_ok"
-                      checked={formState.fluid_levels_ok}
-                      onChange={handleInputChange}
-                      className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
-                      disabled={!canAdd}
-                    />
-                    <label className="text-sm font-medium text-gray-700">Niveaux de fluides OK</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-gray-700">Niveaux de fluides</label>
+                    <div className="flex space-x-4">
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="radio"
+                          id="fluid_levels_ok_ok"
+                          name="fluid_levels_ok"
+                          value="true"
+                          checked={formState.fluid_levels_ok === true}
+                          onChange={handleInputChange}
+                          className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                          disabled={!canAdd}
+                        />
+                        <label htmlFor="fluid_levels_ok_ok" className="text-sm text-gray-700">OK</label>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="radio"
+                          id="fluid_levels_ok_nok"
+                          name="fluid_levels_ok"
+                          value="false"
+                          checked={formState.fluid_levels_ok === false}
+                          onChange={handleInputChange}
+                          className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
+                          disabled={!canAdd}
+                        />
+                        <label htmlFor="fluid_levels_ok_nok" className="text-sm text-gray-700">NOK</label>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      name="brakes_ok"
-                      checked={formState.brakes_ok}
-                      onChange={handleInputChange}
-                      className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
-                      disabled={!canAdd}
-                    />
-                    <label className="text-sm font-medium text-gray-700">Freins OK</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-gray-700">Freins</label>
+                    <div className="flex space-x-4">
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="radio"
+                          id="brakes_ok_ok"
+                          name="brakes_ok"
+                          value="true"
+                          checked={formState.brakes_ok === true}
+                          onChange={handleInputChange}
+                          className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                          disabled={!canAdd}
+                        />
+                        <label htmlFor="brakes_ok_ok" className="text-sm text-gray-700">OK</label>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="radio"
+                          id="brakes_ok_nok"
+                          name="brakes_ok"
+                          value="false"
+                          checked={formState.brakes_ok === false}
+                          onChange={handleInputChange}
+                          className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
+                          disabled={!canAdd}
+                        />
+                        <label htmlFor="brakes_ok_nok" className="text-sm text-gray-700">NOK</label>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      name="wipers_ok"
-                      checked={formState.wipers_ok}
-                      onChange={handleInputChange}
-                      className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
-                      disabled={!canAdd}
-                    />
-                    <label className="text-sm font-medium text-gray-700">Essuie-glaces OK</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-gray-700">Essuie-glaces</label>
+                    <div className="flex space-x-4">
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="radio"
+                          id="wipers_ok_ok"
+                          name="wipers_ok"
+                          value="true"
+                          checked={formState.wipers_ok === true}
+                          onChange={handleInputChange}
+                          className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                          disabled={!canAdd}
+                        />
+                        <label htmlFor="wipers_ok_ok" className="text-sm text-gray-700">OK</label>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="radio"
+                          id="wipers_ok_nok"
+                          name="wipers_ok"
+                          value="false"
+                          checked={formState.wipers_ok === false}
+                          onChange={handleInputChange}
+                          className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
+                          disabled={!canAdd}
+                        />
+                        <label htmlFor="wipers_ok_nok" className="text-sm text-gray-700">NOK</label>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      name="horn_ok"
-                      checked={formState.horn_ok}
-                      onChange={handleInputChange}
-                      className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
-                      disabled={!canAdd}
-                    />
-                    <label className="text-sm font-medium text-gray-700">Klaxon OK</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-gray-700">Klaxon</label>
+                    <div className="flex space-x-4">
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="radio"
+                          id="horn_ok_ok"
+                          name="horn_ok"
+                          value="true"
+                          checked={formState.horn_ok === true}
+                          onChange={handleInputChange}
+                          className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                          disabled={!canAdd}
+                        />
+                        <label htmlFor="horn_ok_ok" className="text-sm text-gray-700">OK</label>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="radio"
+                          id="horn_ok_nok"
+                          name="horn_ok"
+                          value="false"
+                          checked={formState.horn_ok === false}
+                          onChange={handleInputChange}
+                          className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
+                          disabled={!canAdd}
+                        />
+                        <label htmlFor="horn_ok_nok" className="text-sm text-gray-700">NOK</label>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      name="mirrors_ok"
-                      checked={formState.mirrors_ok}
-                      onChange={handleInputChange}
-                      className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
-                      disabled={!canAdd}
-                    />
-                    <label className="text-sm font-medium text-gray-700">Rétroviseurs OK</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-gray-700">Rétroviseurs</label>
+                    <div className="flex space-x-4">
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="radio"
+                          id="mirrors_ok_ok"
+                          name="mirrors_ok"
+                          value="true"
+                          checked={formState.mirrors_ok === true}
+                          onChange={handleInputChange}
+                          className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                          disabled={!canAdd}
+                        />
+                        <label htmlFor="mirrors_ok_ok" className="text-sm text-gray-700">OK</label>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="radio"
+                          id="mirrors_ok_nok"
+                          name="mirrors_ok"
+                          value="false"
+                          checked={formState.mirrors_ok === false}
+                          onChange={handleInputChange}
+                          className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
+                          disabled={!canAdd}
+                        />
+                        <label htmlFor="mirrors_ok_nok" className="text-sm text-gray-700">NOK</label>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      name="ac_working_ok"
-                      checked={formState.ac_working_ok}
-                      onChange={handleInputChange}
-                      className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
-                      disabled={!canAdd}
-                    />
-                    <label className="text-sm font-medium text-gray-700">Climatiseur OK</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-gray-700">Climatiseur</label>
+                    <div className="flex space-x-4">
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="radio"
+                          id="ac_working_ok_ok"
+                          name="ac_working_ok"
+                          value="true"
+                          checked={formState.ac_working_ok === true}
+                          onChange={handleInputChange}
+                          className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                          disabled={!canAdd}
+                        />
+                        <label htmlFor="ac_working_ok_ok" className="text-sm text-gray-700">OK</label>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="radio"
+                          id="ac_working_ok_nok"
+                          name="ac_working_ok"
+                          value="false"
+                          checked={formState.ac_working_ok === false}
+                          onChange={handleInputChange}
+                          className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
+                          disabled={!canAdd}
+                        />
+                        <label htmlFor="ac_working_ok_nok" className="text-sm text-gray-700">NOK</label>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      name="windows_working_ok"
-                      checked={formState.windows_working_ok}
-                      onChange={handleInputChange}
-                      className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
-                      disabled={!canAdd}
-                    />
-                    <label className="text-sm font-medium text-gray-700">Vitres OK</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-gray-700">Vitres</label>
+                    <div className="flex space-x-4">
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="radio"
+                          id="windows_working_ok_ok"
+                          name="windows_working_ok"
+                          value="true"
+                          checked={formState.windows_working_ok === true}
+                          onChange={handleInputChange}
+                          className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                          disabled={!canAdd}
+                        />
+                        <label htmlFor="windows_working_ok_ok" className="text-sm text-gray-700">OK</label>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="radio"
+                          id="windows_working_ok_nok"
+                          name="windows_working_ok"
+                          value="false"
+                          checked={formState.windows_working_ok === false}
+                          onChange={handleInputChange}
+                          className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
+                          disabled={!canAdd}
+                        />
+                        <label htmlFor="windows_working_ok_nok" className="text-sm text-gray-700">NOK</label>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
