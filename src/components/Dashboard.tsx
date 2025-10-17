@@ -1,13 +1,15 @@
 import React from 'react';
 import { Truck, CheckCircle, Route, Wrench, TrendingUp, Fuel, AlertTriangle } from 'lucide-react';
 import { FleetData } from '../types';
+import VehicleStatusChart from './charts/VehicleStatusChart';
+import MonthlyFuelConsumptionChart from './charts/MonthlyFuelConsumptionChart';
 
 interface DashboardProps {
   data: FleetData;
-  userRole: 'admin' | 'direction' | 'utilisateur'; // Keep userRole for display, but not for logic
+  userRole: 'admin' | 'direction' | 'utilisateur';
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ data }) => { // 'userRole' removed from destructuring
+const Dashboard: React.FC<DashboardProps> = ({ data }) => {
   const totalVehicles = data.vehicles.length;
   const availableVehicles = data.vehicles.filter(v => v.status === 'Disponible').length;
   const inMissionVehicles = data.vehicles.filter(v => v.status === 'En mission').length;
@@ -71,14 +73,12 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => { // 'userRole' remove
     }
   ];
 
-  // Calculer les alertes de maintenance
   const maintenanceAlerts = data.vehicles.filter(vehicle => {
     const nextService = (vehicle.last_service_mileage || 0) + 10000;
     const kmUntilService = nextService - vehicle.mileage;
     return kmUntilService <= 1000;
   });
 
-  // Calculer les documents qui expirent bientôt
   const expiringDocs = data.documents.filter(doc => {
     const today = new Date();
     const expiry = new Date(doc.expiration);
@@ -95,7 +95,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => { // 'userRole' remove
         </div>
       </div>
 
-      {/* Alertes */}
       {(maintenanceAlerts.length > 0 || expiringDocs.length > 0) && (
         <div className="space-y-4">
           {maintenanceAlerts.length > 0 && (
@@ -128,7 +127,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => { // 'userRole' remove
         </div>
       )}
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {kpis.map((kpi) => {
           const Icon = kpi.icon;
@@ -148,7 +146,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => { // 'userRole' remove
         })}
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {stats.map((stat) => {
           const Icon = stat.icon;
@@ -168,24 +165,22 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => { // 'userRole' remove
         })}
       </div>
 
-      {/* Charts Placeholder */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h3 className="text-xl font-semibold mb-6 text-gray-800">État des Véhicules</h3>
-          <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-            <p className="text-gray-500">Graphique des statuts des véhicules</p>
+          <div className="h-64">
+            <VehicleStatusChart vehicles={data.vehicles} />
           </div>
         </div>
 
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h3 className="text-xl font-semibold mb-6 text-gray-800">Consommation Mensuelle</h3>
-          <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-            <p className="text-gray-500">Graphique de consommation carburant</p>
+          <div className="h-64">
+            <MonthlyFuelConsumptionChart fuelEntries={data.fuel} />
           </div>
         </div>
       </div>
 
-      {/* Recent Activity */}
       <div className="bg-white rounded-xl shadow-lg p-6">
         <h3 className="text-xl font-semibold mb-6 text-gray-800">Activité Récente</h3>
         <div className="space-y-4">

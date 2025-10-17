@@ -1,10 +1,11 @@
 import React from 'react';
 import { Truck, Users, Route, MapPin, Fuel, DollarSign, TrendingUp, AlertCircle } from 'lucide-react';
 import { FleetData } from '../types';
+import MonthlyPerformanceChart from './charts/MonthlyPerformanceChart';
+import CostDistributionChart from './charts/CostDistributionChart';
 
 interface SummaryProps {
   data: FleetData;
-  // userRole: 'admin' | 'direction' | 'utilisateur'; // Removed as it's not used in this component
 }
 
 const Summary: React.FC<SummaryProps> = ({ data }) => {
@@ -85,7 +86,6 @@ const Summary: React.FC<SummaryProps> = ({ data }) => {
     <div className="space-y-8">
       <h2 className="text-4xl font-bold text-gray-800">Résumé Général</h2>
 
-      {/* KPIs Résumé */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {kpis.map((kpi) => {
           const Icon = kpi.icon;
@@ -103,35 +103,29 @@ const Summary: React.FC<SummaryProps> = ({ data }) => {
         })}
       </div>
 
-      {/* Charts Placeholders */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h3 className="text-xl font-semibold mb-6 text-gray-800">Performance Mensuelle</h3>
-          <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-            <div className="text-center">
-              <TrendingUp className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">Graphique de performance mensuelle</p>
-              <p className="text-sm text-gray-400">Distance parcourue et coûts</p>
-            </div>
+          <div className="h-64">
+            <MonthlyPerformanceChart 
+              tours={data.tours} 
+              fuelEntries={data.fuel} 
+              maintenanceEntries={data.maintenance} 
+            />
           </div>
         </div>
 
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h3 className="text-xl font-semibold mb-6 text-gray-800">Répartition des Coûts (TND)</h3>
-          <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-            <div className="text-center">
-              <DollarSign className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">Graphique de répartition des coûts</p>
-              <div className="flex justify-center space-x-4 mt-4 text-sm">
-                <span className="flex items-center"><span className="w-3 h-3 bg-red-500 rounded-full mr-2"></span>Carburant: 45%</span>
-                <span className="flex items-center"><span className="w-3 h-3 bg-orange-500 rounded-full mr-2"></span>Maintenance: 25%</span>
-              </div>
-            </div>
+          <div className="h-64">
+            <CostDistributionChart 
+              fuelEntries={data.fuel} 
+              maintenanceEntries={data.maintenance} 
+            />
           </div>
         </div>
       </div>
 
-      {/* Statistiques détaillées */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white rounded-xl shadow-lg p-6">
           <div className="flex items-center mb-6">
@@ -179,7 +173,6 @@ const Summary: React.FC<SummaryProps> = ({ data }) => {
         </div>
       </div>
 
-      {/* Performance Overview */}
       <div className="bg-white rounded-xl shadow-lg p-6">
         <h3 className="text-xl font-semibold mb-6 text-gray-800">Aperçu des Performances</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
