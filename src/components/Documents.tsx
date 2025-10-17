@@ -1,22 +1,83 @@
-import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, AlertTriangle } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Plus, Edit2, Trash2, AlertTriangle, ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { FleetData, Document } from '../types';
 import { showSuccess } from '../utils/toast'; // Import toast utilities
 
 interface DocumentsProps {
   data: FleetData;
-  userRole: 'admin' | 'direction' | 'utilisateur'; // Keep userRole for display, but not for logic
+  userRole: 'admin' | 'direction' | 'utilisateur';
   onAdd: (document: Omit<Document, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (document: Document) => void;
   onDelete: (id: string) => void;
 }
 
-const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }) => { // 'userRole' removed from destructuring
+const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
 
-  // const canManage = true; // All authenticated users can manage - Removed
-  // const isReadOnly = false; // All authenticated users can manage - Removed
+  // State for filtering, sorting, and pagination
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortColumn, setSortColumn] = useState<keyof Document>('expiration');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // You can adjust this value
+
+  // Filtered and sorted data
+  const filteredAndSortedDocuments = useMemo(() => {
+    let filtered = data.documents.filter(doc => {
+      const vehicle = data.vehicles.find(v => v.id === doc.vehicle_id);
+      return (
+        (vehicle?.plate || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        doc.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        doc.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        doc.expiration.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    });
+
+    filtered.sort((a, b) => {
+      const aValue = a[sortColumn];
+      const bValue = b[sortColumn];
+
+      // Handle null/undefined values first (though not expected for these columns)
+      if (aValue === null || aValue === undefined) {
+        return sortDirection === 'asc' ? -1 : 1;
+      }
+      if (bValue === null || bValue === undefined) {
+        return sortDirection === 'asc' ? 1 : -1;
+      }
+
+      // Special handling for vehicle_id to sort by plate
+      if (sortColumn === 'vehicle_id') {
+        const aVehicle = data.vehicles.find(v => v.id === a.vehicle_id);
+        const bVehicle = data.vehicles.find(v => v.id === b.vehicle_id);
+        const aPlate = aVehicle?.plate || '';
+        const bPlate = bVehicle?.plate || '';
+        return sortDirection === 'asc' ? aPlate.localeCompare(bPlate) : bPlate.localeCompare(aPlate);
+      }
+
+      // For date strings (like 'expiration'), compare them directly as strings
+      if (sortColumn === 'expiration' && typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+      }
+      
+      // General string comparison
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+      }
+      
+      // Fallback for other types (should not be reached with current Document interface)
+      return 0;
+    });
+    return filtered;
+  }, [data.documents, data.vehicles, searchTerm, sortColumn, sortDirection]);
+
+  // Paginated data
+  const totalPages = Math.ceil(filteredAndSortedDocuments.length / itemsPerPage);
+  const currentDocuments = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredAndSortedDocuments.slice(startIndex, endIndex);
+  }, [filteredAndSortedDocuments, currentPage, itemsPerPage]);
 
   const handleAddDocument = () => {
     setEditingDocument(null);
@@ -37,7 +98,6 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // No need for canManage check here, as the button is always visible
     const formData = new FormData(e.currentTarget);
     
     const documentData: Omit<Document, 'user_id' | 'created_at'> = {
@@ -81,11 +141,26 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
 
   const expiringDocs = data.documents.filter(doc => getDaysUntilExpiration(doc.expiration) < 30);
 
+  const handleSort = (column: keyof Document) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const renderSortIcon = (column: keyof Document) => {
+    if (sortColumn === column) {
+      return sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />;
+    }
+    return null;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Suivi des Documents</h2>
-        {/* canManage replaced with true */}
           <button
             key="add-document-button"
             onClick={handleAddDocument}
@@ -94,6 +169,21 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
             <Plus className="w-5 h-5" />
             <span>Ajouter Document</span>
           </button>
+      </div>
+
+      {/* Search Input */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Rechercher un document par véhicule, type, numéro ou expiration..."
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setCurrentPage(1); // Reset to first page on new search
+          }}
+          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+        />
       </div>
 
       {/* Alerts */}
@@ -115,66 +205,117 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
         <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Véhicule</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Type Document</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">N° Document</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Expiration</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('vehicle_id')}>
+                <div className="flex items-center">
+                  Véhicule {renderSortIcon('vehicle_id')}
+                </div>
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('type')}>
+                <div className="flex items-center">
+                  Type Document {renderSortIcon('type')}
+                </div>
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('number')}>
+                <div className="flex items-center">
+                  N° Document {renderSortIcon('number')}
+                </div>
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('expiration')}>
+                <div className="flex items-center">
+                  Expiration {renderSortIcon('expiration')}
+                </div>
+              </th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Jours Restants</th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Statut</th>
-              {/* isReadOnly replaced with false */}
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {data.documents.map((doc) => {
-              const daysLeft = getDaysUntilExpiration(doc.expiration);
-              const statusClass = daysLeft < 30 ? 'text-red-600 font-semibold' : daysLeft < 60 ? 'text-orange-600' : 'text-green-600';
-              const status = getDocumentStatusBadge(daysLeft);
-              const vehicle = data.vehicles.find(v => v.id === doc.vehicle_id);
-              
-              return (
-                <tr key={doc.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{vehicle?.plate || 'N/A'}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{doc.type}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{doc.number}</td>
-                  <td className={`px-6 py-4 text-sm ${daysLeft < 30 ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
-                    {doc.expiration}
-                  </td>
-                  <td className={`px-6 py-4 text-sm ${statusClass}`}>
-                    {daysLeft < 0 ? 'Expiré' : `${daysLeft} jours`}
-                  </td>
-                  <td className="px-6 py-4 text-sm">
-                    <span className={`px-3 py-1 text-xs rounded-full font-medium ${status.class}`}>
-                      {status.text}
-                    </span>
-                  </td>
-                  {/* isReadOnly replaced with false */}
-                    <td className="px-6 py-4 text-sm">
-                      <div className="flex space-x-2">
-                        <button
-                          key={doc.id + "-edit"}
-                          onClick={() => handleEditDocument(doc)}
-                          className="text-blue-600 hover:text-blue-900 transition-colors"
-                          // disabled={!canManage} // Removed disabled prop
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          key={doc.id + "-delete"}
-                          onClick={() => handleDeleteDocument(doc.id)}
-                          className="text-red-600 hover:text-red-900 transition-colors"
-                          // disabled={!canManage} // Removed disabled prop
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+            {currentDocuments.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                  Aucun document trouvé.
+                </td>
+              </tr>
+            ) : (
+              currentDocuments.map((doc) => {
+                const daysLeft = getDaysUntilExpiration(doc.expiration);
+                const statusClass = daysLeft < 30 ? 'text-red-600 font-semibold' : daysLeft < 60 ? 'text-orange-600' : 'text-green-600';
+                const status = getDocumentStatusBadge(daysLeft);
+                const vehicle = data.vehicles.find(v => v.id === doc.vehicle_id);
+                
+                return (
+                  <tr key={doc.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{vehicle?.plate || 'N/A'}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{doc.type}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{doc.number}</td>
+                    <td className={`px-6 py-4 text-sm ${daysLeft < 30 ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
+                      {doc.expiration}
                     </td>
-                </tr>
-              );
-            })}
+                    <td className={`px-6 py-4 text-sm ${statusClass}`}>
+                      {daysLeft < 0 ? 'Expiré' : `${daysLeft} jours`}
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      <span className={`px-3 py-1 text-xs rounded-full font-medium ${status.class}`}>
+                        {status.text}
+                      </span>
+                    </td>
+                      <td className="px-6 py-4 text-sm">
+                        <div className="flex space-x-2">
+                          <button
+                            key={doc.id + "-edit"}
+                            onClick={() => handleEditDocument(doc)}
+                            className="text-blue-600 hover:text-blue-900 transition-colors"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            key={doc.id + "-delete"}
+                            onClick={() => handleDeleteDocument(doc.id)}
+                            className="text-red-600 hover:text-red-900 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center space-x-2 mt-4">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Précédent
+          </button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+            <button
+              key={page}
+              onClick={() => setCurrentPage(page)}
+              className={`px-4 py-2 rounded-lg ${
+                currentPage === page ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'
+              }`}
+            >
+              {page}
+            </button>
+          ))}
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Suivant
+          </button>
+        </div>
+      )}
 
       {/* Modal */}
       {showModal && (
@@ -192,7 +333,6 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
                     defaultValue={editingDocument?.vehicle_id || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    // disabled={!canManage} // Removed disabled prop
                   >
                     <option value="">Sélectionner un véhicule</option>
                     {data.vehicles.map(vehicle => (
@@ -209,7 +349,6 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
                     defaultValue={editingDocument?.type || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    // disabled={!canManage} // Removed disabled prop
                   >
                     <option value="">Sélectionner un type</option>
                     <option value="Assurance">Assurance</option>
@@ -227,7 +366,6 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
                     defaultValue={editingDocument?.number || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    // readOnly={!canManage} // Removed readOnly prop
                   />
                 </div>
                 <div>
@@ -238,7 +376,6 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
                     defaultValue={editingDocument?.expiration || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    // readOnly={!canManage} // Removed readOnly prop
                   />
                 </div>
                 <div className="flex justify-end space-x-4 mt-8">
@@ -249,7 +386,6 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
                   >
                     Annuler
                   </button>
-                  {/* canManage replaced with true */}
                     <button
                       type="submit"
                       className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
