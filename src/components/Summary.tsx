@@ -1,5 +1,5 @@
 import React from 'react';
-import { Truck, Users, Route, MapPin, Fuel, DollarSign, TrendingUp, AlertCircle } from 'lucide-react';
+import { Truck, Users, Route, MapPin, Fuel, AlertCircle } from 'lucide-react';
 import { FleetData } from '../types';
 import MonthlyPerformanceChart from './charts/MonthlyPerformanceChart';
 import CostDistributionChart from './charts/CostDistributionChart';

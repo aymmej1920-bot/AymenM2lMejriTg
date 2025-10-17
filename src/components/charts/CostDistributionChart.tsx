@@ -7,6 +7,12 @@ interface CostDistributionChartProps {
   maintenanceEntries: MaintenanceEntry[];
 }
 
+// Définir une interface pour les props du label du PieChart
+interface PieLabelProps {
+  name?: string;
+  percent?: number;
+}
+
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042']; // Blue, Green, Yellow, Orange
 
 const CostDistributionChart: React.FC<CostDistributionChartProps> = ({ fuelEntries, maintenanceEntries }) => {
@@ -30,9 +36,9 @@ const CostDistributionChart: React.FC<CostDistributionChartProps> = ({ fuelEntri
           outerRadius={100}
           fill="#8884d8"
           dataKey="value"
-          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+          label={({ name, percent }: PieLabelProps) => `${name || 'N/A'} ${((percent || 0) * 100).toFixed(0)}%`}
         >
-          {data.map((entry, index) => (
+          {data.map((_, index) => (
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
           ))}
         </Pie>

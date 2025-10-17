@@ -6,6 +6,12 @@ interface VehicleStatusChartProps {
   vehicles: Vehicle[];
 }
 
+// Définir une interface pour les props du label du PieChart
+interface PieLabelProps {
+  name?: string;
+  percent?: number;
+}
+
 const COLORS = ['#4CAF50', '#FFC107', '#F44336', '#9E9E9E']; // Green, Amber, Red, Grey
 
 const VehicleStatusChart: React.FC<VehicleStatusChartProps> = ({ vehicles }) => {
@@ -31,7 +37,7 @@ const VehicleStatusChart: React.FC<VehicleStatusChartProps> = ({ vehicles }) => 
           outerRadius={100}
           fill="#8884d8"
           dataKey="value"
-          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+          label={({ name, percent }: PieLabelProps) => `${name || 'N/A'} ${((percent || 0) * 100).toFixed(0)}%`}
         >
           {data.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={entry.color} />
