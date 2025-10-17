@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Plus, Edit2, Trash2, ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { FleetData, Vehicle } from '../types';
 import { showSuccess } from '../utils/toast';
+import { formatDate } from '../utils/date'; // Import the new utility
 
 interface VehiclesProps {
   data: FleetData;
@@ -216,7 +217,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900 font-semibold">{vehicle.mileage.toLocaleString()} km</td>
                     <td className="px-6 py-4 text-sm text-gray-600">
-                      {vehicle.last_service_date} ({(vehicle.last_service_mileage || 0).toLocaleString()} km)
+                      {formatDate(vehicle.last_service_date)} ({(vehicle.last_service_mileage || 0).toLocaleString()} km)
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <div className={serviceStatus.class}>
