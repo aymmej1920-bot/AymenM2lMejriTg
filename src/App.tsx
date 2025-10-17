@@ -206,7 +206,12 @@ function App() {
           preDepartureChecklists={fleetData.pre_departure_checklists}
         />;
       case 'checklists':
-        return <PreDepartureChecklistComponent key="checklists-view" data={fleetData} userRole={userRole} onAdd={(newData) => handleUpdateData('pre_departure_checklists', newData, 'insert')} />;
+        return <PreDepartureChecklistComponent 
+          key="checklists-view" 
+          data={fleetData} 
+          userRole={userRole} 
+          onAdd={(newData: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('pre_departure_checklists', newData, 'insert')} 
+        />;
       case 'summary':
         return <Summary key="summary-view" data={fleetData} />;
       default:
