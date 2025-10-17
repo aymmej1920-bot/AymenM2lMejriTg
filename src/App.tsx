@@ -14,6 +14,7 @@ import { FleetData, AuthUser, Vehicle, Driver, Tour, FuelEntry, Document, Mainte
 import { useSession } from './components/SessionContextProvider';
 import { supabase } from './integrations/supabase/client';
 import { showSuccess, showError, showLoading, dismissToast } from './utils/toast';
+import SkeletonLoader from './components/SkeletonLoader'; // Import SkeletonLoader
 
 function App() {
   const { session, isLoading } = useSession();
@@ -78,7 +79,7 @@ function App() {
       });
 
       setCurrentUser({
-        id: userId,
+        id: session?.user?.id || userId,
         email: session?.user?.email || '',
         name: profileData?.first_name || session?.user?.email?.split('@')[0] || 'User',
         role: profileData?.role || 'utilisateur', // Use the actual role from profileData, default to 'utilisateur'
@@ -169,8 +170,35 @@ function App() {
 
   if (isLoading || dataLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center">
-        <div className="text-white text-2xl font-bold">Chargement...</div>
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <header className="bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg">
+          <div className="container mx-auto px-6 py-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="bg-white bg-opacity-20 p-3 rounded-full">
+                  <Truck className="w-8 h-8" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold">Fleet Manager Pro</h1>
+                  <p className="text-purple-100 text-sm">Système de Gestion de Flotte Avancé</p>
+                </div>
+              </div>
+              <SkeletonLoader height="h-10" className="w-32" />
+            </div>
+          </div>
+        </header>
+        <nav className="bg-white shadow-md sticky top-0 z-40">
+          <div className="container mx-auto px-6">
+            <div className="flex space-x-1 overflow-x-auto py-2">
+              <SkeletonLoader count={tabs.length} height="h-12" className="w-32" />
+            </div>
+          </div>
+        </nav>
+        <main className="container mx-auto px-6 py-8 flex-grow">
+          <SkeletonLoader count={5} height="h-16" className="w-full mb-4" />
+          <SkeletonLoader count={3} height="h-24" className="w-full mb-4" />
+          <SkeletonLoader count={2} height="h-64" className="w-full mb-4" />
+        </main>
       </div>
     );
   }
