@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Plus, Edit2, Trash2, AlertTriangle, ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { FleetData, Document } from '../types';
 import { showSuccess } from '../utils/toast'; // Import toast utilities
+import { formatDate } from '../utils/date'; // Import the new utility
 
 interface DocumentsProps {
   data: FleetData;
@@ -250,7 +251,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
                     <td className="px-6 py-4 text-sm text-gray-600">{doc.type}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{doc.number}</td>
                     <td className={`px-6 py-4 text-sm ${daysLeft < 30 ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
-                      {doc.expiration}
+                      {formatDate(doc.expiration)}
                     </td>
                     <td className={`px-6 py-4 text-sm ${statusClass}`}>
                       {daysLeft < 0 ? 'Expiré' : `${daysLeft} jours`}

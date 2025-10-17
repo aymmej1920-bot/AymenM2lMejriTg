@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Plus, Wrench, AlertTriangle, Clock, ClipboardCheck, ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { FleetData, MaintenanceEntry, PreDepartureChecklist } from '../types';
 import { showSuccess } from '../utils/toast'; // Import toast utilities
+import { formatDate } from '../utils/date'; // Import the new utility
 
 interface MaintenanceProps {
   data: FleetData;
@@ -241,7 +242,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
                   const driver = data.drivers.find(d => d.id === checklist.driver_id);
                   return (
                     <tr key={checklist.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{checklist.date}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(checklist.date)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {vehicle?.plate || 'Véhicule inconnu'}
                       </td>
@@ -282,7 +283,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
                 <tr key={vehicle.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{vehicle.plate}</td>
                   <td className="px-6 py-4 text-sm font-semibold">{vehicle.mileage.toLocaleString()} km</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{vehicle.last_service_date || 'N/A'}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{formatDate(vehicle.last_service_date) || 'N/A'}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{(vehicle.last_service_mileage || 0).toLocaleString()} km</td>
                   <td className="px-6 py-4 text-sm font-semibold">{nextServiceKm.toLocaleString()} km</td>
                   <td className="px-6 py-4 text-sm">
@@ -373,7 +374,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
                     const vehicle = data.vehicles.find(v => v.id === maintenance.vehicle_id);
                     return (
                       <tr key={maintenance.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{maintenance.date}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(maintenance.date)}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {vehicle?.plate || 'Véhicule inconnu'}
                         </td>

@@ -3,6 +3,7 @@ import { Truck, CheckCircle, Route, Wrench, TrendingUp, Fuel, AlertTriangle } fr
 import { FleetData } from '../types';
 import VehicleStatusChart from './charts/VehicleStatusChart';
 import MonthlyFuelConsumptionChart from './charts/MonthlyFuelConsumptionChart';
+import { formatDate } from '../utils/date'; // Import the new utility
 
 interface DashboardProps {
   data: FleetData;
@@ -91,7 +92,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       <div className="flex items-center justify-between">
         <h2 className="text-4xl font-bold text-gray-800">Tableau de Bord</h2>
         <div className="text-sm text-gray-500">
-          Dernière mise à jour: {new Date().toLocaleDateString('fr-FR')}
+          Dernière mise à jour: {formatDate(new Date().toISOString())}
         </div>
       </div>
 
@@ -195,7 +196,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
                   </div>
                   <div>
                     <p className="font-medium">Tournée {vehicle?.plate || 'N/A'}</p>
-                    <p className="text-sm text-gray-600">{driver?.name || 'N/A'} • {tour.date}</p>
+                    <p className="text-sm text-gray-600">{driver?.name || 'N/A'} • {formatDate(tour.date)}</p>
                   </div>
                 </div>
                 <div className={`px-3 py-1 rounded-full text-xs font-medium ${

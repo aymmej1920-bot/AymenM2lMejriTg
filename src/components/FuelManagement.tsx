@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Plus, Edit2, Trash2, Fuel, DollarSign, TrendingUp, ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { FleetData, FuelEntry } from '../types';
 import { showSuccess } from '../utils/toast'; // Import toast utilities
+import { formatDate } from '../utils/date'; // Import the new utility
 
 interface FuelManagementProps {
   data: FleetData;
@@ -258,7 +259,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                 const vehicle = data.vehicles.find(v => v.id === fuel.vehicle_id);
                 return (
                   <tr key={fuel.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 text-sm text-gray-900">{fuel.date}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{formatDate(fuel.date)}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{vehicle?.plate || 'N/A'}</td>
                     <td className="px-6 py-4 text-sm font-semibold">{fuel.liters} L</td>
                     <td className="px-6 py-4 text-sm">{fuel.price_per_liter.toFixed(2)} TND</td>

@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Plus, Edit2, Trash2, Phone, ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { FleetData, Driver } from '../types';
 import { showSuccess } from '../utils/toast'; // Import toast utilities
+import { formatDate } from '../utils/date'; // Import the new utility
 
 interface DriversProps {
   data: FleetData;
@@ -207,7 +208,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{driver.name}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{driver.license}</td>
                   <td className={`px-6 py-4 text-sm ${isExpiringSoon(driver.expiration) ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
-                    {driver.expiration}
+                    {formatDate(driver.expiration)}
                     {isExpiringSoon(driver.expiration) && (
                       <div className="text-xs text-red-500">
                         Expire dans {getDaysUntilExpiration(driver.expiration)} jours

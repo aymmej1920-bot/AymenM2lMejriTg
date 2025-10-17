@@ -1,5 +1,5 @@
 import React from 'react';
-import { Truck, Users, Route, MapPin, Fuel, AlertCircle } from 'lucide-react';
+import { Truck, Users, Route, MapPin, Fuel, AlertCircle, Wrench } from 'lucide-react';
 import { FleetData } from '../types';
 import MonthlyPerformanceChart from './charts/MonthlyPerformanceChart';
 import CostDistributionChart from './charts/CostDistributionChart';
@@ -14,23 +14,24 @@ const Summary: React.FC<SummaryProps> = ({ data }) => {
   const toursThisMonth = data.tours.length;
   const totalDistance = data.tours.filter(t => t.distance).reduce((sum, t) => sum + (t.distance || 0), 0);
   const totalFuelCost = data.fuel.reduce((sum, f) => sum + (f.liters * f.price_per_liter), 0);
-  const avgConsumption = data.tours.length > 0 ? 8.5 : 0; // Exemple
+  const totalLiters = data.fuel.reduce((sum, f) => sum + f.liters, 0);
+  const avgPrice = totalLiters > 0 ? totalFuelCost / totalLiters : 0;
   const maintenanceCost = data.maintenance.reduce((sum, m) => sum + m.cost, 0);
 
-  const expiringDocs = data.documents.filter(doc => {
+  const expiringDocsCount = data.documents.filter(doc => {
     const today = new Date();
     const expiry = new Date(doc.expiration);
     const daysLeft = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     return daysLeft < 30;
   }).length;
 
-  const upcomingMaintenance = data.vehicles.filter(vehicle => {
+  const upcomingMaintenanceCount = data.vehicles.filter(vehicle => {
     const nextService = (vehicle.last_service_mileage || 0) + 10000;
     const kmUntilService = nextService - vehicle.mileage;
     return kmUntilService <= 1000;
   }).length;
 
-  const validDocs = data.documents.filter(doc => {
+  const validDocsCount = data.documents.filter(doc => {
     const today = new Date();
     const expiry = new Date(doc.expiration);
     const daysLeft = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
@@ -39,47 +40,45 @@ const Summary: React.FC<SummaryProps> = ({ data }) => {
 
   const kpis = [
     {
-      title: 'Total Véhicules',
+      title: 'Véhicules Total',
       value: totalVehicles,
       icon: Truck,
-      color: 'from-blue-500 to-blue-600'
+      color: 'from-blue-500 to-blue-600',
     },
     {
       title: 'Conducteurs Actifs',
       value: activeDrivers,
       icon: Users,
-      color: 'from-green-500 to-green-600'
+      color: 'from-green-500 to-green-600',
     },
     {
       title: 'Tournées ce mois',
       value: toursThisMonth,
       icon: Route,
-      color: 'from-orange-500 to-orange-600'
+      color: 'from-orange-500 to-orange-600',
     },
     {
       title: 'Distance Totale',
       value: `${totalDistance.toLocaleString()} km`,
       icon: MapPin,
-      color: 'from-purple-500 to-purple-600'
-    }
+      color: 'from-purple-500 to-purple-600',
+    },
   ];
 
   const fuelStats = [
-    { label: 'Consommation moyenne:', value: `${avgConsumption} L/100km` },
-    { label: 'Coût mensuel:', value: `${totalFuelCost.toFixed(2)} TND` },
-    { label: 'Économies possibles:', value: '-12%', color: 'text-green-600' }
+    { label: 'Total Litres', value: `${totalLiters.toFixed(2)} L` },
+    { label: 'Coût Total', value: `${totalFuelCost.toFixed(2)} TND`, color: 'text-green-600' },
+    { label: 'Prix Moyen/L', value: `${avgPrice.toFixed(2)} TND` },
   ];
 
   const maintenanceStats = [
-    { label: 'Véhicules en maintenance:', value: data.vehicles.filter(v => v.status === 'Maintenance').length, color: 'text-red-600' },
-    { label: 'Vidanges prévues:', value: upcomingMaintenance, color: 'text-orange-600' },
-    { label: 'Coût maintenance:', value: `${maintenanceCost.toFixed(2)} TND` }
+    { label: 'Coût Total Maintenance', value: `${maintenanceCost.toFixed(2)} TND`, color: 'text-red-600' },
+    { label: 'Maintenance à venir', value: `${upcomingMaintenanceCount} véhicules`, color: upcomingMaintenanceCount > 0 ? 'text-orange-600' : 'text-gray-900' },
   ];
 
   const documentStats = [
-    { label: 'Expiration < 30j:', value: expiringDocs, color: 'text-red-600' },
-    { label: 'À renouveler:', value: data.documents.length - validDocs - expiringDocs, color: 'text-orange-600' },
-    { label: 'À jour:', value: validDocs, color: 'text-green-600' }
+    { label: 'Documents Valides', value: `${validDocsCount} documents`, color: 'text-green-600' },
+    { label: 'Documents Expirant bientôt', value: `${expiringDocsCount} documents`, color: expiringDocsCount > 0 ? 'text-red-600' : 'text-gray-900' },
   ];
 
   return (
@@ -87,10 +86,10 @@ const Summary: React.FC<SummaryProps> = ({ data }) => {
       <h2 className="text-4xl font-bold text-gray-800">Résumé Général</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {kpis.map((kpi) => {
+        {kpis.map((kpi, index) => {
           const Icon = kpi.icon;
           return (
-            <div key={kpi.title} className={`bg-gradient-to-br ${kpi.color} text-white rounded-xl shadow-lg p-6`}>
+            <div key={index} className={`bg-gradient-to-br ${kpi.color} text-white rounded-xl shadow-lg p-6`}>
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-white text-sm font-medium opacity-90">{kpi.title}</h3>
@@ -144,7 +143,7 @@ const Summary: React.FC<SummaryProps> = ({ data }) => {
 
         <div className="bg-white rounded-xl shadow-lg p-6">
           <div className="flex items-center mb-6">
-            <AlertCircle className="w-6 h-6 text-orange-600 mr-3" />
+            <Wrench className="w-6 h-6 text-orange-600 mr-3" /> {/* Changed icon to Wrench */}
             <h3 className="text-xl font-semibold text-gray-800">Maintenance</h3>
           </div>
           <div className="space-y-4">
@@ -159,7 +158,7 @@ const Summary: React.FC<SummaryProps> = ({ data }) => {
 
         <div className="bg-white rounded-xl shadow-lg p-6">
           <div className="flex items-center mb-6">
-            <Route className="w-6 h-6 text-green-600 mr-3" />
+            <AlertCircle className="w-6 h-6 text-green-600 mr-3" /> {/* Changed icon to AlertCircle */}
             <h3 className="text-xl font-semibold text-gray-800">Documents</h3>
           </div>
           <div className="space-y-4">

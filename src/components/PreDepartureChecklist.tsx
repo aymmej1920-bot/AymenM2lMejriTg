@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Plus, CheckCircle, XCircle, AlertTriangle, ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { FleetData, PreDepartureChecklist } from '../types';
 import { showSuccess, showError } from '../utils/toast';
+import { formatDate } from '../utils/date'; // Import the new utility
 
 interface PreDepartureChecklistProps {
   data: FleetData;
@@ -298,7 +299,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                   const driver = data.drivers.find(d => d.id === checklist.driver_id);
                   return (
                     <tr key={checklist.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 text-sm text-gray-900">{checklist.date}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900">{formatDate(checklist.date)}</td>
                       <td className="px-6 py-4 text-sm font-medium text-gray-900">{vehicle?.plate || 'N/A'}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{driver?.name || 'N/A'}</td>
                       <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.tire_pressure_ok)}</td>

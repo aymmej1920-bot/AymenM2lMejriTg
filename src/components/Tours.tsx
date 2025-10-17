@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Plus, Edit2, Trash2, ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { FleetData, Tour } from '../types';
 import { showSuccess } from '../utils/toast'; // Import toast utilities
+import { formatDate } from '../utils/date'; // Import the new utility
 
 interface ToursProps {
   data: FleetData;
@@ -245,7 +246,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                   const driver = data.drivers.find(d => d.id === tour.driver_id);
                   return (
                     <tr key={tour.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-4 text-sm text-gray-900">{tour.date}</td>
+                      <td className="px-4 py-4 text-sm text-gray-900">{formatDate(tour.date)}</td>
                       <td className="px-4 py-4 text-sm text-gray-600">{vehicle?.plate || 'N/A'}</td>
                       <td className="px-4 py-4 text-sm text-gray-600">{driver?.name || 'N/A'}</td>
                       <td className="px-4 py-4 text-sm">
