@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Plus, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { FleetData, PreDepartureChecklist } from '../types';
-import { showSuccess } from '../utils/toast';
+import { showSuccess, showError } from '../utils/toast';
 
 interface PreDepartureChecklistProps {
   data: FleetData;
@@ -28,7 +28,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
   });
 
   const canAdd = userRole === 'admin' || userRole === 'utilisateur';
-  // const isReadOnly = userRole === 'direction'; // Removed as it was unused
+  // const isReadOnly = userRole === 'direction'; // Supprimé car non utilisé
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type, checked } = e.target as HTMLInputElement;
@@ -36,6 +36,15 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
       ...prevState,
       [name]: type === 'checkbox' ? checked : value,
     }));
+  };
+
+  const hasChecklistForMonth = (vehicleId: string, month: number, year: number): boolean => {
+    return data.pre_departure_checklists.some(cl => {
+      const clDate = new Date(cl.date);
+      return cl.vehicle_id === vehicleId &&
+             clDate.getMonth() === month &&
+             clDate.getFullYear() === year;
+    });
   };
 
   const handleAddChecklist = () => {
@@ -61,6 +70,17 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
     e.preventDefault();
     if (!canAdd) return;
 
+    const { vehicle_id, date } = formState;
+
+    const checklistDate = new Date(date);
+    const submissionMonth = checklistDate.getMonth();
+    const submissionYear = checklistDate.getFullYear();
+
+    if (hasChecklistForMonth(vehicle_id, submissionMonth, submissionYear)) {
+      showError('Une checklist pour ce véhicule a déjà été soumise ce mois-ci.');
+      return;
+    }
+
     onAdd(formState);
     showSuccess('Checklist ajoutée avec succès !');
     setShowModal(false);
@@ -69,6 +89,14 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
   const getStatusIcon = (status: boolean) => {
     return status ? <CheckCircle className="w-5 h-5 text-green-500" /> : <XCircle className="w-5 h-5 text-red-500" />;
   };
+
+  const today = new Date();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+
+  const vehiclesMissingChecklist = data.vehicles.filter(vehicle =>
+    !hasChecklistForMonth(vehicle.id, currentMonth, currentYear)
+  );
 
   return (
     <div className="space-y-6">
@@ -84,6 +112,22 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
           </button>
         )}
       </div>
+
+      {/* Alerte pour les checklists mensuelles manquantes */}
+      {vehiclesMissingChecklist.length > 0 && (userRole === 'admin' || userRole === 'direction') && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
+          <div className="flex items-center">
+            <AlertTriangle className="w-5 h-5 text-yellow-400 mr-3" />
+            <div>
+              <h3 className="text-yellow-800 font-semibold">Checklists Mensuelles Manquantes</h3>
+              <p className="text-yellow-700">
+                {vehiclesMissingChecklist.length} véhicule(s) n'ont pas de checklist pour ce mois-ci :{' '}
+                <span className="font-medium">{vehiclesMissingChecklist.map(v => v.plate).join(', ')}</span>.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
         <table className="min-w-full">
