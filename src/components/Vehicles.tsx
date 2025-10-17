@@ -11,7 +11,7 @@ interface VehiclesProps {
   onDelete: (id: string) => void;
 }
 
-const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) => {
+const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete, userRole }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
 
@@ -21,6 +21,9 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10; // You can adjust this value
+
+  // Determine if the current user can perform write operations
+  const canWrite = userRole === 'admin' || userRole === 'direction';
 
   // Filtered and sorted data
   const filteredAndSortedVehicles = useMemo(() => {
@@ -137,14 +140,16 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Gestion des Véhicules</h2>
-        <button
-          key="add-vehicle-button"
-          onClick={handleAddVehicle}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Ajouter Véhicule</span>
-        </button>
+        {canWrite && (
+          <button
+            key="add-vehicle-button"
+            onClick={handleAddVehicle}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Ajouter Véhicule</span>
+          </button>
+        )}
       </div>
 
       {/* Search Input */}
@@ -192,13 +197,13 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
                 </div>
               </th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Prochaine Vidange</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+              {canWrite && <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {currentVehicles.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                <td colSpan={canWrite ? 7 : 6} className="px-6 py-4 text-center text-gray-500">
                   Aucun véhicule trouvé.
                 </td>
               </tr>
@@ -225,24 +230,26 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
                         <span className="text-xs">({serviceStatus.text})</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm">
-                      <div className="flex space-x-2">
-                        <button
-                          key={vehicle.id + "-edit"}
-                          onClick={() => handleEditVehicle(vehicle)}
-                          className="text-blue-600 hover:text-blue-900 transition-colors"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          key={vehicle.id + "-delete"}
-                          onClick={() => handleDeleteVehicle(vehicle.id)}
-                          className="text-red-600 hover:text-red-900 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
+                    {canWrite && (
+                      <td className="px-6 py-4 text-sm">
+                        <div className="flex space-x-2">
+                          <button
+                            key={vehicle.id + "-edit"}
+                            onClick={() => handleEditVehicle(vehicle)}
+                            className="text-blue-600 hover:text-blue-900 transition-colors"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            key={vehicle.id + "-delete"}
+                            onClick={() => handleDeleteVehicle(vehicle.id)}
+                            className="text-red-600 hover:text-red-900 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 );
               })
