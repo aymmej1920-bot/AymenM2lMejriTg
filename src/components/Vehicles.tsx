@@ -3,6 +3,8 @@ import { Plus, Edit2, Trash2, ChevronUp, ChevronDown, Search } from 'lucide-reac
 import { FleetData, Vehicle } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date'; // Import the new utility
+import ConfirmDialog from './ConfirmDialog'; // Import ConfirmDialog
+import { Button } from './ui/button'; // Import shadcn Button
 
 interface VehiclesProps {
   data: FleetData;
@@ -15,6 +17,8 @@ interface VehiclesProps {
 const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [vehicleToDelete, setVehicleToDelete] = useState<string | null>(null);
 
   // State for filtering, sorting, and pagination
   const [searchTerm, setSearchTerm] = useState('');
@@ -65,10 +69,16 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
     setShowModal(true);
   };
 
-  const handleDeleteVehicle = (vehicleId: string) => {
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce véhicule ?')) {
-      onDelete(vehicleId);
+  const confirmDeleteVehicle = (vehicleId: string) => {
+    setVehicleToDelete(vehicleId);
+    setShowConfirmDialog(true);
+  };
+
+  const executeDeleteVehicle = () => {
+    if (vehicleToDelete) {
+      onDelete(vehicleToDelete);
       showSuccess('Véhicule supprimé avec succès !');
+      setVehicleToDelete(null);
     }
   };
 
@@ -138,14 +148,13 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Gestion des Véhicules</h2>
-          <button
-            key="add-vehicle-button"
+          <Button
             onClick={handleAddVehicle}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
           >
             <Plus className="w-5 h-5" />
             <span>Ajouter Véhicule</span>
-          </button>
+          </Button>
       </div>
 
       {/* Search Input */}
@@ -228,20 +237,22 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
                     </td>
                       <td className="px-6 py-4 text-sm">
                         <div className="flex space-x-2">
-                          <button
-                            key={vehicle.id + "-edit"}
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => handleEditVehicle(vehicle)}
                             className="text-blue-600 hover:text-blue-900 transition-colors"
                           >
                             <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            key={vehicle.id + "-delete"}
-                            onClick={() => handleDeleteVehicle(vehicle.id)}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => confirmDeleteVehicle(vehicle.id)}
                             className="text-red-600 hover:text-red-900 transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
-                          </button>
+                          </Button>
                         </div>
                       </td>
                   </tr>
@@ -255,31 +266,34 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
       {/* Pagination Controls */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center space-x-2 mt-4">
-          <button
+          <Button
+            variant="outline"
             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
             className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Précédent
-          </button>
+          </Button>
           {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-            <button
+            <Button
               key={page}
+              variant={currentPage === page ? 'default' : 'outline'}
               onClick={() => setCurrentPage(page)}
               className={`px-4 py-2 rounded-lg ${
                 currentPage === page ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'
               }`}
             >
               {page}
-            </button>
+            </Button>
           ))}
-          <button
+          <Button
+            variant="outline"
             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
             disabled={currentPage === totalPages}
             className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Suivant
-          </button>
+          </Button>
         </div>
       )}
 
@@ -360,25 +374,36 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
                   />
                 </div>
                 <div className="flex justify-end space-x-4 mt-8">
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
                     onClick={() => setShowModal(false)}
                     className="px-6 py-3 bg-gray-300 hover:bg-gray-400 rounded-lg transition-all duration-300"
                   >
                     Annuler
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
                     className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
                   >
                     Sauvegarder
-                  </button>
+                  </Button>
                 </div>
               </form>
             </div>
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        title="Confirmer la suppression"
+        description="Êtes-vous sûr de vouloir supprimer ce véhicule ? Cette action est irréversible."
+        onConfirm={executeDeleteVehicle}
+        confirmText="Supprimer"
+        variant="destructive"
+      />
     </div>
   );
 };
