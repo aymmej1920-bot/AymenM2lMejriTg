@@ -12,7 +12,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
   const inMissionVehicles = data.vehicles.filter(v => v.status === 'En mission').length;
   const maintenanceVehicles = data.vehicles.filter(v => v.status === 'Maintenance').length;
 
-  const totalFuelCost = data.fuel.reduce((sum, f) => sum + (f.liters * f.pricePerLiter), 0);
+  const totalFuelCost = data.fuel.reduce((sum, f) => sum + (f.liters * f.price_per_liter), 0);
   const totalDistance = data.tours.filter(t => t.distance).reduce((sum, t) => sum + (t.distance || 0), 0);
 
   const kpis = [
@@ -72,7 +72,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
 
   // Calculer les alertes de maintenance
   const maintenanceAlerts = data.vehicles.filter(vehicle => {
-    const nextService = (vehicle.lastServiceMileage || 0) + 10000;
+    const nextService = (vehicle.last_service_mileage || 0) + 10000;
     const kmUntilService = nextService - vehicle.mileage;
     return kmUntilService <= 1000;
   });
@@ -188,26 +188,30 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       <div className="bg-white rounded-xl shadow-lg p-6">
         <h3 className="text-xl font-semibold mb-6 text-gray-800">Activité Récente</h3>
         <div className="space-y-4">
-          {data.tours.slice(-3).map((tour) => (
-            <div key={tour.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-4">
-                <div className="bg-blue-100 p-2 rounded-full">
-                  <Route className="w-5 h-5 text-blue-600" />
+          {data.tours.slice(-3).map((tour) => {
+            const vehicle = data.vehicles.find(v => v.id === tour.vehicle_id);
+            const driver = data.drivers.find(d => d.id === tour.driver_id);
+            return (
+              <div key={tour.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-4">
+                  <div className="bg-blue-100 p-2 rounded-full">
+                    <Route className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium">Tournée {vehicle?.plate || 'N/A'}</p>
+                    <p className="text-sm text-gray-600">{driver?.name || 'N/A'} • {tour.date}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium">Tournée {tour.vehicle}</p>
-                  <p className="text-sm text-gray-600">{tour.driver} • {tour.date}</p>
+                <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  tour.status === 'Terminé' ? 'bg-green-100 text-green-800' :
+                  tour.status === 'En cours' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-blue-100 text-blue-800'
+                }`}>
+                  {tour.status}
                 </div>
               </div>
-              <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                tour.status === 'Terminé' ? 'bg-green-100 text-green-800' :
-                tour.status === 'En cours' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-blue-100 text-blue-800'
-              }`}>
-                {tour.status}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

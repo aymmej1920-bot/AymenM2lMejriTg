@@ -11,7 +11,7 @@ const Summary: React.FC<SummaryProps> = ({ data }) => {
   const activeDrivers = data.drivers.filter(d => d.status !== 'Congé').length;
   const toursThisMonth = data.tours.length;
   const totalDistance = data.tours.filter(t => t.distance).reduce((sum, t) => sum + (t.distance || 0), 0);
-  const totalFuelCost = data.fuel.reduce((sum, f) => sum + (f.liters * f.pricePerLiter), 0);
+  const totalFuelCost = data.fuel.reduce((sum, f) => sum + (f.liters * f.price_per_liter), 0);
   const avgConsumption = data.tours.length > 0 ? 8.5 : 0; // Exemple
   const maintenanceCost = data.maintenance.reduce((sum, m) => sum + m.cost, 0);
 
@@ -23,7 +23,7 @@ const Summary: React.FC<SummaryProps> = ({ data }) => {
   }).length;
 
   const upcomingMaintenance = data.vehicles.filter(vehicle => {
-    const nextService = (vehicle.lastServiceMileage || 0) + 10000;
+    const nextService = (vehicle.last_service_mileage || 0) + 10000;
     const kmUntilService = nextService - vehicle.mileage;
     return kmUntilService <= 1000;
   }).length;

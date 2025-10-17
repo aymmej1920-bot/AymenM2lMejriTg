@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Truck, Users, Route, Fuel, FileText, Wrench, BarChart3, Download, Upload, LogOut } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Vehicles from './components/Vehicles';
@@ -9,99 +9,65 @@ import Documents from './components/Documents';
 import Maintenance from './components/Maintenance';
 import Summary from './components/Summary';
 import Login from './pages/Login';
-import { FleetData, AuthUser } from './types';
+import { FleetData, AuthUser, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry } from './types';
 import { useSession } from './components/SessionContextProvider';
 import { supabase } from './integrations/supabase/client';
-
-const initialData: FleetData = {
-  vehicles: [
-    {
-      id: '1',
-      plate: 'TUN-123-01',
-      type: 'Camionnette',
-      status: 'Disponible',
-      mileage: 45000,
-      lastServiceDate: '2024-11-15',
-      lastServiceMileage: 40000
-    },
-    {
-      id: '2', 
-      plate: 'TUN-456-02',
-      type: 'Camion',
-      status: 'En mission',
-      mileage: 62000,
-      lastServiceDate: '2024-10-20',
-      lastServiceMileage: 60000
-    }
-  ],
-  drivers: [
-    {
-      id: 1,
-      name: 'Ahmed Ben Ali',
-      license: 'B123456',
-      expiration: '2025-06-15',
-      status: 'Disponible',
-      phone: '+216 98 123 456'
-    },
-    {
-      id: 2,
-      name: 'Mohamed Trabelsi',
-      license: 'B789012',
-      expiration: '2025-03-20',
-      status: 'En mission', 
-      phone: '+216 97 654 321'
-    }
-  ],
-  tours: [
-    {
-      id: 1,
-      date: '2024-12-15',
-      vehicle: 'TUN-123-01',
-      driver: 'Ahmed Ben Ali',
-      status: 'Terminé',
-      fuelStart: 80,
-      kmStart: 44800,
-      fuelEnd: 65,
-      kmEnd: 45000,
-      distance: 200
-    }
-  ],
-  fuel: [
-    {
-      id: 1,
-      date: '2024-12-14',
-      vehicle: 'TUN-123-01',
-      liters: 35.5,
-      pricePerLiter: 3.75,
-      mileage: 44500
-    }
-  ],
-  documents: [
-    {
-      id: 1,
-      vehicle: 'TUN-123-01',
-      type: 'Assurance',
-      number: 'ASS-2024-001',
-      expiration: '2025-01-15'
-    }
-  ],
-  maintenance: [
-    {
-      id: 1,
-      vehicleId: '1',
-      type: 'Vidange',
-      date: '2024-11-15',
-      mileage: 40000,
-      cost: 125.50
-    }
-  ]
-};
 
 function App() {
   const { session, isLoading } = useSession();
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
-  const [fleetData, setFleetData] = useState<FleetData>(initialData);
+  const [fleetData, setFleetData] = useState<FleetData>({
+    vehicles: [],
+    drivers: [],
+    tours: [],
+    fuel: [],
+    documents: [],
+    maintenance: [],
+  });
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [dataLoading, setDataLoading] = useState(true);
+
+  const fetchData = useCallback(async (userId: string) => {
+    setDataLoading(true);
+    try {
+      const [
+        { data: vehiclesData, error: vehiclesError },
+        { data: driversData, error: driversError },
+        { data: toursData, error: toursError },
+        { data: fuelData, error: fuelError },
+        { data: documentsData, error: documentsError },
+        { data: maintenanceData, error: maintenanceError },
+      ] = await Promise.all([
+        supabase.from('vehicles').select('*').eq('user_id', userId),
+        supabase.from('drivers').select('*').eq('user_id', userId),
+        supabase.from('tours').select('*').eq('user_id', userId),
+        supabase.from('fuel_entries').select('*').eq('user_id', userId),
+        supabase.from('documents').select('*').eq('user_id', userId),
+        supabase.from('maintenance_entries').select('*').eq('user_id', userId),
+      ]);
+
+      if (vehiclesError) throw vehiclesError;
+      if (driversError) throw driversError;
+      if (toursError) throw toursError;
+      if (fuelError) throw fuelError;
+      if (documentsError) throw documentsError;
+      if (maintenanceError) throw maintenanceError;
+
+      setFleetData({
+        vehicles: vehiclesData as Vehicle[],
+        drivers: driversData as Driver[],
+        tours: toursData as Tour[],
+        fuel: fuelData as FuelEntry[],
+        documents: documentsData as Document[],
+        maintenance: maintenanceData as MaintenanceEntry[],
+      });
+    } catch (error) {
+      console.error('Error fetching fleet data:', error);
+      alert('Erreur lors du chargement des données de flotte.');
+    } finally {
+      setDataLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (session?.user) {
@@ -110,39 +76,55 @@ function App() {
         email: session.user.email || '',
         name: session.user.user_metadata.first_name || session.user.email?.split('@')[0] || 'User',
       });
-      loadSavedData(session.user.id);
+      fetchData(session.user.id);
     } else {
       setCurrentUser(null);
-      setFleetData(initialData); // Reset data if no user
+      setFleetData({
+        vehicles: [],
+        drivers: [],
+        tours: [],
+        fuel: [],
+        documents: [],
+        maintenance: [],
+      });
+      setDataLoading(false);
     }
-  }, [session]);
+  }, [session, fetchData]);
 
-  const loadSavedData = (userId: string) => {
-    // In a real app, you would fetch user-specific data from Supabase here.
-    // For now, we'll keep the localStorage logic but scope it by user ID.
-    const savedData = localStorage.getItem(`fleetDataPro_${userId}`);
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        setFleetData({ ...initialData, ...parsed });
-      } catch (error) {
-        console.error('Erreur lors du chargement des données:', error);
+  const handleUpdateData = async (tableName: string, newData: any, action: 'insert' | 'update' | 'delete') => {
+    if (!currentUser?.id) return;
+
+    try {
+      let response;
+      if (action === 'insert') {
+        response = await supabase.from(tableName).insert({ ...newData, user_id: currentUser.id }).select();
+      } else if (action === 'update') {
+        response = await supabase.from(tableName).update(newData).eq('id', newData.id).eq('user_id', currentUser.id).select();
+      } else if (action === 'delete') {
+        response = await supabase.from(tableName).delete().eq('id', newData.id).eq('user_id', currentUser.id);
       }
-    }
-  };
 
-  const saveData = (newData: FleetData) => {
-    setFleetData(newData);
-    if (currentUser?.id) {
-      localStorage.setItem(`fleetDataPro_${currentUser.id}`, JSON.stringify(newData));
+      if (response?.error) throw response.error;
+      
+      // Re-fetch data to ensure UI is consistent with DB
+      fetchData(currentUser.id);
+    } catch (error) {
+      console.error(`Error ${action}ing data in ${tableName}:`, error);
+      alert(`Erreur lors de la ${action === 'insert' ? 'création' : action === 'update' ? 'mise à jour' : 'suppression'} des données.`);
     }
   };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    localStorage.removeItem(`fleetDataPro_${currentUser?.id}`);
     setCurrentUser(null);
-    setFleetData(initialData);
+    setFleetData({
+      vehicles: [],
+      drivers: [],
+      tours: [],
+      fuel: [],
+      documents: [],
+      maintenance: [],
+    });
   };
 
   const exportData = () => {
@@ -161,19 +143,37 @@ function App() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
-        const importedData = JSON.parse(e.target?.result as string);
+        const importedData: FleetData = JSON.parse(e.target?.result as string);
         if (importedData.vehicles && importedData.drivers) {
-          setFleetData(importedData);
-          if (currentUser?.id) {
-            localStorage.setItem(`fleetDataPro_${currentUser.id}`, JSON.stringify(importedData));
-          }
+          // Clear existing data for the user
+          await Promise.all([
+            supabase.from('vehicles').delete().eq('user_id', currentUser?.id),
+            supabase.from('drivers').delete().eq('user_id', currentUser?.id),
+            supabase.from('tours').delete().eq('user_id', currentUser?.id),
+            supabase.from('fuel_entries').delete().eq('user_id', currentUser?.id),
+            supabase.from('documents').delete().eq('user_id', currentUser?.id),
+            supabase.from('maintenance_entries').delete().eq('user_id', currentUser?.id),
+          ]);
+
+          // Insert imported data
+          await Promise.all([
+            importedData.vehicles.length > 0 && supabase.from('vehicles').insert(importedData.vehicles.map(v => ({ ...v, user_id: currentUser?.id }))),
+            importedData.drivers.length > 0 && supabase.from('drivers').insert(importedData.drivers.map(d => ({ ...d, user_id: currentUser?.id }))),
+            importedData.tours.length > 0 && supabase.from('tours').insert(importedData.tours.map(t => ({ ...t, user_id: currentUser?.id }))),
+            importedData.fuel.length > 0 && supabase.from('fuel_entries').insert(importedData.fuel.map(f => ({ ...f, user_id: currentUser?.id }))),
+            importedData.documents.length > 0 && supabase.from('documents').insert(importedData.documents.map(doc => ({ ...doc, user_id: currentUser?.id }))),
+            importedData.maintenance.length > 0 && supabase.from('maintenance_entries').insert(importedData.maintenance.map(m => ({ ...m, user_id: currentUser?.id }))),
+          ]);
+          
           alert('Données importées avec succès !');
+          fetchData(currentUser!.id); // Refresh data after import
         } else {
           alert('Format de fichier invalide !');
         }
       } catch (error) {
+        console.error('Error importing data:', error);
         alert('Erreur lors de l\'import du fichier !');
       }
     };
@@ -191,7 +191,7 @@ function App() {
     { id: 'summary', name: 'Résumé', icon: BarChart3 }
   ];
 
-  if (isLoading) {
+  if (isLoading || dataLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center">
         <div className="text-white text-2xl font-bold">Chargement...</div>
@@ -208,17 +208,17 @@ function App() {
       case 'dashboard':
         return <Dashboard data={fleetData} />;
       case 'vehicles':
-        return <Vehicles data={fleetData} onUpdate={saveData} />;
+        return <Vehicles data={fleetData} onUpdate={(newData) => handleUpdateData('vehicles', newData, 'update')} onDelete={(id) => handleUpdateData('vehicles', { id }, 'delete')} onAdd={(newData) => handleUpdateData('vehicles', newData, 'insert')} />;
       case 'drivers':
-        return <Drivers data={fleetData} onUpdate={saveData} />;
+        return <Drivers data={fleetData} onUpdate={(newData) => handleUpdateData('drivers', newData, 'update')} onDelete={(id) => handleUpdateData('drivers', { id }, 'delete')} onAdd={(newData) => handleUpdateData('drivers', newData, 'insert')} />;
       case 'tours':
-        return <Tours data={fleetData} onUpdate={saveData} />;
+        return <Tours data={fleetData} onUpdate={(newData) => handleUpdateData('tours', newData, 'update')} onDelete={(id) => handleUpdateData('tours', { id }, 'delete')} onAdd={(newData) => handleUpdateData('tours', newData, 'insert')} />;
       case 'fuel':
-        return <FuelManagement data={fleetData} onUpdate={saveData} />;
+        return <FuelManagement data={fleetData} onUpdate={(newData) => handleUpdateData('fuel_entries', newData, 'update')} onDelete={(id) => handleUpdateData('fuel_entries', { id }, 'delete')} onAdd={(newData) => handleUpdateData('fuel_entries', newData, 'insert')} />;
       case 'documents':
-        return <Documents data={fleetData} onUpdate={saveData} />;
+        return <Documents data={fleetData} onUpdate={(newData) => handleUpdateData('documents', newData, 'update')} onDelete={(id) => handleUpdateData('documents', { id }, 'delete')} onAdd={(newData) => handleUpdateData('documents', newData, 'insert')} />;
       case 'maintenance':
-        return <Maintenance data={fleetData} onUpdate={saveData} />;
+        return <Maintenance data={fleetData} onUpdate={(newData) => handleUpdateData('maintenance_entries', newData, 'update')} onAdd={(newData) => handleUpdateData('maintenance_entries', newData, 'insert')} />;
       case 'summary':
         return <Summary data={fleetData} />;
       default:

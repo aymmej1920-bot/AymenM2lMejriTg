@@ -4,50 +4,48 @@ import { FleetData, MaintenanceEntry } from '../types';
 
 interface MaintenanceProps {
   data: FleetData;
-  onUpdate: (data: FleetData) => void;
+  onAdd: (maintenanceEntry: Omit<MaintenanceEntry, 'id' | 'user_id' | 'created_at'>) => void;
+  onUpdate: (vehicle: { id: string; last_service_date: string; last_service_mileage: number; mileage: number }) => void;
 }
 
-const Maintenance: React.FC<MaintenanceProps> = ({ data, onUpdate }) => {
+const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate }) => {
   const [showModal, setShowModal] = useState(false);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
 
-  const handleAddMaintenance = () => {
+  const handleAddMaintenance = (vehicleId?: string) => {
+    setSelectedVehicleId(vehicleId || '');
     setShowModal(true);
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
-    const maintenanceData: MaintenanceEntry = {
-      id: Date.now(),
-      vehicleId: formData.get('vehicleId') as string,
+    const maintenanceData: Omit<MaintenanceEntry, 'id' | 'user_id' | 'created_at'> = {
+      vehicle_id: formData.get('vehicle_id') as string,
       type: formData.get('type') as string,
       date: formData.get('date') as string,
       mileage: parseInt(formData.get('mileage') as string),
       cost: parseFloat(formData.get('cost') as string)
     };
 
-    const newData = {
-      ...data,
-      maintenance: [...data.maintenance, maintenanceData]
-    };
+    onAdd(maintenanceData);
 
-    // Si c'est une vidange, mettre à jour les infos du véhicule
+    // If it's an oil change, update vehicle info
     if (maintenanceData.type === 'Vidange') {
-      const vehicleIndex = newData.vehicles.findIndex(v => v.id === maintenanceData.vehicleId);
-      if (vehicleIndex !== -1) {
-        newData.vehicles[vehicleIndex].lastServiceDate = maintenanceData.date;
-        newData.vehicles[vehicleIndex].lastServiceMileage = maintenanceData.mileage;
-        newData.vehicles[vehicleIndex].mileage = maintenanceData.mileage;
-      }
+      onUpdate({
+        id: maintenanceData.vehicle_id,
+        last_service_date: maintenanceData.date,
+        last_service_mileage: maintenanceData.mileage,
+        mileage: maintenanceData.mileage, // Also update current mileage
+      });
     }
 
-    onUpdate(newData);
     setShowModal(false);
   };
 
   const getMaintenanceStatus = (vehicle: any) => {
-    const nextServiceKm = (vehicle.lastServiceMileage || 0) + 10000;
+    const nextServiceKm = (vehicle.last_service_mileage || 0) + 10000;
     const kmUntilService = nextServiceKm - vehicle.mileage;
     
     if (kmUntilService <= 0) {
@@ -60,13 +58,13 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onUpdate }) => {
   };
 
   const upcomingMaintenanceCount = data.vehicles.filter(vehicle => {
-    const nextService = (vehicle.lastServiceMileage || 0) + 10000;
+    const nextService = (vehicle.last_service_mileage || 0) + 10000;
     const kmUntilService = nextService - vehicle.mileage;
     return kmUntilService <= 1000 && kmUntilService > 0;
   }).length;
 
   const urgentMaintenanceCount = data.vehicles.filter(vehicle => {
-    const nextService = (vehicle.lastServiceMileage || 0) + 10000;
+    const nextService = (vehicle.last_service_mileage || 0) + 10000;
     const kmUntilService = nextService - vehicle.mileage;
     return kmUntilService <= 0;
   }).length;
@@ -76,7 +74,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onUpdate }) => {
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Suivi Maintenance & Vidanges</h2>
         <button
-          onClick={handleAddMaintenance}
+          onClick={() => handleAddMaintenance()}
           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
         >
           <Plus className="w-5 h-5" />
@@ -126,7 +124,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onUpdate }) => {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {data.vehicles.map((vehicle) => {
-              const nextServiceKm = (vehicle.lastServiceMileage || 0) + 10000;
+              const nextServiceKm = (vehicle.last_service_mileage || 0) + 10000;
               const status = getMaintenanceStatus(vehicle);
               const StatusIcon = status.icon;
               
@@ -134,8 +132,8 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onUpdate }) => {
                 <tr key={vehicle.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{vehicle.plate}</td>
                   <td className="px-6 py-4 text-sm font-semibold">{vehicle.mileage.toLocaleString()} km</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{vehicle.lastServiceDate || 'N/A'}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{(vehicle.lastServiceMileage || 0).toLocaleString()} km</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{vehicle.last_service_date || 'N/A'}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{(vehicle.last_service_mileage || 0).toLocaleString()} km</td>
                   <td className="px-6 py-4 text-sm font-semibold">{nextServiceKm.toLocaleString()} km</td>
                   <td className="px-6 py-4 text-sm">
                     <span className={`px-3 py-1 text-xs rounded-full font-medium ${status.class} flex items-center space-x-1`}>
@@ -145,10 +143,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onUpdate }) => {
                   </td>
                   <td className="px-6 py-4 text-sm">
                     <button
-                      onClick={() => {
-                        // Pré-remplir le formulaire avec ce véhicule
-                        handleAddMaintenance();
-                      }}
+                      onClick={() => handleAddMaintenance(vehicle.id)}
                       className="text-blue-600 hover:text-blue-900 transition-colors flex items-center space-x-1"
                     >
                       <Wrench className="w-4 h-4" />
@@ -181,7 +176,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onUpdate }) => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {data.maintenance.map((maintenance) => {
-                  const vehicle = data.vehicles.find(v => v.id === maintenance.vehicleId);
+                  const vehicle = data.vehicles.find(v => v.id === maintenance.vehicle_id);
                   return (
                     <tr key={maintenance.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{maintenance.date}</td>
@@ -214,7 +209,8 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onUpdate }) => {
                 <div>
                   <label className="block text-sm font-medium mb-2 text-gray-700">Véhicule</label>
                   <select
-                    name="vehicleId"
+                    name="vehicle_id"
+                    defaultValue={selectedVehicleId}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
                   >
