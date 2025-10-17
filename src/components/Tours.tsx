@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 import { FleetData, Tour } from '../types';
-import { showSuccess, showError } from '../utils/toast'; // Import toast utilities
+import { showSuccess } from '../utils/toast'; // Import toast utilities
 
 interface ToursProps {
   data: FleetData;

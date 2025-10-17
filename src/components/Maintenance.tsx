@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Wrench, AlertTriangle, Clock } from 'lucide-react';
 import { FleetData, MaintenanceEntry } from '../types';
-import { showSuccess, showError } from '../utils/toast'; // Import toast utilities
+import { showSuccess } from '../utils/toast'; // Import toast utilities
 
 interface MaintenanceProps {
   data: FleetData;

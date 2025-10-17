@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Edit2, Trash2, Fuel, DollarSign, TrendingUp } from 'lucide-react';
 import { FleetData, FuelEntry } from '../types';
-import { showSuccess, showError } from '../utils/toast'; // Import toast utilities
+import { showSuccess } from '../utils/toast'; // Import toast utilities
 
 interface FuelManagementProps {
   data: FleetData;
