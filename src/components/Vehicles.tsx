@@ -11,7 +11,7 @@ interface VehiclesProps {
   onDelete: (id: string) => void;
 }
 
-const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete, userRole }) => {
+const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
 
@@ -21,9 +21,6 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete, us
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10; // You can adjust this value
-
-  // Determine if the current user can perform write operations
-  const canWrite = userRole === 'admin' || userRole === 'direction';
 
   // Filtered and sorted data
   const filteredAndSortedVehicles = useMemo(() => {
@@ -140,7 +137,6 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete, us
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Gestion des Véhicules</h2>
-        {canWrite && (
           <button
             key="add-vehicle-button"
             onClick={handleAddVehicle}
@@ -149,7 +145,6 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete, us
             <Plus className="w-5 h-5" />
             <span>Ajouter Véhicule</span>
           </button>
-        )}
       </div>
 
       {/* Search Input */}
@@ -197,13 +192,13 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete, us
                 </div>
               </th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Prochaine Vidange</th>
-              {canWrite && <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>}
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {currentVehicles.length === 0 ? (
               <tr>
-                <td colSpan={canWrite ? 7 : 6} className="px-6 py-4 text-center text-gray-500">
+                <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
                   Aucun véhicule trouvé.
                 </td>
               </tr>
@@ -230,7 +225,6 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete, us
                         <span className="text-xs">({serviceStatus.text})</span>
                       </div>
                     </td>
-                    {canWrite && (
                       <td className="px-6 py-4 text-sm">
                         <div className="flex space-x-2">
                           <button
@@ -249,7 +243,6 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete, us
                           </button>
                         </div>
                       </td>
-                    )}
                   </tr>
                 );
               })
