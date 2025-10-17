@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Wrench, AlertTriangle, Clock } from 'lucide-react';
 import { FleetData, MaintenanceEntry } from '../types';
+import { showSuccess, showError } from '../utils/toast'; // Import toast utilities
 
 interface MaintenanceProps {
   data: FleetData;
@@ -30,6 +31,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate }) => {
     };
 
     onAdd(maintenanceData);
+    showSuccess('Entrée de maintenance ajoutée avec succès !');
 
     // If it's an oil change, update vehicle info
     if (maintenanceData.type === 'Vidange') {
@@ -39,6 +41,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate }) => {
         last_service_mileage: maintenanceData.mileage,
         mileage: maintenanceData.mileage, // Also update current mileage
       });
+      showSuccess('Informations du véhicule mises à jour après la vidange !');
     }
 
     setShowModal(false);

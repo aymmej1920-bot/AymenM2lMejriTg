@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Edit2, Trash2, AlertTriangle } from 'lucide-react';
 import { FleetData, Document } from '../types';
+import { showSuccess, showError } from '../utils/toast'; // Import toast utilities
 
 interface DocumentsProps {
   data: FleetData;
@@ -26,6 +27,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
   const handleDeleteDocument = (documentId: string) => {
     if (confirm('Êtes-vous sûr de vouloir supprimer ce document ?')) {
       onDelete(documentId);
+      showSuccess('Document supprimé avec succès !');
     }
   };
 
@@ -43,8 +45,10 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
 
     if (editingDocument) {
       onUpdate(documentData as Document);
+      showSuccess('Document mis à jour avec succès !');
     } else {
       onAdd(documentData);
+      showSuccess('Document ajouté avec succès !');
     }
     setShowModal(false);
   };

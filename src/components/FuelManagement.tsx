@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Edit2, Trash2, Fuel, DollarSign, TrendingUp } from 'lucide-react';
 import { FleetData, FuelEntry } from '../types';
+import { showSuccess, showError } from '../utils/toast'; // Import toast utilities
 
 interface FuelManagementProps {
   data: FleetData;
@@ -30,6 +31,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
   const handleDeleteFuel = (fuelId: string) => {
     if (confirm('Êtes-vous sûr de vouloir supprimer cet enregistrement ?')) {
       onDelete(fuelId);
+      showSuccess('Enregistrement de carburant supprimé avec succès !');
     }
   };
 
@@ -48,8 +50,10 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
 
     if (editingFuel) {
       onUpdate(fuelData as FuelEntry);
+      showSuccess('Enregistrement de carburant mis à jour avec succès !');
     } else {
       onAdd(fuelData);
+      showSuccess('Enregistrement de carburant ajouté avec succès !');
     }
     setShowModal(false);
   };

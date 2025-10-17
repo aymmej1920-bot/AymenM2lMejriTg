@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Edit2, Trash2, Phone } from 'lucide-react';
 import { FleetData, Driver } from '../types';
+import { showSuccess, showError } from '../utils/toast'; // Import toast utilities
 
 interface DriversProps {
   data: FleetData;
@@ -26,6 +27,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
   const handleDeleteDriver = (driverId: string) => {
     if (confirm('Êtes-vous sûr de vouloir supprimer ce conducteur ?')) {
       onDelete(driverId);
+      showSuccess('Conducteur supprimé avec succès !');
     }
   };
 
@@ -44,8 +46,10 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
 
     if (editingDriver) {
       onUpdate(driverData as Driver);
+      showSuccess('Conducteur mis à jour avec succès !');
     } else {
       onAdd(driverData);
+      showSuccess('Conducteur ajouté avec succès !');
     }
     setShowModal(false);
   };

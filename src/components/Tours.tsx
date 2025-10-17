@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 import { FleetData, Tour } from '../types';
+import { showSuccess, showError } from '../utils/toast'; // Import toast utilities
 
 interface ToursProps {
   data: FleetData;
@@ -26,6 +27,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
   const handleDeleteTour = (tourId: string) => {
     if (confirm('Êtes-vous sûr de vouloir supprimer cette tournée ?')) {
       onDelete(tourId);
+      showSuccess('Tournée supprimée avec succès !');
     }
   };
 
@@ -48,8 +50,10 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
 
     if (editingTour) {
       onUpdate(tourData as Tour);
+      showSuccess('Tournée mise à jour avec succès !');
     } else {
       onAdd(tourData);
+      showSuccess('Tournée ajoutée avec succès !');
     }
     setShowModal(false);
   };

@@ -12,6 +12,7 @@ import Login from './pages/Login';
 import { FleetData, AuthUser, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry } from './types';
 import { useSession } from './components/SessionContextProvider';
 import { supabase } from './integrations/supabase/client';
+import { showSuccess, showError, showLoading, dismissToast } from './utils/toast'; // Import toast utilities
 
 function App() {
   const { session, isLoading } = useSession();
@@ -63,7 +64,7 @@ function App() {
       });
     } catch (error) {
       console.error('Error fetching fleet data:', error);
-      alert('Erreur lors du chargement des données de flotte.');
+      showError('Erreur lors du chargement des données de flotte.');
     } finally {
       setDataLoading(false);
     }
@@ -94,6 +95,8 @@ function App() {
   const handleUpdateData = async (tableName: string, newData: any, action: 'insert' | 'update' | 'delete') => {
     if (!currentUser?.id) return;
 
+    const loadingToastId = showLoading(`Opération en cours sur ${tableName}...`);
+
     try {
       let response;
       if (action === 'insert') {
@@ -106,15 +109,20 @@ function App() {
 
       if (response?.error) throw response.error;
       
+      dismissToast(loadingToastId);
+      showSuccess(`Données ${action === 'insert' ? 'ajoutées' : action === 'update' ? 'mises à jour' : 'supprimées'} avec succès !`);
+      
       // Re-fetch data to ensure UI is consistent with DB
       fetchData(currentUser.id);
     } catch (error) {
       console.error(`Error ${action}ing data in ${tableName}:`, error);
-      alert(`Erreur lors de la ${action === 'insert' ? 'création' : action === 'update' ? 'mise à jour' : 'suppression'} des données.`);
+      dismissToast(loadingToastId);
+      showError(`Erreur lors de la ${action === 'insert' ? 'création' : action === 'update' ? 'mise à jour' : 'suppression'} des données.`);
     }
   };
 
   const handleLogout = async () => {
+    const loadingToastId = showLoading('Déconnexion...');
     await supabase.auth.signOut();
     setCurrentUser(null);
     setFleetData({
@@ -125,6 +133,8 @@ function App() {
       documents: [],
       maintenance: [],
     });
+    dismissToast(loadingToastId);
+    showSuccess('Déconnexion réussie.');
   };
 
   const exportData = () => {
@@ -136,11 +146,14 @@ function App() {
     link.download = `fleet_data_${currentUser?.id}_${new Date().toISOString().split('T')[0]}.json`;
     link.click();
     URL.revokeObjectURL(url);
+    showSuccess('Données exportées avec succès !');
   };
 
   const importData = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    const loadingToastId = showLoading('Importation des données...');
 
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -167,14 +180,17 @@ function App() {
             importedData.maintenance.length > 0 && supabase.from('maintenance_entries').insert(importedData.maintenance.map(m => ({ ...m, user_id: currentUser?.id }))),
           ]);
           
-          alert('Données importées avec succès !');
+          dismissToast(loadingToastId);
+          showSuccess('Données importées avec succès !');
           fetchData(currentUser!.id); // Refresh data after import
         } else {
-          alert('Format de fichier invalide !');
+          dismissToast(loadingToastId);
+          showError('Format de fichier invalide !');
         }
       } catch (error) {
         console.error('Error importing data:', error);
-        alert('Erreur lors de l\'import du fichier !');
+        dismissToast(loadingToastId);
+        showError('Erreur lors de l\'import du fichier !');
       }
     };
     reader.readAsText(file);

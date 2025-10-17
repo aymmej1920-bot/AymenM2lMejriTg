@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 import { FleetData, Vehicle } from '../types';
+import { showSuccess, showError } from '../utils/toast'; // Import toast utilities
 
 interface VehiclesProps {
   data: FleetData;
@@ -26,6 +27,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
   const handleDeleteVehicle = (vehicleId: string) => {
     if (confirm('Êtes-vous sûr de vouloir supprimer ce véhicule ?')) {
       onDelete(vehicleId);
+      showSuccess('Véhicule supprimé avec succès !');
     }
   };
 
@@ -45,8 +47,10 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
 
     if (editingVehicle) {
       onUpdate(vehicleData as Vehicle);
+      showSuccess('Véhicule mis à jour avec succès !');
     } else {
       onAdd(vehicleData);
+      showSuccess('Véhicule ajouté avec succès !');
     }
     setShowModal(false);
   };
