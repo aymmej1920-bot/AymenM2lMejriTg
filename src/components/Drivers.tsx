@@ -1,22 +1,60 @@
-import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, Phone } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Plus, Edit2, Trash2, Phone, ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { FleetData, Driver } from '../types';
 import { showSuccess } from '../utils/toast'; // Import toast utilities
 
 interface DriversProps {
   data: FleetData;
-  userRole: 'admin' | 'direction' | 'utilisateur'; // Keep userRole for display, but not for logic
+  userRole: 'admin' | 'direction' | 'utilisateur';
   onAdd: (driver: Omit<Driver, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (driver: Driver) => void;
   onDelete: (id: string) => void;
 }
 
-const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) => { // 'userRole' removed from destructuring
+const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
 
-  // const canManage = true; // All authenticated users can manage - Removed
-  // const isReadOnly = false; // All authenticated users can manage - Removed
+  // State for filtering, sorting, and pagination
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortColumn, setSortColumn] = useState<keyof Driver>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // You can adjust this value
+
+  // Filtered and sorted data
+  const filteredAndSortedDrivers = useMemo(() => {
+    let filtered = data.drivers.filter(driver =>
+      driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      driver.license.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      driver.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      driver.phone.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    filtered.sort((a, b) => {
+      const aValue = a[sortColumn];
+      const bValue = b[sortColumn];
+
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+      }
+      // For date strings, we can compare them directly as strings if they are in YYYY-MM-DD format
+      if (sortColumn === 'expiration' && typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+      }
+      // Fallback for other types or if values are null/undefined
+      return 0;
+    });
+    return filtered;
+  }, [data.drivers, searchTerm, sortColumn, sortDirection]);
+
+  // Paginated data
+  const totalPages = Math.ceil(filteredAndSortedDrivers.length / itemsPerPage);
+  const currentDrivers = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredAndSortedDrivers.slice(startIndex, endIndex);
+  }, [filteredAndSortedDrivers, currentPage, itemsPerPage]);
 
   const handleAddDriver = () => {
     setEditingDriver(null);
@@ -37,7 +75,6 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // No need for canManage check here, as the button is always visible
     const formData = new FormData(e.currentTarget);
     
     const driverData: Omit<Driver, 'user_id' | 'created_at'> = {
@@ -80,11 +117,26 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
     return getDaysUntilExpiration(expirationDate) < 60;
   };
 
+  const handleSort = (column: keyof Driver) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const renderSortIcon = (column: keyof Driver) => {
+    if (sortColumn === column) {
+      return sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />;
+    }
+    return null;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Gestion des Conducteurs</h2>
-        {/* canManage replaced with true */}
           <button
             key="add-driver-button"
             onClick={handleAddDriver}
@@ -95,67 +147,137 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
           </button>
       </div>
 
+      {/* Search Input */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Rechercher un conducteur par nom, permis, statut ou téléphone..."
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setCurrentPage(1); // Reset to first page on new search
+          }}
+          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+        />
+      </div>
+
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
         <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nom</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">N° Permis</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Expiration</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Statut</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Téléphone</th>
-              {/* isReadOnly replaced with false */}
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('name')}>
+                <div className="flex items-center">
+                  Nom {renderSortIcon('name')}
+                </div>
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('license')}>
+                <div className="flex items-center">
+                  N° Permis {renderSortIcon('license')}
+                </div>
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('expiration')}>
+                <div className="flex items-center">
+                  Expiration {renderSortIcon('expiration')}
+                </div>
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('status')}>
+                <div className="flex items-center">
+                  Statut {renderSortIcon('status')}
+                </div>
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('phone')}>
+                <div className="flex items-center">
+                  Téléphone {renderSortIcon('phone')}
+                </div>
+              </th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {data.drivers.map((driver) => (
-              <tr key={driver.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">{driver.name}</td>
-                <td className="px-6 py-4 text-sm text-gray-600">{driver.license}</td>
-                <td className={`px-6 py-4 text-sm ${isExpiringSoon(driver.expiration) ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
-                  {driver.expiration}
-                  {isExpiringSoon(driver.expiration) && (
-                    <div className="text-xs text-red-500">
-                      Expire dans {getDaysUntilExpiration(driver.expiration)} jours
-                    </div>
-                  )}
+            {currentDrivers.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                  Aucun conducteur trouvé.
                 </td>
-                <td className="px-6 py-4 text-sm">
-                  <span className={getStatusBadge(driver.status)}>{driver.status}</span>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-600">
-                  <div className="flex items-center space-x-2">
-                    <Phone className="w-4 h-4" />
-                    <span>{driver.phone}</span>
-                  </div>
-                </td>
-                {/* isReadOnly replaced with false */}
+              </tr>
+            ) : (
+              currentDrivers.map((driver) => (
+                <tr key={driver.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{driver.name}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{driver.license}</td>
+                  <td className={`px-6 py-4 text-sm ${isExpiringSoon(driver.expiration) ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
+                    {driver.expiration}
+                    {isExpiringSoon(driver.expiration) && (
+                      <div className="text-xs text-red-500">
+                        Expire dans {getDaysUntilExpiration(driver.expiration)} jours
+                      </div>
+                    )}
+                  </td>
                   <td className="px-6 py-4 text-sm">
-                    <div className="flex space-x-2">
-                      <button
-                        key={driver.id + "-edit"}
-                        onClick={() => handleEditDriver(driver)}
-                        className="text-blue-600 hover:text-blue-900 transition-colors"
-                        // disabled={!canManage} // Removed disabled prop
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        key={driver.id + "-delete"}
-                        onClick={() => handleDeleteDriver(driver.id)}
-                        className="text-red-600 hover:text-red-900 transition-colors"
-                        // disabled={!canManage} // Removed disabled prop
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                    <span className={getStatusBadge(driver.status)}>{driver.status}</span>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    <div className="flex items-center space-x-2">
+                      <Phone className="w-4 h-4" />
+                      <span>{driver.phone}</span>
                     </div>
                   </td>
-              </tr>
-            ))}
+                    <td className="px-6 py-4 text-sm">
+                      <div className="flex space-x-2">
+                        <button
+                          key={driver.id + "-edit"}
+                          onClick={() => handleEditDriver(driver)}
+                          className="text-blue-600 hover:text-blue-900 transition-colors"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          key={driver.id + "-delete"}
+                          onClick={() => handleDeleteDriver(driver.id)}
+                          className="text-red-600 hover:text-red-900 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center space-x-2 mt-4">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Précédent
+          </button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+            <button
+              key={page}
+              onClick={() => setCurrentPage(page)}
+              className={`px-4 py-2 rounded-lg ${
+                currentPage === page ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'
+              }`}
+            >
+              {page}
+            </button>
+          ))}
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Suivant
+          </button>
+        </div>
+      )}
 
       {/* Modal */}
       {showModal && (
@@ -174,7 +296,6 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
                     defaultValue={editingDriver?.name || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    // readOnly={!canManage} // Removed readOnly prop
                   />
                 </div>
                 <div>
@@ -185,7 +306,6 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
                     defaultValue={editingDriver?.license || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    // readOnly={!canManage} // Removed readOnly prop
                   />
                 </div>
                 <div>
@@ -196,7 +316,6 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
                     defaultValue={editingDriver?.expiration || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    // readOnly={!canManage} // Removed readOnly prop
                   />
                 </div>
                 <div>
@@ -206,7 +325,6 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
                     defaultValue={editingDriver?.status || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    // disabled={!canManage} // Removed disabled prop
                   >
                     <option value="Disponible">Disponible</option>
                     <option value="En mission">En mission</option>
@@ -222,7 +340,6 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
                     defaultValue={editingDriver?.phone || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    // readOnly={!canManage} // Removed readOnly prop
                   />
                 </div>
                 <div className="flex justify-end space-x-4 mt-8">
@@ -233,7 +350,6 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
                   >
                     Annuler
                   </button>
-                  {/* canManage replaced with true */}
                     <button
                       type="submit"
                       className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
