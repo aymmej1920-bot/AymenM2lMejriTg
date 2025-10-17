@@ -1,22 +1,89 @@
-import React, { useState } from 'react';
-import { Plus, Wrench, AlertTriangle, Clock, ClipboardCheck } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Plus, Wrench, AlertTriangle, Clock, ClipboardCheck, ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { FleetData, MaintenanceEntry, PreDepartureChecklist } from '../types';
 import { showSuccess } from '../utils/toast'; // Import toast utilities
 
 interface MaintenanceProps {
   data: FleetData;
-  userRole: 'admin' | 'direction' | 'utilisateur'; // Keep userRole for display, but not for logic
+  userRole: 'admin' | 'direction' | 'utilisateur';
   onAdd: (maintenanceEntry: Omit<MaintenanceEntry, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (vehicle: { id: string; last_service_date: string; last_service_mileage: number; mileage: number }) => void;
-  preDepartureChecklists: PreDepartureChecklist[]; // New prop for checklists
+  preDepartureChecklists: PreDepartureChecklist[];
 }
 
-const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDepartureChecklists }) => { // 'userRole' removed from destructuring
+const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDepartureChecklists }) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
 
-  // const canManage = true; // All authenticated users can manage - Removed
-  // const isReadOnly = false; // All authenticated users can manage - Removed
+  // State for filtering, sorting, and pagination
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortColumn, setSortColumn] = useState<keyof MaintenanceEntry>('date');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // You can adjust this value
+
+  // Filtered and sorted data for Maintenance History
+  const filteredAndSortedMaintenanceEntries = useMemo(() => {
+    let filtered = data.maintenance.filter(entry => {
+      const vehicle = data.vehicles.find(v => v.id === entry.vehicle_id);
+      return (
+        entry.date.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (vehicle?.plate || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        entry.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        entry.mileage.toString().includes(searchTerm) ||
+        entry.cost.toString().includes(searchTerm)
+      );
+    });
+
+    filtered.sort((a, b) => {
+      const aValue = a[sortColumn];
+      const bValue = b[sortColumn];
+
+      // Handle null/undefined values first (though not expected for these columns)
+      if (aValue === null || aValue === undefined) {
+        return sortDirection === 'asc' ? -1 : 1;
+      }
+      if (bValue === null || bValue === undefined) {
+        return sortDirection === 'asc' ? 1 : -1;
+      }
+
+      // Special handling for vehicle_id to sort by plate
+      if (sortColumn === 'vehicle_id') {
+        const aVehicle = data.vehicles.find(v => v.id === a.vehicle_id);
+        const bVehicle = data.vehicles.find(v => v.id === b.vehicle_id);
+        const aPlate = aVehicle?.plate || '';
+        const bPlate = bVehicle?.plate || '';
+        return sortDirection === 'asc' ? aPlate.localeCompare(bPlate) : bPlate.localeCompare(aPlate);
+      }
+
+      // For date strings (like 'date'), compare them directly as strings
+      if (sortColumn === 'date' && typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+      }
+      
+      // General number comparison
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+      }
+      
+      // General string comparison (fallback for other string columns)
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+      }
+      
+      // Fallback for other types
+      return 0;
+    });
+    return filtered;
+  }, [data.maintenance, data.vehicles, searchTerm, sortColumn, sortDirection]);
+
+  // Paginated data for Maintenance History
+  const totalPages = Math.ceil(filteredAndSortedMaintenanceEntries.length / itemsPerPage);
+  const currentMaintenanceEntries = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredAndSortedMaintenanceEntries.slice(startIndex, endIndex);
+  }, [filteredAndSortedMaintenanceEntries, currentPage, itemsPerPage]);
 
   const handleAddMaintenance = (vehicleId?: string) => {
     setSelectedVehicleId(vehicleId || '');
@@ -25,7 +92,6 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // No need for canManage check here, as the button is always visible
     const formData = new FormData(e.currentTarget);
     
     const maintenanceData: Omit<MaintenanceEntry, 'id' | 'user_id' | 'created_at'> = {
@@ -81,11 +147,26 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
   // Filter checklists with issues to address
   const checklistsWithIssues = preDepartureChecklists.filter(cl => cl.issues_to_address && cl.issues_to_address.trim() !== '');
 
+  const handleSort = (column: keyof MaintenanceEntry) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const renderSortIcon = (column: keyof MaintenanceEntry) => {
+    if (sortColumn === column) {
+      return sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />;
+    }
+    return null;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Suivi Maintenance & Vidanges</h2>
-        {/* canManage replaced with true */}
           <button
             key="add-maintenance-button"
             onClick={() => handleAddMaintenance()}
@@ -97,48 +178,46 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
       </div>
 
       {/* Alertes maintenance */}
-      {(
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-orange-50 border-l-4 border-orange-400 p-6 rounded-r-lg shadow-lg">
-            <div className="flex items-center">
-              <Clock className="w-6 h-6 text-orange-400 mr-4" />
-              <div>
-                <h3 className="text-lg font-semibold text-orange-700">Vidanges à Prévoir</h3>
-                <p className="text-orange-600">
-                  {upcomingMaintenanceCount} véhicule(s) approchent des 10,000 km
-                </p>
-              </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-orange-50 border-l-4 border-orange-400 p-6 rounded-r-lg shadow-lg">
+          <div className="flex items-center">
+            <Clock className="w-6 h-6 text-orange-400 mr-4" />
+            <div>
+              <h3 className="text-lg font-semibold text-orange-700">Vidanges à Prévoir</h3>
+              <p className="text-orange-600">
+                {upcomingMaintenanceCount} véhicule(s) approchent des 10,000 km
+              </p>
             </div>
           </div>
-
-          <div className="bg-red-50 border-l-4 border-red-400 p-6 rounded-r-lg shadow-lg">
-            <div className="flex items-center">
-              <AlertTriangle className="w-6 h-6 text-red-400 mr-4" />
-              <div>
-                <h3 className="text-lg font-semibold text-red-700">Maintenance Urgente</h3>
-                <p className="text-red-600">
-                  {urgentMaintenanceCount} véhicule(s) dépassent les limites
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* New Alert for Checklist Issues */}
-          {checklistsWithIssues.length > 0 && (
-            <div className="bg-purple-50 border-l-4 border-purple-400 p-6 rounded-r-lg shadow-lg">
-              <div className="flex items-center">
-                <ClipboardCheck className="w-6 h-6 text-purple-400 mr-4" />
-                <div>
-                  <h3 className="text-lg font-semibold text-purple-700">Points à Traiter (Checklists)</h3>
-                  <p className="text-purple-600">
-                    {checklistsWithIssues.length} checklist(s) contiennent des problèmes à résoudre.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
-      )}
+
+        <div className="bg-red-50 border-l-4 border-red-400 p-6 rounded-r-lg shadow-lg">
+          <div className="flex items-center">
+            <AlertTriangle className="w-6 h-6 text-red-400 mr-4" />
+            <div>
+              <h3 className="text-lg font-semibold text-red-700">Maintenance Urgente</h3>
+              <p className="text-red-600">
+                {urgentMaintenanceCount} véhicule(s) dépassent les limites
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* New Alert for Checklist Issues */}
+        {checklistsWithIssues.length > 0 && (
+          <div className="bg-purple-50 border-l-4 border-purple-400 p-6 rounded-r-lg shadow-lg">
+            <div className="flex items-center">
+              <ClipboardCheck className="w-6 h-6 text-purple-400 mr-4" />
+              <div>
+                <h3 className="text-lg font-semibold text-purple-700">Points à Traiter (Checklists)</h3>
+                <p className="text-purple-600">
+                  {checklistsWithIssues.length} checklist(s) contiennent des problèmes à résoudre.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Detailed list of checklist issues */}
       {checklistsWithIssues.length > 0 && (
@@ -190,7 +269,6 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Dernière Vidange</th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Km Dernière Vidange</th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Prochaine Vidange</th>
-              {/* isReadOnly replaced with false */}
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
@@ -213,13 +291,11 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
                       <span>{status.text}</span>
                     </span>
                   </td>
-                  {/* isReadOnly replaced with false */}
                     <td className="px-6 py-4 text-sm">
                       <button
                         key={vehicle.id + "-maintenance"}
                         onClick={() => handleAddMaintenance(vehicle.id)}
                         className="text-blue-600 hover:text-blue-900 transition-colors flex items-center space-x-1"
-                        // disabled={!canManage} // Removed disabled prop
                       >
                         <Wrench className="w-4 h-4" />
                         <span>Maintenance</span>
@@ -238,39 +314,114 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
           <div className="px-6 py-4 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-gray-800">Historique des Maintenances</h3>
           </div>
+
+          {/* Search Input for History */}
+          <div className="relative px-6 py-4">
+            <Search className="absolute left-9 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Rechercher dans l'historique par véhicule, type, date ou coût..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1); // Reset to first page on new search
+              }}
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            />
+          </div>
+
           <div className="overflow-x-auto">
             <table className="min-w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Véhicule</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kilométrage</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Coût</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('date')}>
+                    <div className="flex items-center">
+                      Date {renderSortIcon('date')}
+                    </div>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('vehicle_id')}>
+                    <div className="flex items-center">
+                      Véhicule {renderSortIcon('vehicle_id')}
+                    </div>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('type')}>
+                    <div className="flex items-center">
+                      Type {renderSortIcon('type')}
+                    </div>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('mileage')}>
+                    <div className="flex items-center">
+                      Kilométrage {renderSortIcon('mileage')}
+                    </div>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('cost')}>
+                    <div className="flex items-center">
+                      Coût {renderSortIcon('cost')}
+                    </div>
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {data.maintenance.map((maintenance) => {
-                  const vehicle = data.vehicles.find(v => v.id === maintenance.vehicle_id);
-                  return (
-                    <tr key={maintenance.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{maintenance.date}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {vehicle?.plate || 'Véhicule inconnu'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{maintenance.type}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {maintenance.mileage.toLocaleString()} km
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
-                        {maintenance.cost.toFixed(2)} TND
-                      </td>
-                    </tr>
-                  );
-                })}
+                {currentMaintenanceEntries.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                      Aucun enregistrement de maintenance trouvé.
+                    </td>
+                  </tr>
+                ) : (
+                  currentMaintenanceEntries.map((maintenance) => {
+                    const vehicle = data.vehicles.find(v => v.id === maintenance.vehicle_id);
+                    return (
+                      <tr key={maintenance.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{maintenance.date}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {vehicle?.plate || 'Véhicule inconnu'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{maintenance.type}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {maintenance.mileage.toLocaleString()} km
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                          {maintenance.cost.toFixed(2)} TND
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls for History */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center space-x-2 mt-4 py-4">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Précédent
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`px-4 py-2 rounded-lg ${
+                    currentPage === page ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Suivant
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -288,7 +439,6 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
                     defaultValue={selectedVehicleId}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    // disabled={!canManage} // Removed disabled prop
                   >
                     <option value="">Sélectionner un véhicule</option>
                     {data.vehicles.map(vehicle => (
@@ -304,7 +454,6 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
                     name="type"
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    // disabled={!canManage} // Removed disabled prop
                   >
                     <option value="Vidange">Vidange</option>
                     <option value="Révision">Révision</option>
@@ -320,7 +469,6 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
                     defaultValue={new Date().toISOString().split('T')[0]}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    // readOnly={!canManage} // Removed readOnly prop
                   />
                 </div>
                 <div>
@@ -330,7 +478,6 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
                     name="mileage"
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    // readOnly={!canManage} // Removed readOnly prop
                   />
                 </div>
                 <div>
@@ -341,7 +488,6 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
                     name="cost"
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    // readOnly={!canManage} // Removed readOnly prop
                   />
                 </div>
                 <div className="flex justify-end space-x-4 mt-8">
@@ -352,7 +498,6 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
                   >
                     Annuler
                   </button>
-                  {/* canManage replaced with true */}
                     <button
                       type="submit"
                       className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
