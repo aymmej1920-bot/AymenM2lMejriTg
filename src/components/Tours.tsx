@@ -1,23 +1,73 @@
-import React, { useState } from 'react';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Plus, Edit2, Trash2, ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { FleetData, Tour } from '../types';
 import { showSuccess } from '../utils/toast'; // Import toast utilities
 
 interface ToursProps {
   data: FleetData;
-  userRole: 'admin' | 'direction' | 'utilisateur'; // Keep userRole for display, but not for logic
+  userRole: 'admin' | 'direction' | 'utilisateur';
   onAdd: (tour: Omit<Tour, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (tour: Tour) => void;
   onDelete: (id: string) => void;
 }
 
-const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => { // 'userRole' removed from destructuring
+const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingTour, setEditingTour] = useState<Tour | null>(null);
 
-  // const canManage = true; // All authenticated users can manage - Removed
-  // const canAddEdit = true; // All authenticated users can add/edit - Removed
-  // const isReadOnly = false; // All authenticated users can manage - Removed
+  // State for filtering, sorting, and pagination
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortColumn, setSortColumn] = useState<keyof Tour>('date');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // You can adjust this value
+
+  // Filtered and sorted data
+  const filteredAndSortedTours = useMemo(() => {
+    let filtered = data.tours.filter(tour => {
+      const vehicle = data.vehicles.find(v => v.id === tour.vehicle_id);
+      const driver = data.drivers.find(d => d.id === tour.driver_id);
+      
+      return (
+        tour.date.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (vehicle?.plate || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (driver?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        tour.status.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    });
+
+    filtered.sort((a, b) => {
+      const aValue = a[sortColumn];
+      const bValue = b[sortColumn];
+
+      // Handle null/undefined values first
+      if (aValue === null || aValue === undefined) {
+        return sortDirection === 'asc' ? -1 : 1; // Null/undefined comes first in asc, last in desc
+      }
+      if (bValue === null || bValue === undefined) {
+        return sortDirection === 'asc' ? 1 : -1; // Null/undefined comes first in asc, last in desc
+      }
+
+      // Now that we know values are not null/undefined, compare them based on type
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+      }
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+      }
+      // Fallback for any other unexpected types (should not be reached with current Tour interface)
+      return 0;
+    });
+    return filtered;
+  }, [data.tours, data.vehicles, data.drivers, searchTerm, sortColumn, sortDirection]);
+
+  // Paginated data
+  const totalPages = Math.ceil(filteredAndSortedTours.length / itemsPerPage);
+  const currentTours = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredAndSortedTours.slice(startIndex, endIndex);
+  }, [filteredAndSortedTours, currentPage, itemsPerPage]);
 
   const handleAddTour = () => {
     setEditingTour(null);
@@ -38,7 +88,6 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => { /
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // No need for canAddEdit check here, as the button is always visible
     const formData = new FormData(e.currentTarget);
     
     const tourData: Omit<Tour, 'user_id' | 'created_at'> = {
@@ -84,11 +133,26 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => { /
     return '-';
   };
 
+  const handleSort = (column: keyof Tour) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const renderSortIcon = (column: keyof Tour) => {
+    if (sortColumn === column) {
+      return sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />;
+    }
+    return null;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Suivi des Tournées</h2>
-        {/* canAddEdit replaced with true */}
           <button
             key="add-tour-button"
             onClick={handleAddTour}
@@ -99,71 +163,157 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => { /
           </button>
       </div>
 
+      {/* Search Input */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Rechercher une tournée par date, véhicule, conducteur ou statut..."
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setCurrentPage(1); // Reset to first page on new search
+          }}
+          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+        />
+      </div>
+
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
-                <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Véhicule</th>
-                <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Conducteur</th>
-                <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Statut</th>
-                <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Fuel Début</th>
-                <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Km Début</th>
-                <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Fuel Fin</th>
-                <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Km Fin</th>
-                <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Distance</th>
+                <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('date')}>
+                  <div className="flex items-center">
+                    Date {renderSortIcon('date')}
+                  </div>
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('vehicle_id')}>
+                  <div className="flex items-center">
+                    Véhicule {renderSortIcon('vehicle_id')}
+                  </div>
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('driver_id')}>
+                  <div className="flex items-center">
+                    Conducteur {renderSortIcon('driver_id')}
+                  </div>
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('status')}>
+                  <div className="flex items-center">
+                    Statut {renderSortIcon('status')}
+                  </div>
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('fuel_start')}>
+                  <div className="flex items-center">
+                    Fuel Début {renderSortIcon('fuel_start')}
+                  </div>
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('km_start')}>
+                  <div className="flex items-center">
+                    Km Début {renderSortIcon('km_start')}
+                  </div>
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('fuel_end')}>
+                  <div className="flex items-center">
+                    Fuel Fin {renderSortIcon('fuel_end')}
+                  </div>
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('km_end')}>
+                  <div className="flex items-center">
+                    Km Fin {renderSortIcon('km_end')}
+                  </div>
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('distance')}>
+                  <div className="flex items-center">
+                    Distance {renderSortIcon('distance')}
+                  </div>
+                </th>
                 <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">L/100km</th>
-                {/* isReadOnly replaced with false */}
                 <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {data.tours.map((tour) => {
-                const vehicle = data.vehicles.find(v => v.id === tour.vehicle_id);
-                const driver = data.drivers.find(d => d.id === tour.driver_id);
-                return (
-                  <tr key={tour.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-4 text-sm text-gray-900">{tour.date}</td>
-                    <td className="px-4 py-4 text-sm text-gray-600">{vehicle?.plate || 'N/A'}</td>
-                    <td className="px-4 py-4 text-sm text-gray-600">{driver?.name || 'N/A'}</td>
-                    <td className="px-4 py-4 text-sm">
-                      <span className={getStatusBadge(tour.status)}>{tour.status}</span>
-                    </td>
-                    <td className="px-4 py-4 text-sm text-center">{tour.fuel_start !== null ? `${tour.fuel_start}%` : '-'}</td>
-                    <td className="px-4 py-4 text-sm text-center">{tour.km_start !== null ? tour.km_start.toLocaleString() : '-'}</td>
-                    <td className="px-4 py-4 text-sm text-center">{tour.fuel_end !== null ? `${tour.fuel_end}%` : '-'}</td>
-                    <td className="px-4 py-4 text-sm text-center">{tour.km_end !== null ? tour.km_end.toLocaleString() : '-'}</td>
-                    <td className="px-4 py-4 text-sm font-semibold">{tour.distance !== null ? `${tour.distance.toLocaleString()} km` : '-'}</td>
-                    <td className="px-4 py-4 text-sm font-semibold">{calculateConsumption(tour)}</td>
-                    {/* isReadOnly replaced with false */}
+              {currentTours.length === 0 ? (
+                <tr>
+                  <td colSpan={11} className="px-6 py-4 text-center text-gray-500">
+                    Aucune tournée trouvée.
+                  </td>
+                </tr>
+              ) : (
+                currentTours.map((tour) => {
+                  const vehicle = data.vehicles.find(v => v.id === tour.vehicle_id);
+                  const driver = data.drivers.find(d => d.id === tour.driver_id);
+                  return (
+                    <tr key={tour.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-4 text-sm text-gray-900">{tour.date}</td>
+                      <td className="px-4 py-4 text-sm text-gray-600">{vehicle?.plate || 'N/A'}</td>
+                      <td className="px-4 py-4 text-sm text-gray-600">{driver?.name || 'N/A'}</td>
                       <td className="px-4 py-4 text-sm">
-                        <div className="flex space-x-2">
-                          <button
-                            key={tour.id + "-edit"}
-                            onClick={() => handleEditTour(tour)}
-                            className="text-blue-600 hover:text-blue-900 transition-colors"
-                            // disabled={!canAddEdit} // Removed disabled prop
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            key={tour.id + "-delete"}
-                            onClick={() => handleDeleteTour(tour.id)}
-                            className="text-red-600 hover:text-red-900 transition-colors"
-                            // disabled={!canManage} // Removed disabled prop
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                        <span className={getStatusBadge(tour.status)}>{tour.status}</span>
                       </td>
-                  </tr>
-                );
-              })}
+                      <td className="px-4 py-4 text-sm text-center">{tour.fuel_start !== null ? `${tour.fuel_start}%` : '-'}</td>
+                      <td className="px-4 py-4 text-sm text-center">{tour.km_start !== null ? tour.km_start.toLocaleString() : '-'}</td>
+                      <td className="px-4 py-4 text-sm text-center">{tour.fuel_end !== null ? `${tour.fuel_end}%` : '-'}</td>
+                      <td className="px-4 py-4 text-sm text-center">{tour.km_end !== null ? tour.km_end.toLocaleString() : '-'}</td>
+                      <td className="px-4 py-4 text-sm font-semibold">{tour.distance !== null ? `${tour.distance.toLocaleString()} km` : '-'}</td>
+                      <td className="px-4 py-4 text-sm font-semibold">{calculateConsumption(tour)}</td>
+                        <td className="px-4 py-4 text-sm">
+                          <div className="flex space-x-2">
+                            <button
+                              key={tour.id + "-edit"}
+                              onClick={() => handleEditTour(tour)}
+                              className="text-blue-600 hover:text-blue-900 transition-colors"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              key={tour.id + "-delete"}
+                              onClick={() => handleDeleteTour(tour.id)}
+                              className="text-red-600 hover:text-red-900 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center space-x-2 mt-4">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Précédent
+          </button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+            <button
+              key={page}
+              onClick={() => setCurrentPage(page)}
+              className={`px-4 py-2 rounded-lg ${
+                currentPage === page ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'
+              }`}
+            >
+              {page}
+            </button>
+          ))}
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Suivant
+          </button>
+        </div>
+      )}
 
       {/* Modal */}
       {showModal && (
@@ -183,7 +333,6 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => { /
                       defaultValue={editingTour?.date || ''}
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                       required
-                      // readOnly={!canAddEdit} // Removed readOnly prop
                     />
                   </div>
                   <div>
@@ -193,7 +342,6 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => { /
                       defaultValue={editingTour?.status || ''}
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                       required
-                      // disabled={!canAddEdit} // Removed disabled prop
                     >
                       <option value="Planifié">Planifié</option>
                       <option value="En cours">En cours</option>
@@ -211,7 +359,6 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => { /
                       defaultValue={editingTour?.vehicle_id || ''}
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                       required
-                      // disabled={!canAddEdit} // Removed disabled prop
                     >
                       <option value="">Sélectionner un véhicule</option>
                       {data.vehicles.map(vehicle => (
@@ -228,7 +375,6 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => { /
                       defaultValue={editingTour?.driver_id || ''}
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                       required
-                      // disabled={!canAddEdit} // Removed disabled prop
                     >
                       <option value="">Sélectionner un conducteur</option>
                       {data.drivers.map(driver => (
@@ -250,7 +396,6 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => { /
                       max="100"
                       defaultValue={editingTour?.fuel_start || ''}
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                      // readOnly={!canAddEdit} // Removed readOnly prop
                     />
                   </div>
                   <div>
@@ -260,7 +405,6 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => { /
                       name="km_start"
                       defaultValue={editingTour?.km_start || ''}
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                      // readOnly={!canAddEdit} // Removed readOnly prop
                     />
                   </div>
                 </div>
@@ -275,7 +419,6 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => { /
                       max="100"
                       defaultValue={editingTour?.fuel_end || ''}
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                      // readOnly={!canAddEdit} // Removed readOnly prop
                     />
                   </div>
                   <div>
@@ -285,7 +428,6 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => { /
                       name="km_end"
                       defaultValue={editingTour?.km_end || ''}
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                      // readOnly={!canAddEdit} // Removed readOnly prop
                     />
                   </div>
                 </div>
@@ -297,7 +439,6 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => { /
                     name="distance"
                     defaultValue={editingTour?.distance || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                    // readOnly={!canAddEdit} // Removed readOnly prop
                   />
                 </div>
 
@@ -309,7 +450,6 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => { /
                   >
                     Annuler
                   </button>
-                  {/* canAddEdit replaced with true */}
                     <button
                       type="submit"
                       className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
