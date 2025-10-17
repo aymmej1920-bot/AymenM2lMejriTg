@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Plus, Wrench, AlertTriangle, Clock } from 'lucide-react';
-import { FleetData, MaintenanceEntry } from '../types';
+import { Plus, Wrench, AlertTriangle, Clock, ClipboardCheck } from 'lucide-react';
+import { FleetData, MaintenanceEntry, PreDepartureChecklist } from '../types';
 import { showSuccess } from '../utils/toast'; // Import toast utilities
 
 interface MaintenanceProps {
@@ -8,9 +8,10 @@ interface MaintenanceProps {
   userRole: 'admin' | 'direction' | 'utilisateur';
   onAdd: (maintenanceEntry: Omit<MaintenanceEntry, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (vehicle: { id: string; last_service_date: string; last_service_mileage: number; mileage: number }) => void;
+  preDepartureChecklists: PreDepartureChecklist[]; // New prop for checklists
 }
 
-const Maintenance: React.FC<MaintenanceProps> = ({ data, userRole, onAdd, onUpdate }) => {
+const Maintenance: React.FC<MaintenanceProps> = ({ data, userRole, onAdd, onUpdate, preDepartureChecklists }) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
 
@@ -78,6 +79,9 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, userRole, onAdd, onUpda
     return kmUntilService <= 0;
   }).length;
 
+  // Filter checklists with issues to address
+  const checklistsWithIssues = preDepartureChecklists.filter(cl => cl.issues_to_address && cl.issues_to_address.trim() !== '');
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -95,7 +99,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, userRole, onAdd, onUpda
 
       {/* Alertes maintenance */}
       {(userRole === 'admin' || userRole === 'direction') && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"> {/* Adjusted grid for new alert */}
           <div className="bg-orange-50 border-l-4 border-orange-400 p-6 rounded-r-lg shadow-lg">
             <div className="flex items-center">
               <Clock className="w-6 h-6 text-orange-400 mr-4" />
@@ -118,6 +122,62 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, userRole, onAdd, onUpda
                 </p>
               </div>
             </div>
+          </div>
+
+          {/* New Alert for Checklist Issues */}
+          {checklistsWithIssues.length > 0 && (
+            <div className="bg-purple-50 border-l-4 border-purple-400 p-6 rounded-r-lg shadow-lg">
+              <div className="flex items-center">
+                <ClipboardCheck className="w-6 h-6 text-purple-400 mr-4" />
+                <div>
+                  <h3 className="text-lg font-semibold text-purple-700">Points à Traiter (Checklists)</h3>
+                  <p className="text-purple-600">
+                    {checklistsWithIssues.length} checklist(s) contiennent des problèmes à résoudre.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Detailed list of checklist issues */}
+      {checklistsWithIssues.length > 0 && (userRole === 'admin' || userRole === 'direction') && (
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-800">Détail des Points à Traiter</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Checklist</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Véhicule</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conducteur</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Points à Traiter</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {checklistsWithIssues.map((checklist) => {
+                  const vehicle = data.vehicles.find(v => v.id === checklist.vehicle_id);
+                  const driver = data.drivers.find(d => d.id === checklist.driver_id);
+                  return (
+                    <tr key={checklist.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{checklist.date}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {vehicle?.plate || 'Véhicule inconnu'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {driver?.name || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-red-600">
+                        {checklist.issues_to_address}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

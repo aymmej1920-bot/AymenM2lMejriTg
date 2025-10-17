@@ -197,7 +197,13 @@ function App() {
       case 'documents':
         return <Documents data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('documents', newData, 'update')} onDelete={(id) => handleUpdateData('documents', { id }, 'delete')} onAdd={(newData) => handleUpdateData('documents', newData, 'insert')} />;
       case 'maintenance':
-        return <Maintenance data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('vehicles', newData, 'update')} onAdd={(newData) => handleUpdateData('maintenance_entries', newData, 'insert')} />;
+        return <Maintenance 
+          data={fleetData} 
+          userRole={userRole} 
+          onUpdate={(newData) => handleUpdateData('vehicles', newData, 'update')} 
+          onAdd={(newData) => handleUpdateData('maintenance_entries', newData, 'insert')} 
+          preDepartureChecklists={fleetData.pre_departure_checklists} // Pass checklists data
+        />;
       case 'checklists': // New case for checklists
         return <PreDepartureChecklistComponent data={fleetData} userRole={userRole} onAdd={(newData) => handleUpdateData('pre_departure_checklists', newData, 'insert')} />;
       case 'summary':
