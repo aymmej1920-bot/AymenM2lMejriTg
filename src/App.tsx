@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Truck, Users, Route, Fuel, FileText, Wrench, BarChart3, Download, Upload, LogOut } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Truck, Users, Route, Fuel, FileText, Wrench, BarChart3, LogOut } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Vehicles from './components/Vehicles';
 import Drivers from './components/Drivers';
@@ -137,65 +137,6 @@ function App() {
     showSuccess('Déconnexion réussie.');
   };
 
-  const exportData = () => {
-    const dataStr = JSON.stringify(fleetData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `fleet_data_${currentUser?.id}_${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-    showSuccess('Données exportées avec succès !');
-  };
-
-  const importData = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const loadingToastId = showLoading('Importation des données...');
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const importedData: FleetData = JSON.parse(e.target?.result as string);
-        if (importedData.vehicles && importedData.drivers) {
-          // Clear existing data for the user
-          await Promise.all([
-            supabase.from('vehicles').delete().eq('user_id', currentUser?.id),
-            supabase.from('drivers').delete().eq('user_id', currentUser?.id),
-            supabase.from('tours').delete().eq('user_id', currentUser?.id),
-            supabase.from('fuel_entries').delete().eq('user_id', currentUser?.id),
-            supabase.from('documents').delete().eq('user_id', currentUser?.id),
-            supabase.from('maintenance_entries').delete().eq('user_id', currentUser?.id),
-          ]);
-
-          // Insert imported data
-          await Promise.all([
-            importedData.vehicles.length > 0 && supabase.from('vehicles').insert(importedData.vehicles.map(v => ({ ...v, user_id: currentUser?.id }))),
-            importedData.drivers.length > 0 && supabase.from('drivers').insert(importedData.drivers.map(d => ({ ...d, user_id: currentUser?.id }))),
-            importedData.tours.length > 0 && supabase.from('tours').insert(importedData.tours.map(t => ({ ...t, user_id: currentUser?.id }))),
-            importedData.fuel.length > 0 && supabase.from('fuel_entries').insert(importedData.fuel.map(f => ({ ...f, user_id: currentUser?.id }))),
-            importedData.documents.length > 0 && supabase.from('documents').insert(importedData.documents.map(doc => ({ ...doc, user_id: currentUser?.id }))),
-            importedData.maintenance.length > 0 && supabase.from('maintenance_entries').insert(importedData.maintenance.map(m => ({ ...m, user_id: currentUser?.id }))),
-          ]);
-          
-          dismissToast(loadingToastId);
-          showSuccess('Données importées avec succès !');
-          fetchData(currentUser!.id); // Refresh data after import
-        } else {
-          dismissToast(loadingToastId);
-          showError('Format de fichier invalide !');
-        }
-      } catch (error) {
-        console.error('Error importing data:', error);
-        dismissToast(loadingToastId);
-        showError('Erreur lors de l\'import du fichier !');
-      }
-    };
-    reader.readAsText(file);
-  };
-
   const tabs = [
     { id: 'dashboard', name: 'Dashboard', icon: BarChart3 },
     { id: 'vehicles', name: 'Véhicules', icon: Truck },
@@ -259,23 +200,6 @@ function App() {
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm">Bienvenue, {currentUser?.name}</span>
-              <button
-                onClick={exportData}
-                className="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg transition-all duration-300 flex items-center space-x-2"
-              >
-                <Download className="w-4 h-4" />
-                <span>Exporter</span>
-              </button>
-              <label className="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg transition-all duration-300 flex items-center space-x-2 cursor-pointer">
-                <Upload className="w-4 h-4" />
-                <span>Importer</span>
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={importData}
-                  className="hidden"
-                />
-              </label>
               <button
                 onClick={handleLogout}
                 className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-all duration-300 flex items-center space-x-2"
