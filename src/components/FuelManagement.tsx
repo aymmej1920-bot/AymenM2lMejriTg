@@ -1,23 +1,89 @@
-import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, Fuel, DollarSign, TrendingUp } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Plus, Edit2, Trash2, Fuel, DollarSign, TrendingUp, ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { FleetData, FuelEntry } from '../types';
 import { showSuccess } from '../utils/toast'; // Import toast utilities
 
 interface FuelManagementProps {
   data: FleetData;
-  userRole: 'admin' | 'direction' | 'utilisateur'; // Keep userRole for display, but not for logic
+  userRole: 'admin' | 'direction' | 'utilisateur';
   onAdd: (fuelEntry: Omit<FuelEntry, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (fuelEntry: FuelEntry) => void;
   onDelete: (id: string) => void;
 }
 
-const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, onDelete }) => { // 'userRole' removed from destructuring
+const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingFuel, setEditingFuel] = useState<FuelEntry | null>(null);
 
-  // const canManage = true; // All authenticated users can manage - Removed
-  // const canAddEdit = true; // All authenticated users can add/edit - Removed
-  // const isReadOnly = false; // All authenticated users can manage - Removed
+  // State for filtering, sorting, and pagination
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortColumn, setSortColumn] = useState<keyof FuelEntry>('date');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // You can adjust this value
+
+  // Filtered and sorted data
+  const filteredAndSortedFuelEntries = useMemo(() => {
+    let filtered = data.fuel.filter(entry => {
+      const vehicle = data.vehicles.find(v => v.id === entry.vehicle_id);
+      return (
+        entry.date.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (vehicle?.plate || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        entry.liters.toString().includes(searchTerm) ||
+        entry.price_per_liter.toString().includes(searchTerm) ||
+        entry.mileage.toString().includes(searchTerm)
+      );
+    });
+
+    filtered.sort((a, b) => {
+      const aValue = a[sortColumn];
+      const bValue = b[sortColumn];
+
+      // Handle null/undefined values first (though not expected for these columns)
+      if (aValue === null || aValue === undefined) {
+        return sortDirection === 'asc' ? -1 : 1;
+      }
+      if (bValue === null || bValue === undefined) {
+        return sortDirection === 'asc' ? 1 : -1;
+      }
+
+      // Special handling for vehicle_id to sort by plate
+      if (sortColumn === 'vehicle_id') {
+        const aVehicle = data.vehicles.find(v => v.id === a.vehicle_id);
+        const bVehicle = data.vehicles.find(v => v.id === b.vehicle_id);
+        const aPlate = aVehicle?.plate || '';
+        const bPlate = bVehicle?.plate || '';
+        return sortDirection === 'asc' ? aPlate.localeCompare(bPlate) : bPlate.localeCompare(aPlate);
+      }
+
+      // For date strings (like 'date'), compare them directly as strings
+      if (sortColumn === 'date' && typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+      }
+      
+      // General number comparison
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+      }
+      
+      // General string comparison (fallback for other string columns)
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+      }
+      
+      // Fallback for other types
+      return 0;
+    });
+    return filtered;
+  }, [data.fuel, data.vehicles, searchTerm, sortColumn, sortDirection]);
+
+  // Paginated data
+  const totalPages = Math.ceil(filteredAndSortedFuelEntries.length / itemsPerPage);
+  const currentFuelEntries = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredAndSortedFuelEntries.slice(startIndex, endIndex);
+  }, [filteredAndSortedFuelEntries, currentPage, itemsPerPage]);
 
   const totalLiters = data.fuel.reduce((sum, f) => sum + f.liters, 0);
   const totalCost = data.fuel.reduce((sum, f) => sum + (f.liters * f.price_per_liter), 0);
@@ -42,7 +108,6 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // No need for canAddEdit check here, as the button is always visible
     const formData = new FormData(e.currentTarget);
     
     const fuelData: Omit<FuelEntry, 'user_id' | 'created_at'> = {
@@ -64,11 +129,26 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
     setShowModal(false);
   };
 
+  const handleSort = (column: keyof FuelEntry) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const renderSortIcon = (column: keyof FuelEntry) => {
+    if (sortColumn === column) {
+      return sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />;
+    }
+    return null;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Gestion du Carburant</h2>
-        {/* canAddEdit replaced with true */}
           <button
             key="add-fuel-button"
             onClick={handleAddFuel}
@@ -118,58 +198,128 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
         </div>
       </div>
 
+      {/* Search Input */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Rechercher un plein par date, véhicule, litres, prix ou kilométrage..."
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setCurrentPage(1); // Reset to first page on new search
+          }}
+          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+        />
+      </div>
+
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
         <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Véhicule</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Litres</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Prix/L</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('date')}>
+                <div className="flex items-center">
+                  Date {renderSortIcon('date')}
+                </div>
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('vehicle_id')}>
+                <div className="flex items-center">
+                  Véhicule {renderSortIcon('vehicle_id')}
+                </div>
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('liters')}>
+                <div className="flex items-center">
+                  Litres {renderSortIcon('liters')}
+                </div>
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('price_per_liter')}>
+                <div className="flex items-center">
+                  Prix/L {renderSortIcon('price_per_liter')}
+                </div>
+              </th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Coût Total</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Kilométrage</th>
-              {/* isReadOnly replaced with false */}
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('mileage')}>
+                <div className="flex items-center">
+                  Kilométrage {renderSortIcon('mileage')}
+                </div>
+              </th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {data.fuel.map((fuel) => {
-              const vehicle = data.vehicles.find(v => v.id === fuel.vehicle_id);
-              return (
-                <tr key={fuel.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 text-sm text-gray-900">{fuel.date}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{vehicle?.plate || 'N/A'}</td>
-                  <td className="px-6 py-4 text-sm font-semibold">{fuel.liters} L</td>
-                  <td className="px-6 py-4 text-sm">{fuel.price_per_liter.toFixed(2)} TND</td>
-                  <td className="px-6 py-4 text-sm font-bold text-green-600">{(fuel.liters * fuel.price_per_liter).toFixed(2)} TND</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{fuel.mileage.toLocaleString()} km</td>
-                  {/* isReadOnly replaced with false */}
-                    <td className="px-6 py-4 text-sm">
-                      <div className="flex space-x-2">
-                        <button
-                          key={fuel.id + "-edit"}
-                          onClick={() => handleEditFuel(fuel)}
-                          className="text-blue-600 hover:text-blue-900 transition-colors"
-                          // disabled={!canAddEdit} // Removed disabled prop
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          key={fuel.id + "-delete"}
-                          onClick={() => handleDeleteFuel(fuel.id)}
-                          className="text-red-600 hover:text-red-900 transition-colors"
-                          // disabled={!canManage} // Removed disabled prop
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                </tr>
-              );
-            })}
+            {currentFuelEntries.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                  Aucun enregistrement de carburant trouvé.
+                </td>
+              </tr>
+            ) : (
+              currentFuelEntries.map((fuel) => {
+                const vehicle = data.vehicles.find(v => v.id === fuel.vehicle_id);
+                return (
+                  <tr key={fuel.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 text-sm text-gray-900">{fuel.date}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{vehicle?.plate || 'N/A'}</td>
+                    <td className="px-6 py-4 text-sm font-semibold">{fuel.liters} L</td>
+                    <td className="px-6 py-4 text-sm">{fuel.price_per_liter.toFixed(2)} TND</td>
+                    <td className="px-6 py-4 text-sm font-bold text-green-600">{(fuel.liters * fuel.price_per_liter).toFixed(2)} TND</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{fuel.mileage.toLocaleString()} km</td>
+                      <td className="px-6 py-4 text-sm">
+                        <div className="flex space-x-2">
+                          <button
+                            key={fuel.id + "-edit"}
+                            onClick={() => handleEditFuel(fuel)}
+                            className="text-blue-600 hover:text-blue-900 transition-colors"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            key={fuel.id + "-delete"}
+                            onClick={() => handleDeleteFuel(fuel.id)}
+                            className="text-red-600 hover:text-red-900 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center space-x-2 mt-4">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Précédent
+          </button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+            <button
+              key={page}
+              onClick={() => setCurrentPage(page)}
+              className={`px-4 py-2 rounded-lg ${
+                currentPage === page ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'
+              }`}
+            >
+              {page}
+            </button>
+          ))}
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Suivant
+          </button>
+        </div>
+      )}
 
       {/* Modal */}
       {showModal && (
@@ -188,7 +338,6 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                     defaultValue={editingFuel?.date || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    // readOnly={!canAddEdit} // Removed readOnly prop
                   />
                 </div>
                 <div>
@@ -198,7 +347,6 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                     defaultValue={editingFuel?.vehicle_id || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    // disabled={!canAddEdit} // Removed disabled prop
                   >
                     <option value="">Sélectionner un véhicule</option>
                     {data.vehicles.map(vehicle => (
@@ -217,7 +365,6 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                     defaultValue={editingFuel?.liters || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    // readOnly={!canAddEdit} // Removed readOnly prop
                   />
                 </div>
                 <div>
@@ -229,7 +376,6 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                     defaultValue={editingFuel?.price_per_liter || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    // readOnly={!canAddEdit} // Removed readOnly prop
                   />
                 </div>
                 <div>
@@ -240,7 +386,6 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                     defaultValue={editingFuel?.mileage || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    // readOnly={!canAddEdit} // Removed readOnly prop
                   />
                 </div>
                 <div className="flex justify-end space-x-4 mt-8">
@@ -251,7 +396,6 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                   >
                     Annuler
                   </button>
-                  {/* canAddEdit replaced with true */}
                     <button
                       type="submit"
                       className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
