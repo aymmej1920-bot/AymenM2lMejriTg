@@ -77,12 +77,11 @@ function App() {
         pre_departure_checklists: checklistsData as PreDepartureChecklist[],
       });
 
-      // Assign a default role or simply use 'admin' as all users will have full access
       setCurrentUser({
         id: userId,
         email: session?.user?.email || '',
         name: profileData?.first_name || session?.user?.email?.split('@')[0] || 'User',
-        role: 'admin', // All users are effectively 'admin' for UI purposes
+        role: profileData?.role || 'utilisateur', // Use the actual role from profileData, default to 'utilisateur'
       });
 
     } catch (error) {
@@ -181,7 +180,7 @@ function App() {
   }
 
   const renderContent = () => {
-    const userRole = currentUser?.role || 'admin'; // Default to 'admin' as all users have full access
+    const userRole = currentUser?.role || 'utilisateur'; // Default to 'utilisateur' if role is not set
 
     switch (currentTab) {
       case 'dashboard':
