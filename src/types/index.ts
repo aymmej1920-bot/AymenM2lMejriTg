@@ -68,6 +68,25 @@ export interface MaintenanceEntry {
   created_at?: string;
 }
 
+export interface PreDepartureChecklist {
+  id: string;
+  user_id: string;
+  vehicle_id: string;
+  driver_id: string | null;
+  date: string;
+  tire_pressure_ok: boolean;
+  lights_ok: boolean;
+  oil_level_ok: boolean;
+  fluid_levels_ok: boolean;
+  brakes_ok: boolean;
+  wipers_ok: boolean;
+  horn_ok: boolean;
+  mirrors_ok: boolean;
+  observations: string | null;
+  issues_to_address: string | null;
+  created_at?: string;
+}
+
 export interface FleetData {
   vehicles: Vehicle[];
   drivers: Driver[];
@@ -75,6 +94,7 @@ export interface FleetData {
   fuel: FuelEntry[];
   documents: Document[];
   maintenance: MaintenanceEntry[];
+  pre_departure_checklists: PreDepartureChecklist[]; // New field
 }
 
 export interface AuthUser {

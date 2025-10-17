@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Truck, Users, Route, Fuel, FileText, Wrench, BarChart3, LogOut } from 'lucide-react';
+import { Truck, Users, Route, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Vehicles from './components/Vehicles';
 import Drivers from './components/Drivers';
@@ -8,8 +8,9 @@ import FuelManagement from './components/FuelManagement';
 import Documents from './components/Documents';
 import Maintenance from './components/Maintenance';
 import Summary from './components/Summary';
+import PreDepartureChecklistComponent from './components/PreDepartureChecklist'; // Import new component
 import Login from './pages/Login';
-import { FleetData, AuthUser, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry } from './types';
+import { FleetData, AuthUser, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist } from './types';
 import { useSession } from './components/SessionContextProvider';
 import { supabase } from './integrations/supabase/client';
 import { showSuccess, showError, showLoading, dismissToast } from './utils/toast';
@@ -24,6 +25,7 @@ function App() {
     fuel: [],
     documents: [],
     maintenance: [],
+    pre_departure_checklists: [], // Initialize new data
   });
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
@@ -46,6 +48,7 @@ function App() {
         { data: fuelData, error: fuelError },
         { data: documentsData, error: documentsError },
         { data: maintenanceData, error: maintenanceError },
+        { data: checklistsData, error: checklistsError }, // Fetch new data
       ] = await Promise.all([
         supabase.from('vehicles').select('*').eq('user_id', userId),
         supabase.from('drivers').select('*').eq('user_id', userId),
@@ -53,6 +56,7 @@ function App() {
         supabase.from('fuel_entries').select('*').eq('user_id', userId),
         supabase.from('documents').select('*').eq('user_id', userId),
         supabase.from('maintenance_entries').select('*').eq('user_id', userId),
+        supabase.from('pre_departure_checklists').select('*').eq('user_id', userId), // Fetch new data
       ]);
 
       if (vehiclesError) throw vehiclesError;
@@ -61,6 +65,7 @@ function App() {
       if (fuelError) throw fuelError;
       if (documentsError) throw documentsError;
       if (maintenanceError) throw maintenanceError;
+      if (checklistsError) throw checklistsError; // Handle error for new data
 
       setFleetData({
         vehicles: vehiclesData as Vehicle[],
@@ -69,6 +74,7 @@ function App() {
         fuel: fuelData as FuelEntry[],
         documents: documentsData as Document[],
         maintenance: maintenanceData as MaintenanceEntry[],
+        pre_departure_checklists: checklistsData as PreDepartureChecklist[], // Set new data
       });
 
       setCurrentUser({
@@ -98,6 +104,7 @@ function App() {
         fuel: [],
         documents: [],
         maintenance: [],
+        pre_departure_checklists: [], // Reset new data
       });
       setDataLoading(false);
     }
@@ -143,6 +150,7 @@ function App() {
       fuel: [],
       documents: [],
       maintenance: [],
+      pre_departure_checklists: [], // Reset new data
     });
     dismissToast(loadingToastId);
     showSuccess('Déconnexion réussie.');
@@ -156,6 +164,7 @@ function App() {
     { id: 'fuel', name: 'Carburant', icon: Fuel },
     { id: 'documents', name: 'Documents', icon: FileText },
     { id: 'maintenance', name: 'Maintenance', icon: Wrench },
+    { id: 'checklists', name: 'Checklists', icon: ClipboardCheck }, // New tab
     { id: 'summary', name: 'Résumé', icon: BarChart3 }
   ];
 
@@ -188,7 +197,9 @@ function App() {
       case 'documents':
         return <Documents data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('documents', newData, 'update')} onDelete={(id) => handleUpdateData('documents', { id }, 'delete')} onAdd={(newData) => handleUpdateData('documents', newData, 'insert')} />;
       case 'maintenance':
-        return <Maintenance data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('maintenance_entries', newData, 'update')} onAdd={(newData) => handleUpdateData('maintenance_entries', newData, 'insert')} />;
+        return <Maintenance data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('vehicles', newData, 'update')} onAdd={(newData) => handleUpdateData('maintenance_entries', newData, 'insert')} />;
+      case 'checklists': // New case for checklists
+        return <PreDepartureChecklistComponent data={fleetData} userRole={userRole} onAdd={(newData) => handleUpdateData('pre_departure_checklists', newData, 'insert')} />;
       case 'summary':
         return <Summary data={fleetData} />;
       default:
