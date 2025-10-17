@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Plus, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Plus, CheckCircle, XCircle, AlertTriangle, ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { FleetData, PreDepartureChecklist } from '../types';
 import { showSuccess, showError } from '../utils/toast';
 
@@ -29,7 +29,83 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
     issues_to_address: '',
   });
 
+  // State for filtering, sorting, and pagination
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortColumn, setSortColumn] = useState<keyof PreDepartureChecklist>('date');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // You can adjust this value
+
   const canAdd = true; // All authenticated users can add
+
+  // Filtered and sorted data
+  const filteredAndSortedChecklists = useMemo(() => {
+    let filtered = data.pre_departure_checklists.filter(checklist => {
+      const vehicle = data.vehicles.find(v => v.id === checklist.vehicle_id);
+      const driver = data.drivers.find(d => d.id === checklist.driver_id);
+      
+      return (
+        checklist.date.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (vehicle?.plate || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (driver?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (checklist.observations || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (checklist.issues_to_address || '').toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    });
+
+    filtered.sort((a, b) => {
+      const aValue = a[sortColumn];
+      const bValue = b[sortColumn];
+
+      // Handle null/undefined values first
+      if (aValue === null || aValue === undefined) {
+        return sortDirection === 'asc' ? -1 : 1;
+      }
+      if (bValue === null || bValue === undefined) {
+        return sortDirection === 'asc' ? 1 : -1;
+      }
+
+      // Special handling for vehicle_id to sort by plate
+      if (sortColumn === 'vehicle_id') {
+        const aVehicle = data.vehicles.find(v => v.id === a.vehicle_id);
+        const bVehicle = data.vehicles.find(v => v.id === b.vehicle_id);
+        const aPlate = aVehicle?.plate || '';
+        const bPlate = bVehicle?.plate || '';
+        return sortDirection === 'asc' ? aPlate.localeCompare(bPlate) : bPlate.localeCompare(aPlate);
+      }
+
+      // Special handling for driver_id to sort by name
+      if (sortColumn === 'driver_id') {
+        const aDriver = data.drivers.find(d => d.id === a.driver_id);
+        const bDriver = data.drivers.find(d => d.id === b.driver_id);
+        const aName = aDriver?.name || '';
+        const bName = bDriver?.name || '';
+        return sortDirection === 'asc' ? aName.localeCompare(bName) : bName.localeCompare(aName);
+      }
+
+      // For date strings (like 'date'), compare them directly as strings
+      if (sortColumn === 'date' && typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+      }
+      
+      // General string comparison (fallback for other string columns)
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+      }
+      
+      // Fallback for other types
+      return 0;
+    });
+    return filtered;
+  }, [data.pre_departure_checklists, data.vehicles, data.drivers, searchTerm, sortColumn, sortDirection]);
+
+  // Paginated data
+  const totalPages = Math.ceil(filteredAndSortedChecklists.length / itemsPerPage);
+  const currentChecklists = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredAndSortedChecklists.slice(startIndex, endIndex);
+  }, [filteredAndSortedChecklists, currentPage, itemsPerPage]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const target = e.target;
@@ -112,6 +188,22 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
     !hasChecklistForMonth(vehicle.id, currentMonth, currentYear)
   );
 
+  const handleSort = (column: keyof PreDepartureChecklist) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const renderSortIcon = (column: keyof PreDepartureChecklist) => {
+    if (sortColumn === column) {
+      return sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />;
+    }
+    return null;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -144,14 +236,41 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
         </div>
       )}
 
+      {/* Search Input */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Rechercher une checklist par date, véhicule, conducteur, observations ou problèmes..."
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setCurrentPage(1); // Reset to first page on new search
+          }}
+          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+        />
+      </div>
+
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Véhicule</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Conducteur</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('date')}>
+                  <div className="flex items-center">
+                    Date {renderSortIcon('date')}
+                  </div>
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('vehicle_id')}>
+                  <div className="flex items-center">
+                    Véhicule {renderSortIcon('vehicle_id')}
+                  </div>
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('driver_id')}>
+                  <div className="flex items-center">
+                    Conducteur {renderSortIcon('driver_id')}
+                  </div>
+                </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Pneus</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Feux</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Huile</th>
@@ -167,33 +286,72 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {data.pre_departure_checklists.map((checklist) => {
-                const vehicle = data.vehicles.find(v => v.id === checklist.vehicle_id);
-                const driver = data.drivers.find(d => d.id === checklist.driver_id);
-                return (
-                  <tr key={checklist.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 text-sm text-gray-900">{checklist.date}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{vehicle?.plate || 'N/A'}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{driver?.name || 'N/A'}</td>
-                    <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.tire_pressure_ok)}</td>
-                    <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.lights_ok)}</td>
-                    <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.oil_level_ok)}</td>
-                    <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.fluid_levels_ok)}</td>
-                    <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.brakes_ok)}</td>
-                    <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.wipers_ok)}</td>
-                    <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.horn_ok)}</td>
-                    <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.mirrors_ok)}</td>
-                    <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.ac_working_ok)}</td>
-                    <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.windows_working_ok)}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600 max-w-xs overflow-hidden text-ellipsis">{checklist.observations || '-'}</td>
-                    <td className="px-6 py-4 text-sm text-red-600 max-w-xs overflow-hidden text-ellipsis">{checklist.issues_to_address || '-'}</td>
-                  </tr>
-                );
-              })}
+              {currentChecklists.length === 0 ? (
+                <tr>
+                  <td colSpan={15} className="px-6 py-4 text-center text-gray-500">
+                    Aucune checklist trouvée.
+                  </td>
+                </tr>
+              ) : (
+                currentChecklists.map((checklist) => {
+                  const vehicle = data.vehicles.find(v => v.id === checklist.vehicle_id);
+                  const driver = data.drivers.find(d => d.id === checklist.driver_id);
+                  return (
+                    <tr key={checklist.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 text-sm text-gray-900">{checklist.date}</td>
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{vehicle?.plate || 'N/A'}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{driver?.name || 'N/A'}</td>
+                      <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.tire_pressure_ok)}</td>
+                      <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.lights_ok)}</td>
+                      <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.oil_level_ok)}</td>
+                      <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.fluid_levels_ok)}</td>
+                      <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.brakes_ok)}</td>
+                      <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.wipers_ok)}</td>
+                      <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.horn_ok)}</td>
+                      <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.mirrors_ok)}</td>
+                      <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.ac_working_ok)}</td>
+                      <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.windows_working_ok)}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600 max-w-xs overflow-hidden text-ellipsis">{checklist.observations || '-'}</td>
+                      <td className="px-6 py-4 text-sm text-red-600 max-w-xs overflow-hidden text-ellipsis">{checklist.issues_to_address || '-'}</td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center space-x-2 mt-4">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Précédent
+          </button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+            <button
+              key={page}
+              onClick={() => setCurrentPage(page)}
+              className={`px-4 py-2 rounded-lg ${
+                currentPage === page ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'
+              }`}
+            >
+              {page}
+            </button>
+          ))}
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Suivant
+          </button>
+        </div>
+      )}
 
       {/* Modal */}
       {showModal && (
