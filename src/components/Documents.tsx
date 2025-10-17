@@ -5,18 +5,18 @@ import { showSuccess } from '../utils/toast'; // Import toast utilities
 
 interface DocumentsProps {
   data: FleetData;
-  userRole: 'admin' | 'direction' | 'utilisateur';
+  userRole: 'admin' | 'direction' | 'utilisateur'; // Keep userRole for display, but not for logic
   onAdd: (document: Omit<Document, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (document: Document) => void;
   onDelete: (id: string) => void;
 }
 
-const Documents: React.FC<DocumentsProps> = ({ data, userRole, onAdd, onUpdate, onDelete }) => {
+const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }) => { // 'userRole' removed from destructuring
   const [showModal, setShowModal] = useState(false);
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
 
-  const canManage = userRole === 'admin';
-  const isReadOnly = userRole === 'direction' || userRole === 'utilisateur';
+  // const canManage = true; // All authenticated users can manage - Removed
+  // const isReadOnly = false; // All authenticated users can manage - Removed
 
   const handleAddDocument = () => {
     setEditingDocument(null);
@@ -37,8 +37,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, userRole, onAdd, onUpdate, 
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!canManage) return; // Prevent submission if not admin
-
+    // No need for canManage check here, as the button is always visible
     const formData = new FormData(e.currentTarget);
     
     const documentData: Omit<Document, 'user_id' | 'created_at'> = {
@@ -86,7 +85,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, userRole, onAdd, onUpdate, 
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Suivi des Documents</h2>
-        {canManage && (
+        {/* canManage replaced with true */}
           <button
             key="add-document-button"
             onClick={handleAddDocument}
@@ -95,11 +94,10 @@ const Documents: React.FC<DocumentsProps> = ({ data, userRole, onAdd, onUpdate, 
             <Plus className="w-5 h-5" />
             <span>Ajouter Document</span>
           </button>
-        )}
       </div>
 
       {/* Alerts */}
-      {expiringDocs.length > 0 && (userRole === 'admin' || userRole === 'direction') && (
+      {expiringDocs.length > 0 && (
         <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
           <div className="flex items-center">
             <AlertTriangle className="w-5 h-5 text-red-400 mr-3" />
@@ -123,7 +121,8 @@ const Documents: React.FC<DocumentsProps> = ({ data, userRole, onAdd, onUpdate, 
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Expiration</th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Jours Restants</th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Statut</th>
-              {!isReadOnly && <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>}
+              {/* isReadOnly replaced with false */}
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -149,14 +148,14 @@ const Documents: React.FC<DocumentsProps> = ({ data, userRole, onAdd, onUpdate, 
                       {status.text}
                     </span>
                   </td>
-                  {!isReadOnly && (
+                  {/* isReadOnly replaced with false */}
                     <td className="px-6 py-4 text-sm">
                       <div className="flex space-x-2">
                         <button
                           key={doc.id + "-edit"}
                           onClick={() => handleEditDocument(doc)}
                           className="text-blue-600 hover:text-blue-900 transition-colors"
-                          disabled={!canManage}
+                          // disabled={!canManage} // Removed disabled prop
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
@@ -164,13 +163,12 @@ const Documents: React.FC<DocumentsProps> = ({ data, userRole, onAdd, onUpdate, 
                           key={doc.id + "-delete"}
                           onClick={() => handleDeleteDocument(doc.id)}
                           className="text-red-600 hover:text-red-900 transition-colors"
-                          disabled={!canManage}
+                          // disabled={!canManage} // Removed disabled prop
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
-                  )}
                 </tr>
               );
             })}
@@ -194,7 +192,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, userRole, onAdd, onUpdate, 
                     defaultValue={editingDocument?.vehicle_id || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    disabled={!canManage}
+                    // disabled={!canManage} // Removed disabled prop
                   >
                     <option value="">Sélectionner un véhicule</option>
                     {data.vehicles.map(vehicle => (
@@ -211,7 +209,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, userRole, onAdd, onUpdate, 
                     defaultValue={editingDocument?.type || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    disabled={!canManage}
+                    // disabled={!canManage} // Removed disabled prop
                   >
                     <option value="">Sélectionner un type</option>
                     <option value="Assurance">Assurance</option>
@@ -229,7 +227,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, userRole, onAdd, onUpdate, 
                     defaultValue={editingDocument?.number || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    readOnly={!canManage}
+                    // readOnly={!canManage} // Removed readOnly prop
                   />
                 </div>
                 <div>
@@ -240,7 +238,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, userRole, onAdd, onUpdate, 
                     defaultValue={editingDocument?.expiration || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    readOnly={!canManage}
+                    // readOnly={!canManage} // Removed readOnly prop
                   />
                 </div>
                 <div className="flex justify-end space-x-4 mt-8">
@@ -251,14 +249,13 @@ const Documents: React.FC<DocumentsProps> = ({ data, userRole, onAdd, onUpdate, 
                   >
                     Annuler
                   </button>
-                  {canManage && (
+                  {/* canManage replaced with true */}
                     <button
                       type="submit"
                       className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
                     >
                       Sauvegarder
                     </button>
-                  )}
                 </div>
               </form>
             </div>

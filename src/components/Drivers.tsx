@@ -5,18 +5,18 @@ import { showSuccess } from '../utils/toast'; // Import toast utilities
 
 interface DriversProps {
   data: FleetData;
-  userRole: 'admin' | 'direction' | 'utilisateur';
+  userRole: 'admin' | 'direction' | 'utilisateur'; // Keep userRole for display, but not for logic
   onAdd: (driver: Omit<Driver, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (driver: Driver) => void;
   onDelete: (id: string) => void;
 }
 
-const Drivers: React.FC<DriversProps> = ({ data, userRole, onAdd, onUpdate, onDelete }) => {
+const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) => { // 'userRole' removed from destructuring
   const [showModal, setShowModal] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
 
-  const canManage = userRole === 'admin';
-  const isReadOnly = userRole === 'direction' || userRole === 'utilisateur';
+  // const canManage = true; // All authenticated users can manage - Removed
+  // const isReadOnly = false; // All authenticated users can manage - Removed
 
   const handleAddDriver = () => {
     setEditingDriver(null);
@@ -37,8 +37,7 @@ const Drivers: React.FC<DriversProps> = ({ data, userRole, onAdd, onUpdate, onDe
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!canManage) return; // Prevent submission if not admin
-
+    // No need for canManage check here, as the button is always visible
     const formData = new FormData(e.currentTarget);
     
     const driverData: Omit<Driver, 'user_id' | 'created_at'> = {
@@ -85,7 +84,7 @@ const Drivers: React.FC<DriversProps> = ({ data, userRole, onAdd, onUpdate, onDe
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Gestion des Conducteurs</h2>
-        {canManage && (
+        {/* canManage replaced with true */}
           <button
             key="add-driver-button"
             onClick={handleAddDriver}
@@ -94,7 +93,6 @@ const Drivers: React.FC<DriversProps> = ({ data, userRole, onAdd, onUpdate, onDe
             <Plus className="w-5 h-5" />
             <span>Ajouter Conducteur</span>
           </button>
-        )}
       </div>
 
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -106,7 +104,8 @@ const Drivers: React.FC<DriversProps> = ({ data, userRole, onAdd, onUpdate, onDe
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Expiration</th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Statut</th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Téléphone</th>
-              {!isReadOnly && <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>}
+              {/* isReadOnly replaced with false */}
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -131,14 +130,14 @@ const Drivers: React.FC<DriversProps> = ({ data, userRole, onAdd, onUpdate, onDe
                     <span>{driver.phone}</span>
                   </div>
                 </td>
-                {!isReadOnly && (
+                {/* isReadOnly replaced with false */}
                   <td className="px-6 py-4 text-sm">
                     <div className="flex space-x-2">
                       <button
                         key={driver.id + "-edit"}
                         onClick={() => handleEditDriver(driver)}
                         className="text-blue-600 hover:text-blue-900 transition-colors"
-                        disabled={!canManage}
+                        // disabled={!canManage} // Removed disabled prop
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
@@ -146,13 +145,12 @@ const Drivers: React.FC<DriversProps> = ({ data, userRole, onAdd, onUpdate, onDe
                         key={driver.id + "-delete"}
                         onClick={() => handleDeleteDriver(driver.id)}
                         className="text-red-600 hover:text-red-900 transition-colors"
-                        disabled={!canManage}
+                        // disabled={!canManage} // Removed disabled prop
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </td>
-                )}
               </tr>
             ))}
           </tbody>
@@ -176,7 +174,7 @@ const Drivers: React.FC<DriversProps> = ({ data, userRole, onAdd, onUpdate, onDe
                     defaultValue={editingDriver?.name || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    readOnly={!canManage}
+                    // readOnly={!canManage} // Removed readOnly prop
                   />
                 </div>
                 <div>
@@ -187,7 +185,7 @@ const Drivers: React.FC<DriversProps> = ({ data, userRole, onAdd, onUpdate, onDe
                     defaultValue={editingDriver?.license || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    readOnly={!canManage}
+                    // readOnly={!canManage} // Removed readOnly prop
                   />
                 </div>
                 <div>
@@ -198,7 +196,7 @@ const Drivers: React.FC<DriversProps> = ({ data, userRole, onAdd, onUpdate, onDe
                     defaultValue={editingDriver?.expiration || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    readOnly={!canManage}
+                    // readOnly={!canManage} // Removed readOnly prop
                   />
                 </div>
                 <div>
@@ -208,7 +206,7 @@ const Drivers: React.FC<DriversProps> = ({ data, userRole, onAdd, onUpdate, onDe
                     defaultValue={editingDriver?.status || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    disabled={!canManage}
+                    // disabled={!canManage} // Removed disabled prop
                   >
                     <option value="Disponible">Disponible</option>
                     <option value="En mission">En mission</option>
@@ -224,7 +222,7 @@ const Drivers: React.FC<DriversProps> = ({ data, userRole, onAdd, onUpdate, onDe
                     defaultValue={editingDriver?.phone || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    readOnly={!canManage}
+                    // readOnly={!canManage} // Removed readOnly prop
                   />
                 </div>
                 <div className="flex justify-end space-x-4 mt-8">
@@ -235,14 +233,13 @@ const Drivers: React.FC<DriversProps> = ({ data, userRole, onAdd, onUpdate, onDe
                   >
                     Annuler
                   </button>
-                  {canManage && (
+                  {/* canManage replaced with true */}
                     <button
                       type="submit"
                       className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
                     >
                       Sauvegarder
                     </button>
-                  )}
                 </div>
               </form>
             </div>

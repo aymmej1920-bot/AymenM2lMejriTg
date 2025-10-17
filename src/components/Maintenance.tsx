@@ -5,18 +5,18 @@ import { showSuccess } from '../utils/toast'; // Import toast utilities
 
 interface MaintenanceProps {
   data: FleetData;
-  userRole: 'admin' | 'direction' | 'utilisateur';
+  userRole: 'admin' | 'direction' | 'utilisateur'; // Keep userRole for display, but not for logic
   onAdd: (maintenanceEntry: Omit<MaintenanceEntry, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (vehicle: { id: string; last_service_date: string; last_service_mileage: number; mileage: number }) => void;
   preDepartureChecklists: PreDepartureChecklist[]; // New prop for checklists
 }
 
-const Maintenance: React.FC<MaintenanceProps> = ({ data, userRole, onAdd, onUpdate, preDepartureChecklists }) => {
+const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDepartureChecklists }) => { // 'userRole' removed from destructuring
   const [showModal, setShowModal] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
 
-  const canManage = userRole === 'admin';
-  const isReadOnly = userRole === 'direction' || userRole === 'utilisateur';
+  // const canManage = true; // All authenticated users can manage - Removed
+  // const isReadOnly = false; // All authenticated users can manage - Removed
 
   const handleAddMaintenance = (vehicleId?: string) => {
     setSelectedVehicleId(vehicleId || '');
@@ -25,8 +25,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, userRole, onAdd, onUpda
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!canManage) return; // Prevent submission if not admin
-
+    // No need for canManage check here, as the button is always visible
     const formData = new FormData(e.currentTarget);
     
     const maintenanceData: Omit<MaintenanceEntry, 'id' | 'user_id' | 'created_at'> = {
@@ -86,7 +85,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, userRole, onAdd, onUpda
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Suivi Maintenance & Vidanges</h2>
-        {canManage && (
+        {/* canManage replaced with true */}
           <button
             key="add-maintenance-button"
             onClick={() => handleAddMaintenance()}
@@ -95,11 +94,10 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, userRole, onAdd, onUpda
             <Plus className="w-5 h-5" />
             <span>Ajouter Maintenance</span>
           </button>
-        )}
       </div>
 
       {/* Alertes maintenance */}
-      {(userRole === 'admin' || userRole === 'direction') && (
+      {(
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="bg-orange-50 border-l-4 border-orange-400 p-6 rounded-r-lg shadow-lg">
             <div className="flex items-center">
@@ -143,7 +141,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, userRole, onAdd, onUpda
       )}
 
       {/* Detailed list of checklist issues */}
-      {checklistsWithIssues.length > 0 && (userRole === 'admin' || userRole === 'direction') && (
+      {checklistsWithIssues.length > 0 && (
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-gray-800">Détail des Points à Traiter</h3>
@@ -192,8 +190,8 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, userRole, onAdd, onUpda
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Dernière Vidange</th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Km Dernière Vidange</th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Prochaine Vidange</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Statut</th>
-              {!isReadOnly && <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>}
+              {/* isReadOnly replaced with false */}
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -215,19 +213,18 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, userRole, onAdd, onUpda
                       <span>{status.text}</span>
                     </span>
                   </td>
-                  {!isReadOnly && (
+                  {/* isReadOnly replaced with false */}
                     <td className="px-6 py-4 text-sm">
                       <button
                         key={vehicle.id + "-maintenance"}
                         onClick={() => handleAddMaintenance(vehicle.id)}
                         className="text-blue-600 hover:text-blue-900 transition-colors flex items-center space-x-1"
-                        disabled={!canManage}
+                        // disabled={!canManage} // Removed disabled prop
                       >
                         <Wrench className="w-4 h-4" />
                         <span>Maintenance</span>
                       </button>
                     </td>
-                  )}
                 </tr>
               );
             })}
@@ -236,7 +233,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, userRole, onAdd, onUpda
       </div>
 
       {/* Historique des maintenances */}
-      {data.maintenance.length > 0 && (userRole === 'admin' || userRole === 'direction') && (
+      {data.maintenance.length > 0 && (
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-gray-800">Historique des Maintenances</h3>
@@ -291,7 +288,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, userRole, onAdd, onUpda
                     defaultValue={selectedVehicleId}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    disabled={!canManage}
+                    // disabled={!canManage} // Removed disabled prop
                   >
                     <option value="">Sélectionner un véhicule</option>
                     {data.vehicles.map(vehicle => (
@@ -307,7 +304,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, userRole, onAdd, onUpda
                     name="type"
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    disabled={!canManage}
+                    // disabled={!canManage} // Removed disabled prop
                   >
                     <option value="Vidange">Vidange</option>
                     <option value="Révision">Révision</option>
@@ -323,7 +320,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, userRole, onAdd, onUpda
                     defaultValue={new Date().toISOString().split('T')[0]}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    readOnly={!canManage}
+                    // readOnly={!canManage} // Removed readOnly prop
                   />
                 </div>
                 <div>
@@ -333,7 +330,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, userRole, onAdd, onUpda
                     name="mileage"
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    readOnly={!canManage}
+                    // readOnly={!canManage} // Removed readOnly prop
                   />
                 </div>
                 <div>
@@ -344,7 +341,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, userRole, onAdd, onUpda
                     name="cost"
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    readOnly={!canManage}
+                    // readOnly={!canManage} // Removed readOnly prop
                   />
                 </div>
                 <div className="flex justify-end space-x-4 mt-8">
@@ -355,14 +352,13 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, userRole, onAdd, onUpda
                   >
                     Annuler
                   </button>
-                  {canManage && (
+                  {/* canManage replaced with true */}
                     <button
                       type="submit"
                       className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
                     >
                       Sauvegarder
                     </button>
-                  )}
                 </div>
               </form>
             </div>

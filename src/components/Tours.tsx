@@ -5,19 +5,19 @@ import { showSuccess } from '../utils/toast'; // Import toast utilities
 
 interface ToursProps {
   data: FleetData;
-  userRole: 'admin' | 'direction' | 'utilisateur';
+  userRole: 'admin' | 'direction' | 'utilisateur'; // Keep userRole for display, but not for logic
   onAdd: (tour: Omit<Tour, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (tour: Tour) => void;
   onDelete: (id: string) => void;
 }
 
-const Tours: React.FC<ToursProps> = ({ data, userRole, onAdd, onUpdate, onDelete }) => {
+const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => { // 'userRole' removed from destructuring
   const [showModal, setShowModal] = useState(false);
   const [editingTour, setEditingTour] = useState<Tour | null>(null);
 
-  const canManage = userRole === 'admin';
-  const canAddEdit = userRole === 'admin' || userRole === 'utilisateur';
-  const isReadOnly = userRole === 'direction';
+  // const canManage = true; // All authenticated users can manage - Removed
+  // const canAddEdit = true; // All authenticated users can add/edit - Removed
+  // const isReadOnly = false; // All authenticated users can manage - Removed
 
   const handleAddTour = () => {
     setEditingTour(null);
@@ -38,8 +38,7 @@ const Tours: React.FC<ToursProps> = ({ data, userRole, onAdd, onUpdate, onDelete
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!canAddEdit) return; // Prevent submission if not admin or utilisateur
-
+    // No need for canAddEdit check here, as the button is always visible
     const formData = new FormData(e.currentTarget);
     
     const tourData: Omit<Tour, 'user_id' | 'created_at'> = {
@@ -89,7 +88,7 @@ const Tours: React.FC<ToursProps> = ({ data, userRole, onAdd, onUpdate, onDelete
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Suivi des Tournées</h2>
-        {canAddEdit && (
+        {/* canAddEdit replaced with true */}
           <button
             key="add-tour-button"
             onClick={handleAddTour}
@@ -98,7 +97,6 @@ const Tours: React.FC<ToursProps> = ({ data, userRole, onAdd, onUpdate, onDelete
             <Plus className="w-5 h-5" />
             <span>Nouvelle Tournée</span>
           </button>
-        )}
       </div>
 
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -116,7 +114,8 @@ const Tours: React.FC<ToursProps> = ({ data, userRole, onAdd, onUpdate, onDelete
                 <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Km Fin</th>
                 <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Distance</th>
                 <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">L/100km</th>
-                {!isReadOnly && <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>}
+                {/* isReadOnly replaced with false */}
+                <th className="px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -137,14 +136,14 @@ const Tours: React.FC<ToursProps> = ({ data, userRole, onAdd, onUpdate, onDelete
                     <td className="px-4 py-4 text-sm text-center">{tour.km_end !== null ? tour.km_end.toLocaleString() : '-'}</td>
                     <td className="px-4 py-4 text-sm font-semibold">{tour.distance !== null ? `${tour.distance.toLocaleString()} km` : '-'}</td>
                     <td className="px-4 py-4 text-sm font-semibold">{calculateConsumption(tour)}</td>
-                    {!isReadOnly && (
+                    {/* isReadOnly replaced with false */}
                       <td className="px-4 py-4 text-sm">
                         <div className="flex space-x-2">
                           <button
                             key={tour.id + "-edit"}
                             onClick={() => handleEditTour(tour)}
                             className="text-blue-600 hover:text-blue-900 transition-colors"
-                            disabled={!canAddEdit}
+                            // disabled={!canAddEdit} // Removed disabled prop
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
@@ -152,13 +151,12 @@ const Tours: React.FC<ToursProps> = ({ data, userRole, onAdd, onUpdate, onDelete
                             key={tour.id + "-delete"}
                             onClick={() => handleDeleteTour(tour.id)}
                             className="text-red-600 hover:text-red-900 transition-colors"
-                            disabled={!canManage} // Only admin can delete
+                            // disabled={!canManage} // Removed disabled prop
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
-                    )}
                   </tr>
                 );
               })}
@@ -185,7 +183,7 @@ const Tours: React.FC<ToursProps> = ({ data, userRole, onAdd, onUpdate, onDelete
                       defaultValue={editingTour?.date || ''}
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                       required
-                      readOnly={!canAddEdit}
+                      // readOnly={!canAddEdit} // Removed readOnly prop
                     />
                   </div>
                   <div>
@@ -195,7 +193,7 @@ const Tours: React.FC<ToursProps> = ({ data, userRole, onAdd, onUpdate, onDelete
                       defaultValue={editingTour?.status || ''}
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                       required
-                      disabled={!canAddEdit}
+                      // disabled={!canAddEdit} // Removed disabled prop
                     >
                       <option value="Planifié">Planifié</option>
                       <option value="En cours">En cours</option>
@@ -213,7 +211,7 @@ const Tours: React.FC<ToursProps> = ({ data, userRole, onAdd, onUpdate, onDelete
                       defaultValue={editingTour?.vehicle_id || ''}
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                       required
-                      disabled={!canAddEdit}
+                      // disabled={!canAddEdit} // Removed disabled prop
                     >
                       <option value="">Sélectionner un véhicule</option>
                       {data.vehicles.map(vehicle => (
@@ -230,7 +228,7 @@ const Tours: React.FC<ToursProps> = ({ data, userRole, onAdd, onUpdate, onDelete
                       defaultValue={editingTour?.driver_id || ''}
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                       required
-                      disabled={!canAddEdit}
+                      // disabled={!canAddEdit} // Removed disabled prop
                     >
                       <option value="">Sélectionner un conducteur</option>
                       {data.drivers.map(driver => (
@@ -252,7 +250,7 @@ const Tours: React.FC<ToursProps> = ({ data, userRole, onAdd, onUpdate, onDelete
                       max="100"
                       defaultValue={editingTour?.fuel_start || ''}
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                      readOnly={!canAddEdit}
+                      // readOnly={!canAddEdit} // Removed readOnly prop
                     />
                   </div>
                   <div>
@@ -262,7 +260,7 @@ const Tours: React.FC<ToursProps> = ({ data, userRole, onAdd, onUpdate, onDelete
                       name="km_start"
                       defaultValue={editingTour?.km_start || ''}
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                      readOnly={!canAddEdit}
+                      // readOnly={!canAddEdit} // Removed readOnly prop
                     />
                   </div>
                 </div>
@@ -277,7 +275,7 @@ const Tours: React.FC<ToursProps> = ({ data, userRole, onAdd, onUpdate, onDelete
                       max="100"
                       defaultValue={editingTour?.fuel_end || ''}
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                      readOnly={!canAddEdit}
+                      // readOnly={!canAddEdit} // Removed readOnly prop
                     />
                   </div>
                   <div>
@@ -287,7 +285,7 @@ const Tours: React.FC<ToursProps> = ({ data, userRole, onAdd, onUpdate, onDelete
                       name="km_end"
                       defaultValue={editingTour?.km_end || ''}
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                      readOnly={!canAddEdit}
+                      // readOnly={!canAddEdit} // Removed readOnly prop
                     />
                   </div>
                 </div>
@@ -299,7 +297,7 @@ const Tours: React.FC<ToursProps> = ({ data, userRole, onAdd, onUpdate, onDelete
                     name="distance"
                     defaultValue={editingTour?.distance || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                    readOnly={!canAddEdit}
+                    // readOnly={!canAddEdit} // Removed readOnly prop
                   />
                 </div>
 
@@ -311,14 +309,13 @@ const Tours: React.FC<ToursProps> = ({ data, userRole, onAdd, onUpdate, onDelete
                   >
                     Annuler
                   </button>
-                  {canAddEdit && (
+                  {/* canAddEdit replaced with true */}
                     <button
                       type="submit"
                       className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
                     >
                       Sauvegarder
                     </button>
-                  )}
                 </div>
               </form>
             </div>

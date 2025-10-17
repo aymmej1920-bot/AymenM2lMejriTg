@@ -5,18 +5,18 @@ import { showSuccess } from '../utils/toast'; // Import toast utilities
 
 interface VehiclesProps {
   data: FleetData;
-  userRole: 'admin' | 'direction' | 'utilisateur';
+  userRole: 'admin' | 'direction' | 'utilisateur'; // Keep userRole for display, but not for logic
   onAdd: (vehicle: Omit<Vehicle, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (vehicle: Vehicle) => void;
   onDelete: (id: string) => void;
 }
 
-const Vehicles: React.FC<VehiclesProps> = ({ data, userRole, onAdd, onUpdate, onDelete }) => {
+const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) => { // 'userRole' removed from destructuring
   const [showModal, setShowModal] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
 
-  const canManage = userRole === 'admin';
-  const isReadOnly = userRole === 'direction' || userRole === 'utilisateur';
+  // const canManage = true; // All authenticated users can manage - Removed
+  // const isReadOnly = false; // All authenticated users can manage - Removed
 
   const handleAddVehicle = () => {
     setEditingVehicle(null);
@@ -37,8 +37,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, userRole, onAdd, onUpdate, on
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!canManage) return; // Prevent submission if not admin
-
+    // No need for canManage check here, as the button is always visible
     const formData = new FormData(e.currentTarget);
     
     const vehicleData: Omit<Vehicle, 'user_id' | 'created_at'> = {
@@ -87,7 +86,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, userRole, onAdd, onUpdate, on
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Gestion des Véhicules</h2>
-        {canManage && (
+        {/* canManage replaced with true */}
           <button
             key="add-vehicle-button"
             onClick={handleAddVehicle}
@@ -96,7 +95,6 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, userRole, onAdd, onUpdate, on
             <Plus className="w-5 h-5" />
             <span>Ajouter Véhicule</span>
           </button>
-        )}
       </div>
 
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -109,7 +107,8 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, userRole, onAdd, onUpdate, on
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Kilométrage</th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Dernière Vidange</th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Prochaine Vidange</th>
-              {!isReadOnly && <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>}
+              {/* isReadOnly replaced with false */}
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -135,14 +134,14 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, userRole, onAdd, onUpdate, on
                       <span className="text-xs">({serviceStatus.text})</span>
                     </div>
                   </td>
-                  {!isReadOnly && (
+                  {/* isReadOnly replaced with false */}
                     <td className="px-6 py-4 text-sm">
                       <div className="flex space-x-2">
                         <button
                           key={vehicle.id + "-edit"}
                           onClick={() => handleEditVehicle(vehicle)}
                           className="text-blue-600 hover:text-blue-900 transition-colors"
-                          disabled={!canManage}
+                          // disabled={!canManage} // Removed disabled prop
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
@@ -150,13 +149,12 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, userRole, onAdd, onUpdate, on
                           key={vehicle.id + "-delete"}
                           onClick={() => handleDeleteVehicle(vehicle.id)}
                           className="text-red-600 hover:text-red-900 transition-colors"
-                          disabled={!canManage}
+                          // disabled={!canManage} // Removed disabled prop
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
-                  )}
                 </tr>
               );
             })}
@@ -181,7 +179,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, userRole, onAdd, onUpdate, on
                     defaultValue={editingVehicle?.plate || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    readOnly={!canManage}
+                    // readOnly={!canManage} // Removed readOnly prop
                   />
                 </div>
                 <div>
@@ -191,7 +189,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, userRole, onAdd, onUpdate, on
                     defaultValue={editingVehicle?.type || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    disabled={!canManage}
+                    // disabled={!canManage} // Removed disabled prop
                   >
                     <option value="Camionnette">Camionnette</option>
                     <option value="Camion">Camion</option>
@@ -206,7 +204,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, userRole, onAdd, onUpdate, on
                     defaultValue={editingVehicle?.status || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    disabled={!canManage}
+                    // disabled={!canManage} // Removed disabled prop
                   >
                     <option value="Disponible">Disponible</option>
                     <option value="En mission">En mission</option>
@@ -221,7 +219,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, userRole, onAdd, onUpdate, on
                     defaultValue={editingVehicle?.mileage || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    readOnly={!canManage}
+                    // readOnly={!canManage} // Removed readOnly prop
                   />
                 </div>
                 <div>
@@ -232,7 +230,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, userRole, onAdd, onUpdate, on
                     defaultValue={editingVehicle?.last_service_date || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    readOnly={!canManage}
+                    // readOnly={!canManage} // Removed readOnly prop
                   />
                 </div>
                 <div>
@@ -243,7 +241,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, userRole, onAdd, onUpdate, on
                     defaultValue={editingVehicle?.last_service_mileage || ''}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     required
-                    readOnly={!canManage}
+                    // readOnly={!canManage} // Removed readOnly prop
                   />
                 </div>
                 <div className="flex justify-end space-x-4 mt-8">
@@ -254,14 +252,13 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, userRole, onAdd, onUpdate, on
                   >
                     Annuler
                   </button>
-                  {canManage && (
+                  {/* canManage replaced with true */}
                     <button
                       type="submit"
                       className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
                     >
                       Sauvegarder
                     </button>
-                  )}
                 </div>
               </form>
             </div>
