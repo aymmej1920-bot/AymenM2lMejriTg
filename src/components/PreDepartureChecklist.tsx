@@ -36,8 +36,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
       mirrors_ok: false,
       ac_working_ok: false,
       windows_working_ok: false,
-      observations: '',
-      issues_to_address: '',
+      observations: null, // Ensure default is null for nullable fields
+      issues_to_address: null, // Ensure default is null for nullable fields
     }
   });
 
@@ -58,8 +58,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
       mirrors_ok: false,
       ac_working_ok: false,
       windows_working_ok: false,
-      observations: '',
-      issues_to_address: '',
+      observations: null,
+      issues_to_address: null,
     });
   }, [showModal, reset]);
 
@@ -90,10 +90,10 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
       const bValue = b[sortColumn];
 
       // Handle null/undefined values first
-      if (aValue === null || aValue === undefined) {
+      if (aValue == null) {
         return sortDirection === 'asc' ? -1 : 1;
       }
-      if (bValue === null || bValue === undefined) {
+      if (bValue == null) {
         return sortDirection === 'asc' ? 1 : -1;
       }
 
@@ -166,7 +166,15 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
       return;
     }
 
-    onAdd(formData);
+    // Ensure driver_id, observations, issues_to_address are explicitly null if empty string
+    const dataToSubmit = {
+      ...formData,
+      driver_id: formData.driver_id === '' ? null : formData.driver_id,
+      observations: formData.observations === '' ? null : formData.observations,
+      issues_to_address: formData.issues_to_address === '' ? null : formData.issues_to_address,
+    };
+
+    onAdd(dataToSubmit);
     showSuccess('Checklist ajoutée avec succès !');
     setShowModal(false);
   };

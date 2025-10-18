@@ -45,7 +45,14 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
 
   useEffect(() => {
     if (editingTour) {
-      reset(editingTour);
+      reset({
+        ...editingTour,
+        fuel_start: editingTour.fuel_start ?? null, // Ensure null for optional number fields
+        km_start: editingTour.km_start ?? null,
+        fuel_end: editingTour.fuel_end ?? null,
+        km_end: editingTour.km_end ?? null,
+        distance: editingTour.distance ?? null,
+      });
     } else {
       reset({
         date: new Date().toISOString().split('T')[0],
@@ -87,10 +94,10 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
       const bValue = b[sortColumn];
 
       // Handle null/undefined values first
-      if (aValue === null || aValue === undefined) {
+      if (aValue == null) { // Use == null to check for both null and undefined
         return sortDirection === 'asc' ? -1 : 1; // Null/undefined comes first in asc, last in desc
       }
-      if (bValue === null || bValue === undefined) {
+      if (bValue == null) { // Use == null to check for both null and undefined
         return sortDirection === 'asc' ? 1 : -1; // Null/undefined comes first in asc, last in desc
       }
 
@@ -140,7 +147,8 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
 
   const onSubmit = (formData: TourFormData) => {
     if (editingTour) {
-      onUpdate({ ...formData, id: editingTour.id, user_id: editingTour.user_id, created_at: editingTour.created_at });
+      // Merge formData with existing editingTour to preserve user_id and created_at
+      onUpdate({ ...editingTour, ...formData, id: editingTour.id, user_id: editingTour.user_id, created_at: editingTour.created_at });
       showSuccess('Tournée mise à jour avec succès !');
     } else {
       onAdd(formData);
@@ -160,7 +168,8 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
   };
 
   const calculateConsumption = (tour: Tour): string => {
-    if (tour.distance && tour.distance > 0 && tour.fuel_start !== null && tour.fuel_end !== null) {
+    // Use != null to check for both null and undefined
+    if (tour.distance != null && tour.distance > 0 && tour.fuel_start != null && tour.fuel_end != null) {
       const fuelConsumed = tour.fuel_start - tour.fuel_end;
       if (fuelConsumed > 0) {
         return ((fuelConsumed / tour.distance) * 100).toFixed(1);
@@ -286,11 +295,11 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                       <td className="px-4 py-4 text-sm">
                         <span className={getStatusBadge(tour.status)}>{tour.status}</span>
                       </td>
-                      <td className="px-4 py-4 text-sm text-center">{tour.fuel_start !== null ? `${tour.fuel_start}%` : '-'}</td>
-                      <td className="px-4 py-4 text-sm text-center">{tour.km_start !== null ? tour.km_start.toLocaleString() : '-'}</td>
-                      <td className="px-4 py-4 text-sm text-center">{tour.fuel_end !== null ? `${tour.fuel_end}%` : '-'}</td>
-                      <td className="px-4 py-4 text-sm text-center">{tour.km_end !== null ? tour.km_end.toLocaleString() : '-'}</td>
-                      <td className="px-4 py-4 text-sm font-semibold">{tour.distance !== null ? `${tour.distance.toLocaleString()} km` : '-'}</td>
+                      <td className="px-4 py-4 text-sm text-center">{tour.fuel_start != null ? `${tour.fuel_start}%` : '-'}</td>
+                      <td className="px-4 py-4 text-sm text-center">{tour.km_start != null ? tour.km_start.toLocaleString() : '-'}</td>
+                      <td className="px-4 py-4 text-sm text-center">{tour.fuel_end != null ? `${tour.fuel_end}%` : '-'}</td>
+                      <td className="px-4 py-4 text-sm text-center">{tour.km_end != null ? tour.km_end.toLocaleString() : '-'}</td>
+                      <td className="px-4 py-4 text-sm font-semibold">{tour.distance != null ? `${tour.distance.toLocaleString()} km` : '-'}</td>
                       <td className="px-4 py-4 text-sm font-semibold">{calculateConsumption(tour)}</td>
                         <td className="px-4 py-4 text-sm">
                           <div className="flex space-x-2">
