@@ -341,7 +341,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
                 id="plate"
                 type="text"
                 {...register('plate')}
-                className="w-full bg-white border border-gray-700 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-900 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               />
               {errors.plate && <p className="text-red-500 text-sm mt-1">{errors.plate.message}</p>}
             </div>
@@ -350,7 +350,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
               <select
                 id="type"
                 {...register('type')}
-                className="w-full bg-white border border-gray-700 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-900 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="Camionnette">Camionnette</option>
                 <option value="Camion">Camion</option>
@@ -364,7 +364,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
               <select
                 id="status"
                 {...register('status')}
-                className="w-full bg-white border border-gray-700 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-900 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="Disponible">Disponible</option>
                 <option value="En mission">En mission</option>
@@ -378,7 +378,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
                 id="mileage"
                 type="number"
                 {...register('mileage', { valueAsNumber: true })}
-                className="w-full bg-white border border-gray-700 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-900 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               />
               {errors.mileage && <p className="text-red-500 text-sm mt-1">{errors.mileage.message}</p>}
             </div>
@@ -388,7 +388,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
                 id="last_service_date"
                 type="date"
                 {...register('last_service_date')}
-                className="w-full bg-white border border-gray-700 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-900 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               />
               {errors.last_service_date && <p className="text-red-500 text-sm mt-1">{errors.last_service_date.message}</p>}
             </div>
@@ -398,7 +398,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
                 id="last_service_mileage"
                 type="number"
                 {...register('last_service_mileage', { valueAsNumber: true })}
-                className="w-full bg-white border border-gray-700 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-900 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               />
               {errors.last_service_mileage && <p className="text-red-500 text-sm mt-1">{errors.last_service_mileage.message}</p>}
             </div>
