@@ -369,7 +369,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
             <div>
-              <label htmlFor="vehicle_id" className="block text-sm font-medium mb-2 text-gray-900">Véhicule</label>
+              <label htmlFor="vehicle_id" className="block text-sm font-semibold mb-2 text-gray-900">Véhicule</label>
               <select
                 id="vehicle_id"
                 {...register('vehicle_id')}
@@ -385,7 +385,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
               {errors.vehicle_id && <p className="text-red-500 text-sm mt-1">{errors.vehicle_id.message}</p>}
             </div>
             <div>
-              <label htmlFor="type" className="block text-sm font-medium mb-2 text-gray-900">Type de document</label>
+              <label htmlFor="type" className="block text-sm font-semibold mb-2 text-gray-900">Type de document</label>
               <select
                 id="type"
                 {...register('type')}
@@ -401,7 +401,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
               {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>}
             </div>
             <div>
-              <label htmlFor="number" className="block text-sm font-medium mb-2 text-gray-900">Numéro de document</label>
+              <label htmlFor="number" className="block text-sm font-semibold mb-2 text-gray-900">Numéro de document</label>
               <input
                 id="number"
                 type="text"
@@ -411,7 +411,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
               {errors.number && <p className="text-red-500 text-sm mt-1">{errors.number.message}</p>}
             </div>
             <div>
-              <label htmlFor="expiration" className="block text-sm font-medium mb-2 text-gray-900">Date d'expiration</label>
+              <label htmlFor="expiration" className="block text-sm font-semibold mb-2 text-gray-900">Date d'expiration</label>
               <input
                 id="expiration"
                 type="date"

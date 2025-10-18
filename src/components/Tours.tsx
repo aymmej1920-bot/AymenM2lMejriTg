@@ -384,7 +384,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="date" className="block text-sm font-medium mb-2 text-gray-900">Date</label>
+                <label htmlFor="date" className="block text-sm font-semibold mb-2 text-gray-900">Date</label>
                 <input
                   id="date"
                   type="date"
@@ -394,7 +394,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                 {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
               </div>
               <div>
-                <label htmlFor="status" className="block text-sm font-medium mb-2 text-gray-900">Statut</label>
+                <label htmlFor="status" className="block text-sm font-semibold mb-2 text-gray-900">Statut</label>
                 <select
                   id="status"
                   {...register('status')}
@@ -411,7 +411,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
             
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="vehicle_id" className="block text-sm font-medium mb-2 text-gray-900">Véhicule</label>
+                <label htmlFor="vehicle_id" className="block text-sm font-semibold mb-2 text-gray-900">Véhicule</label>
                 <select
                   id="vehicle_id"
                   {...register('vehicle_id')}
@@ -427,7 +427,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                 {errors.vehicle_id && <p className="text-red-500 text-sm mt-1">{errors.vehicle_id.message}</p>}
               </div>
               <div>
-                <label htmlFor="driver_id" className="block text-sm font-medium mb-2 text-gray-900">Conducteur</label>
+                <label htmlFor="driver_id" className="block text-sm font-semibold mb-2 text-gray-900">Conducteur</label>
                 <select
                   id="driver_id"
                   {...register('driver_id')}
@@ -446,7 +446,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="fuel_start" className="block text-sm font-medium mb-2 text-gray-900">Niveau fuel début (%)</label>
+                <label htmlFor="fuel_start" className="block text-sm font-semibold mb-2 text-gray-900">Niveau fuel début (%)</label>
                 <input
                   id="fuel_start"
                   type="number"
@@ -459,7 +459,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                 {errors.fuel_start && <p className="text-red-500 text-sm mt-1">{errors.fuel_start.message}</p>}
               </div>
               <div>
-                <label htmlFor="km_start" className="block text-sm font-medium mb-2 text-gray-900">Km début</label>
+                <label htmlFor="km_start" className="block text-sm font-semibold mb-2 text-gray-900">Km début</label>
                 <input
                   id="km_start"
                   type="number"
@@ -473,7 +473,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="fuel_end" className="block text-sm font-medium mb-2 text-gray-900">Niveau fuel fin (%)</label>
+                <label htmlFor="fuel_end" className="block text-sm font-semibold mb-2 text-gray-900">Niveau fuel fin (%)</label>
                 <input
                   id="fuel_end"
                   type="number"
@@ -486,7 +486,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                 {errors.fuel_end && <p className="text-red-500 text-sm mt-1">{errors.fuel_end.message}</p>}
               </div>
               <div>
-                <label htmlFor="km_end" className="block text-sm font-medium mb-2 text-gray-900">Km fin</label>
+                <label htmlFor="km_end" className="block text-sm font-semibold mb-2 text-gray-900">Km fin</label>
                 <input
                   id="km_end"
                   type="number"
@@ -499,7 +499,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
             </div>
 
             <div>
-              <label htmlFor="distance" className="block text-sm font-medium mb-2 text-gray-900">Distance (km)</label>
+              <label htmlFor="distance" className="block text-sm font-semibold mb-2 text-gray-900">Distance (km)</label>
               <input
                 id="distance"
                 type="number"

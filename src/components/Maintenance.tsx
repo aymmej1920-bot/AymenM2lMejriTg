@@ -278,7 +278,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
                   return (
                     <tr key={checklist.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(checklist.date)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                         {vehicle?.plate || 'Véhicule inconnu'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -372,27 +372,27 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
             <table className="min-w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('date')}>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('date')}>
                     <div className="flex items-center">
                       Date {renderSortIcon('date')}
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('vehicle_id')}>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('vehicle_id')}>
                     <div className="flex items-center">
                       Véhicule {renderSortIcon('vehicle_id')}
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('type')}>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('type')}>
                     <div className="flex items-center">
                       Type {renderSortIcon('type')}
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('mileage')}>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('mileage')}>
                     <div className="flex items-center">
                       Kilométrage {renderSortIcon('mileage')}
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('cost')}>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('cost')}>
                     <div className="flex items-center">
                       Coût {renderSortIcon('cost')}
                     </div>
@@ -412,7 +412,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
                     return (
                       <tr key={maintenance.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(maintenance.date)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                           {vehicle?.plate || 'Véhicule inconnu'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{maintenance.type}</td>
@@ -474,7 +474,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
             <div>
-              <label htmlFor="vehicle_id" className="block text-sm font-medium mb-2 text-gray-900">Véhicule</label>
+              <label htmlFor="vehicle_id" className="block text-sm font-semibold mb-2 text-gray-900">Véhicule</label>
               <select
                 id="vehicle_id"
                 {...register('vehicle_id')}
@@ -490,7 +490,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
               {errors.vehicle_id && <p className="text-red-500 text-sm mt-1">{errors.vehicle_id.message}</p>}
             </div>
             <div>
-              <label htmlFor="type" className="block text-sm font-medium mb-2 text-gray-900">Type de maintenance</label>
+              <label htmlFor="type" className="block text-sm font-semibold mb-2 text-gray-900">Type de maintenance</label>
               <select
                 id="type"
                 {...register('type')}
@@ -504,7 +504,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
               {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>}
             </div>
             <div>
-              <label htmlFor="date" className="block text-sm font-medium mb-2 text-gray-900">Date</label>
+              <label htmlFor="date" className="block text-sm font-semibold mb-2 text-gray-900">Date</label>
               <input
                 id="date"
                 type="date"
@@ -514,7 +514,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
               {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
             </div>
             <div>
-              <label htmlFor="mileage" className="block text-sm font-medium mb-2 text-gray-900">Kilométrage</label>
+              <label htmlFor="mileage" className="block text-sm font-semibold mb-2 text-gray-900">Kilométrage</label>
               <input
                 id="mileage"
                 type="number"
@@ -524,7 +524,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
               {errors.mileage && <p className="text-red-500 text-sm mt-1">{errors.mileage.message}</p>}
             </div>
             <div>
-              <label htmlFor="cost" className="block text-sm font-medium mb-2 text-gray-900">Coût (TND)</label>
+              <label htmlFor="cost" className="block text-sm font-semibold mb-2 text-gray-900">Coût (TND)</label>
               <input
                 id="cost"
                 type="number"

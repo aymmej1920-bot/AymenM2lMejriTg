@@ -332,7 +332,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium mb-2 text-gray-900">Nom complet</label>
+              <label htmlFor="name" className="block text-sm font-semibold mb-2 text-gray-900">Nom complet</label>
               <input
                 id="name"
                 type="text"
@@ -342,7 +342,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
               {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
             </div>
             <div>
-              <label htmlFor="license" className="block text-sm font-medium mb-2 text-gray-900">Numéro de permis</label>
+              <label htmlFor="license" className="block text-sm font-semibold mb-2 text-gray-900">Numéro de permis</label>
               <input
                 id="license"
                 type="text"
@@ -352,7 +352,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
               {errors.license && <p className="text-red-500 text-sm mt-1">{errors.license.message}</p>}
             </div>
             <div>
-              <label htmlFor="expiration" className="block text-sm font-medium mb-2 text-gray-900">Date d'expiration</label>
+              <label htmlFor="expiration" className="block text-sm font-semibold mb-2 text-gray-900">Date d'expiration</label>
               <input
                 id="expiration"
                 type="date"
@@ -362,7 +362,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
               {errors.expiration && <p className="text-red-500 text-sm mt-1">{errors.expiration.message}</p>}
             </div>
             <div>
-              <label htmlFor="status" className="block text-sm font-medium mb-2 text-gray-900">Statut</label>
+              <label htmlFor="status" className="block text-sm font-semibold mb-2 text-gray-900">Statut</label>
               <select
                 id="status"
                 {...register('status')}
@@ -376,7 +376,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
               {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status.message}</p>}
             </div>
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium mb-2 text-gray-900">Téléphone</label>
+              <label htmlFor="phone" className="block text-sm font-semibold mb-2 text-gray-900">Téléphone</label>
               <input
                 id="phone"
                 type="tel"

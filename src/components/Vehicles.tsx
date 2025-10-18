@@ -336,7 +336,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
             <div>
-              <label htmlFor="plate" className="block text-sm font-medium mb-2 text-gray-900">Plaque d'immatriculation</label>
+              <label htmlFor="plate" className="block text-sm font-semibold mb-2 text-gray-900">Plaque d'immatriculation</label>
               <input
                 id="plate"
                 type="text"
@@ -346,7 +346,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
               {errors.plate && <p className="text-red-500 text-sm mt-1">{errors.plate.message}</p>}
             </div>
             <div>
-              <label htmlFor="type" className="block text-sm font-medium mb-2 text-gray-900">Type de véhicule</label>
+              <label htmlFor="type" className="block text-sm font-semibold mb-2 text-gray-900">Type de véhicule</label>
               <select
                 id="type"
                 {...register('type')}
@@ -360,7 +360,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
               {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>}
             </div>
             <div>
-              <label htmlFor="status" className="block text-sm font-medium mb-2 text-gray-900">Statut</label>
+              <label htmlFor="status" className="block text-sm font-semibold mb-2 text-gray-900">Statut</label>
               <select
                 id="status"
                 {...register('status')}
@@ -373,7 +373,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
               {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status.message}</p>}
             </div>
             <div>
-              <label htmlFor="mileage" className="block text-sm font-medium mb-2 text-gray-900">Kilométrage actuel</label>
+              <label htmlFor="mileage" className="block text-sm font-semibold mb-2 text-gray-900">Kilométrage actuel</label>
               <input
                 id="mileage"
                 type="number"
@@ -383,7 +383,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
               {errors.mileage && <p className="text-red-500 text-sm mt-1">{errors.mileage.message}</p>}
             </div>
             <div>
-              <label htmlFor="last_service_date" className="block text-sm font-medium mb-2 text-gray-900">Date dernière vidange</label>
+              <label htmlFor="last_service_date" className="block text-sm font-semibold mb-2 text-gray-900">Date dernière vidange</label>
               <input
                 id="last_service_date"
                 type="date"
@@ -393,7 +393,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
               {errors.last_service_date && <p className="text-red-500 text-sm mt-1">{errors.last_service_date.message}</p>}
             </div>
             <div>
-              <label htmlFor="last_service_mileage" className="block text-sm font-medium mb-2 text-gray-900">Kilométrage dernière vidange</label>
+              <label htmlFor="last_service_mileage" className="block text-sm font-semibold mb-2 text-gray-900">Kilométrage dernière vidange</label>
               <input
                 id="last_service_mileage"
                 type="number"
