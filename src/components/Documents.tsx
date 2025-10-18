@@ -229,7 +229,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
             <AlertTriangle className="w-5 h-5 text-red-400 mr-3" />
             <div>
               <h3 className="text-red-800 font-semibold">Attention!</h3>
-              <p className className="text-red-700">
+              <p className="text-red-700">
                 {expiringDocs.length} document(s) expirent dans moins de 30 jours.
               </p>
             </div>
