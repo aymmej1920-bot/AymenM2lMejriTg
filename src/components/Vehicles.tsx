@@ -1,10 +1,13 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Edit2, Trash2, ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { FleetData, Vehicle } from '../types';
 import { showSuccess } from '../utils/toast';
-import { formatDate } from '../utils/date'; // Import the new utility
-import ConfirmDialog from './ConfirmDialog'; // Import ConfirmDialog
-import { Button } from './ui/button'; // Import shadcn Button
+import { formatDate } from '../utils/date';
+import ConfirmDialog from './ConfirmDialog';
+import { Button } from './ui/button';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { vehicleSchema } from '../types/formSchemas'; // Import the schema
 
 interface VehiclesProps {
   data: FleetData;
@@ -19,6 +22,33 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [vehicleToDelete, setVehicleToDelete] = useState<string | null>(null);
+
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<Vehicle>({
+    resolver: zodResolver(vehicleSchema),
+    defaultValues: {
+      plate: '',
+      type: 'Camionnette',
+      status: 'Disponible',
+      mileage: 0,
+      last_service_date: new Date().toISOString().split('T')[0],
+      last_service_mileage: 0,
+    }
+  });
+
+  useEffect(() => {
+    if (editingVehicle) {
+      reset(editingVehicle);
+    } else {
+      reset({
+        plate: '',
+        type: 'Camionnette',
+        status: 'Disponible',
+        mileage: 0,
+        last_service_date: new Date().toISOString().split('T')[0],
+        last_service_mileage: 0,
+      });
+    }
+  }, [editingVehicle, reset]);
 
   // State for filtering, sorting, and pagination
   const [searchTerm, setSearchTerm] = useState('');
@@ -82,25 +112,12 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
     }
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    
-    const vehicleData: Omit<Vehicle, 'user_id' | 'created_at'> = {
-      id: editingVehicle?.id || '',
-      plate: formData.get('plate') as string,
-      type: formData.get('type') as string,
-      status: formData.get('status') as string,
-      mileage: parseInt(formData.get('mileage') as string),
-      last_service_date: formData.get('last_service_date') as string,
-      last_service_mileage: parseInt(formData.get('last_service_mileage') as string)
-    };
-
+  const onSubmit = (formData: Vehicle) => {
     if (editingVehicle) {
-      onUpdate(vehicleData as Vehicle);
+      onUpdate(formData);
       showSuccess('Véhicule mis à jour avec succès !');
     } else {
-      onAdd(vehicleData);
+      onAdd(formData);
       showSuccess('Véhicule ajouté avec succès !');
     }
     setShowModal(false);
@@ -305,73 +322,73 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
               <h3 className="text-2xl font-bold text-gray-800 mb-6">
                 {editingVehicle ? 'Modifier un Véhicule' : 'Ajouter un Véhicule'}
               </h3>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700">Plaque d'immatriculation</label>
+                  <label htmlFor="plate" className="block text-sm font-medium mb-2 text-gray-700">Plaque d'immatriculation</label>
                   <input
+                    id="plate"
                     type="text"
-                    name="plate"
-                    defaultValue={editingVehicle?.plate || ''}
+                    {...register('plate')}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                    required
                   />
+                  {errors.plate && <p className="text-red-500 text-sm mt-1">{errors.plate.message}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700">Type de véhicule</label>
+                  <label htmlFor="type" className="block text-sm font-medium mb-2 text-gray-700">Type de véhicule</label>
                   <select
-                    name="type"
-                    defaultValue={editingVehicle?.type || ''}
+                    id="type"
+                    {...register('type')}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                    required
                   >
                     <option value="Camionnette">Camionnette</option>
                     <option value="Camion">Camion</option>
                     <option value="Fourgon">Fourgon</option>
                     <option value="Utilitaire">Utilitaire</option>
                   </select>
+                  {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700">Statut</label>
+                  <label htmlFor="status" className="block text-sm font-medium mb-2 text-gray-700">Statut</label>
                   <select
-                    name="status"
-                    defaultValue={editingVehicle?.status || ''}
+                    id="status"
+                    {...register('status')}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                    required
                   >
                     <option value="Disponible">Disponible</option>
                     <option value="En mission">En mission</option>
                     <option value="Maintenance">Maintenance</option>
                   </select>
+                  {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status.message}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700">Kilométrage actuel</label>
+                  <label htmlFor="mileage" className="block text-sm font-medium mb-2 text-gray-700">Kilométrage actuel</label>
                   <input
+                    id="mileage"
                     type="number"
-                    name="mileage"
-                    defaultValue={editingVehicle?.mileage || ''}
+                    {...register('mileage', { valueAsNumber: true })}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                    required
                   />
+                  {errors.mileage && <p className="text-red-500 text-sm mt-1">{errors.mileage.message}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700">Date dernière vidange</label>
+                  <label htmlFor="last_service_date" className="block text-sm font-medium mb-2 text-gray-700">Date dernière vidange</label>
                   <input
+                    id="last_service_date"
                     type="date"
-                    name="last_service_date"
-                    defaultValue={editingVehicle?.last_service_date || ''}
+                    {...register('last_service_date')}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                    required
                   />
+                  {errors.last_service_date && <p className="text-red-500 text-sm mt-1">{errors.last_service_date.message}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700">Kilométrage dernière vidange</label>
+                  <label htmlFor="last_service_mileage" className="block text-sm font-medium mb-2 text-gray-700">Kilométrage dernière vidange</label>
                   <input
+                    id="last_service_mileage"
                     type="number"
-                    name="last_service_mileage"
-                    defaultValue={editingVehicle?.last_service_mileage || ''}
+                    {...register('last_service_mileage', { valueAsNumber: true })}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                    required
                   />
+                  {errors.last_service_mileage && <p className="text-red-500 text-sm mt-1">{errors.last_service_mileage.message}</p>}
                 </div>
                 <div className="flex justify-end space-x-4 mt-8">
                   <Button

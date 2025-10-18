@@ -1,8 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Wrench, AlertTriangle, Clock, ClipboardCheck, ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { FleetData, MaintenanceEntry, PreDepartureChecklist } from '../types';
-import { showSuccess } from '../utils/toast'; // Import toast utilities
-import { formatDate } from '../utils/date'; // Import the new utility
+import { showSuccess } from '../utils/toast';
+import { formatDate } from '../utils/date';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { maintenanceEntrySchema } from '../types/formSchemas'; // Import the schema
+import { Button } from './ui/button'; // Import shadcn Button
 
 interface MaintenanceProps {
   data: FleetData;
@@ -15,6 +19,37 @@ interface MaintenanceProps {
 const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDepartureChecklists }) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
+
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<Omit<MaintenanceEntry, 'id' | 'user_id' | 'created_at'>>({
+    resolver: zodResolver(maintenanceEntrySchema),
+    defaultValues: {
+      vehicle_id: '',
+      type: 'Vidange',
+      date: new Date().toISOString().split('T')[0],
+      mileage: 0,
+      cost: 0,
+    }
+  });
+
+  useEffect(() => {
+    if (selectedVehicleId) {
+      reset({
+        vehicle_id: selectedVehicleId,
+        type: 'Vidange',
+        date: new Date().toISOString().split('T')[0],
+        mileage: data.vehicles.find(v => v.id === selectedVehicleId)?.mileage || 0,
+        cost: 0,
+      });
+    } else {
+      reset({
+        vehicle_id: '',
+        type: 'Vidange',
+        date: new Date().toISOString().split('T')[0],
+        mileage: 0,
+        cost: 0,
+      });
+    }
+  }, [selectedVehicleId, reset, data.vehicles]);
 
   // State for filtering, sorting, and pagination
   const [searchTerm, setSearchTerm] = useState('');
@@ -91,18 +126,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
     setShowModal(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    
-    const maintenanceData: Omit<MaintenanceEntry, 'id' | 'user_id' | 'created_at'> = {
-      vehicle_id: formData.get('vehicle_id') as string,
-      type: formData.get('type') as string,
-      date: formData.get('date') as string,
-      mileage: parseInt(formData.get('mileage') as string),
-      cost: parseFloat(formData.get('cost') as string)
-    };
-
+  const onSubmit = (maintenanceData: Omit<MaintenanceEntry, 'id' | 'user_id' | 'created_at'>) => {
     onAdd(maintenanceData);
     showSuccess('Entrée de maintenance ajoutée avec succès !');
 
@@ -168,14 +192,14 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Suivi Maintenance & Vidanges</h2>
-          <button
+          <Button
             key="add-maintenance-button"
             onClick={() => handleAddMaintenance()}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
           >
             <Plus className="w-5 h-5" />
             <span>Ajouter Maintenance</span>
-          </button>
+          </Button>
       </div>
 
       {/* Alertes maintenance */}
@@ -293,14 +317,16 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
                     </span>
                   </td>
                     <td className="px-6 py-4 text-sm">
-                      <button
+                      <Button
                         key={vehicle.id + "-maintenance"}
                         onClick={() => handleAddMaintenance(vehicle.id)}
                         className="text-blue-600 hover:text-blue-900 transition-colors flex items-center space-x-1"
+                        variant="ghost"
+                        size="icon"
                       >
                         <Wrench className="w-4 h-4" />
                         <span>Maintenance</span>
-                      </button>
+                      </Button>
                     </td>
                 </tr>
               );
@@ -432,14 +458,13 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
           <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
             <div className="p-8">
               <h3 className="text-2xl font-bold text-gray-800 mb-6">Enregistrer une Maintenance</h3>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700">Véhicule</label>
+                  <label htmlFor="vehicle_id" className="block text-sm font-medium mb-2 text-gray-700">Véhicule</label>
                   <select
-                    name="vehicle_id"
-                    defaultValue={selectedVehicleId}
+                    id="vehicle_id"
+                    {...register('vehicle_id')}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                    required
                   >
                     <option value="">Sélectionner un véhicule</option>
                     {data.vehicles.map(vehicle => (
@@ -448,63 +473,68 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
                       </option>
                     ))}
                   </select>
+                  {errors.vehicle_id && <p className="text-red-500 text-sm mt-1">{errors.vehicle_id.message}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700">Type de maintenance</label>
+                  <label htmlFor="type" className="block text-sm font-medium mb-2 text-gray-700">Type de maintenance</label>
                   <select
-                    name="type"
+                    id="type"
+                    {...register('type')}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                    required
                   >
                     <option value="Vidange">Vidange</option>
                     <option value="Révision">Révision</option>
                     <option value="Réparation">Réparation</option>
                     <option value="Pneus">Changement pneus</option>
                   </select>
+                  {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700">Date</label>
+                  <label htmlFor="date" className="block text-sm font-medium mb-2 text-gray-700">Date</label>
                   <input
+                    id="date"
                     type="date"
-                    name="date"
-                    defaultValue={new Date().toISOString().split('T')[0]}
+                    {...register('date')}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                    required
                   />
+                  {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700">Kilométrage</label>
+                  <label htmlFor="mileage" className="block text-sm font-medium mb-2 text-gray-700">Kilométrage</label>
                   <input
+                    id="mileage"
                     type="number"
-                    name="mileage"
+                    {...register('mileage', { valueAsNumber: true })}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                    required
                   />
+                  {errors.mileage && <p className="text-red-500 text-sm mt-1">{errors.mileage.message}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700">Coût (TND)</label>
+                  <label htmlFor="cost" className="block text-sm font-medium mb-2 text-gray-700">Coût (TND)</label>
                   <input
+                    id="cost"
                     type="number"
                     step="0.01"
-                    name="cost"
+                    {...register('cost', { valueAsNumber: true })}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                    required
                   />
+                  {errors.cost && <p className="text-red-500 text-sm mt-1">{errors.cost.message}</p>}
                 </div>
                 <div className="flex justify-end space-x-4 mt-8">
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
                     onClick={() => setShowModal(false)}
                     className="px-6 py-3 bg-gray-300 hover:bg-gray-400 rounded-lg transition-all duration-300"
                   >
                     Annuler
-                  </button>
-                    <button
+                  </Button>
+                    <Button
                       type="submit"
                       className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
                     >
                       Sauvegarder
-                    </button>
+                    </Button>
                 </div>
               </form>
             </div>

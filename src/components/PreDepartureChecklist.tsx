@@ -1,34 +1,64 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, CheckCircle, XCircle, AlertTriangle, ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { FleetData, PreDepartureChecklist } from '../types';
 import { showSuccess, showError } from '../utils/toast';
-import { formatDate } from '../utils/date'; // Import the new utility
+import { formatDate } from '../utils/date';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { preDepartureChecklistSchema } from '../types/formSchemas'; // Import the schema
+import { Button } from './ui/button'; // Import shadcn Button
 
 interface PreDepartureChecklistProps {
   data: FleetData;
-  userRole: 'admin' | 'direction' | 'utilisateur'; // Still passed, but not used for logic here
+  userRole: 'admin' | 'direction' | 'utilisateur';
   onAdd: (checklist: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>) => void;
 }
 
 const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ data, onAdd }) => {
   const [showModal, setShowModal] = useState(false);
-  const [formState, setFormState] = useState<Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>>({
-    vehicle_id: '',
-    driver_id: null,
-    date: new Date().toISOString().split('T')[0],
-    tire_pressure_ok: false,
-    lights_ok: false,
-    oil_level_ok: false,
-    fluid_levels_ok: false,
-    brakes_ok: false,
-    wipers_ok: false,
-    horn_ok: false,
-    mirrors_ok: false,
-    ac_working_ok: false,
-    windows_working_ok: false,
-    observations: '',
-    issues_to_address: '',
+
+  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>>({
+    resolver: zodResolver(preDepartureChecklistSchema),
+    defaultValues: {
+      vehicle_id: '',
+      driver_id: null,
+      date: new Date().toISOString().split('T')[0],
+      tire_pressure_ok: false,
+      lights_ok: false,
+      oil_level_ok: false,
+      fluid_levels_ok: false,
+      brakes_ok: false,
+      wipers_ok: false,
+      horn_ok: false,
+      mirrors_ok: false,
+      ac_working_ok: false,
+      windows_working_ok: false,
+      observations: '',
+      issues_to_address: '',
+    }
   });
+
+  const canAdd = true; // All authenticated users can add
+
+  useEffect(() => {
+    reset({
+      vehicle_id: '',
+      driver_id: null,
+      date: new Date().toISOString().split('T')[0],
+      tire_pressure_ok: false,
+      lights_ok: false,
+      oil_level_ok: false,
+      fluid_levels_ok: false,
+      brakes_ok: false,
+      wipers_ok: false,
+      horn_ok: false,
+      mirrors_ok: false,
+      ac_working_ok: false,
+      windows_working_ok: false,
+      observations: '',
+      issues_to_address: '',
+    });
+  }, [showModal, reset]);
 
   // State for filtering, sorting, and pagination
   const [searchTerm, setSearchTerm] = useState('');
@@ -36,8 +66,6 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10; // You can adjust this value
-
-  const canAdd = true; // All authenticated users can add
 
   // Filtered and sorted data
   const filteredAndSortedChecklists = useMemo(() => {
@@ -108,25 +136,6 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
     return filteredAndSortedChecklists.slice(startIndex, endIndex);
   }, [filteredAndSortedChecklists, currentPage, itemsPerPage]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const target = e.target;
-    const name = target.name;
-    let value: string | boolean;
-
-    if (target.type === 'checkbox') {
-      value = (target as HTMLInputElement).checked;
-    } else if (target.type === 'radio') {
-      value = target.value === 'true'; // Convert string 'true'/'false' to boolean
-    } else {
-      value = target.value;
-    }
-
-    setFormState(prevState => ({
-      ...prevState,
-      [name]: value,
-    }));
-  };
-
   const hasChecklistForMonth = (vehicleId: string, month: number, year: number): boolean => {
     return data.pre_departure_checklists.some(cl => {
       const clDate = new Date(cl.date);
@@ -137,31 +146,13 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
   };
 
   const handleAddChecklist = () => {
-    setFormState({
-      vehicle_id: '',
-      driver_id: null,
-      date: new Date().toISOString().split('T')[0],
-      tire_pressure_ok: false,
-      lights_ok: false,
-      oil_level_ok: false,
-      fluid_levels_ok: false,
-      brakes_ok: false,
-      wipers_ok: false,
-      horn_ok: false,
-      mirrors_ok: false,
-      ac_working_ok: false,
-      windows_working_ok: false,
-      observations: '',
-      issues_to_address: '',
-    });
     setShowModal(true);
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const onSubmit = (formData: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>) => {
     if (!canAdd) return;
 
-    const { vehicle_id, date } = formState;
+    const { vehicle_id, date } = formData;
 
     const checklistDate = new Date(date);
     const submissionMonth = checklistDate.getMonth();
@@ -172,7 +163,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
       return;
     }
 
-    onAdd(formState);
+    onAdd(formData);
     showSuccess('Checklist ajoutée avec succès !');
     setShowModal(false);
   };
@@ -210,14 +201,14 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Checklists Avant Départ</h2>
         {canAdd && (
-          <button
+          <Button
             key="add-checklist-button"
             onClick={handleAddChecklist}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
           >
             <Plus className="w-5 h-5" />
             <span>Nouvelle Checklist</span>
-          </button>
+          </Button>
         )}
       </div>
 
@@ -326,31 +317,34 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
       {/* Pagination Controls */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center space-x-2 mt-4">
-          <button
+          <Button
+            variant="outline"
             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
             className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Précédent
-          </button>
+          </Button>
           {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-            <button
+            <Button
               key={page}
+              variant={currentPage === page ? 'default' : 'outline'}
               onClick={() => setCurrentPage(page)}
               className={`px-4 py-2 rounded-lg ${
                 currentPage === page ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'
               }`}
             >
               {page}
-            </button>
+            </Button>
           ))}
-          <button
+          <Button
+            variant="outline"
             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
             disabled={currentPage === totalPages}
             className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Suivant
-          </button>
+          </Button>
         </div>
       )}
 
@@ -360,28 +354,25 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-screen overflow-y-auto">
             <div className="p-8">
               <h3 className="text-2xl font-bold text-gray-800 mb-6">Nouvelle Checklist Avant Départ</h3>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700">Date</label>
+                    <label htmlFor="date" className="block text-sm font-medium mb-2 text-gray-700">Date</label>
                     <input
+                      id="date"
                       type="date"
-                      name="date"
-                      value={formState.date}
-                      onChange={handleInputChange}
+                      {...register('date')}
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                      required
                       disabled={!canAdd}
                     />
+                    {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700">Véhicule</label>
+                    <label htmlFor="vehicle_id" className="block text-sm font-medium mb-2 text-gray-700">Véhicule</label>
                     <select
-                      name="vehicle_id"
-                      value={formState.vehicle_id}
-                      onChange={handleInputChange}
+                      id="vehicle_id"
+                      {...register('vehicle_id')}
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                      required
                       disabled={!canAdd}
                     >
                       <option value="">Sélectionner un véhicule</option>
@@ -391,15 +382,15 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                         </option>
                       ))}
                     </select>
+                    {errors.vehicle_id && <p className="text-red-500 text-sm mt-1">{errors.vehicle_id.message}</p>}
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700">Conducteur (Optionnel)</label>
+                  <label htmlFor="driver_id" className="block text-sm font-medium mb-2 text-gray-700">Conducteur (Optionnel)</label>
                   <select
-                    name="driver_id"
-                    value={formState.driver_id || ''}
-                    onChange={handleInputChange}
+                    id="driver_id"
+                    {...register('driver_id')}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     disabled={!canAdd}
                   >
@@ -410,6 +401,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       </option>
                     ))}
                   </select>
+                  {errors.driver_id && <p className="text-red-500 text-sm mt-1">{errors.driver_id.message}</p>}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -420,10 +412,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                         <input
                           type="radio"
                           id="tire_pressure_ok_ok"
-                          name="tire_pressure_ok"
                           value="true"
-                          checked={formState.tire_pressure_ok === true}
-                          onChange={handleInputChange}
+                          {...register('tire_pressure_ok', { valueAsBoolean: true })}
                           className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
                           disabled={!canAdd}
                         />
@@ -433,10 +423,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                         <input
                           type="radio"
                           id="tire_pressure_ok_nok"
-                          name="tire_pressure_ok"
                           value="false"
-                          checked={formState.tire_pressure_ok === false}
-                          onChange={handleInputChange}
+                          {...register('tire_pressure_ok', { valueAsBoolean: true })}
                           className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
                           disabled={!canAdd}
                         />
@@ -451,10 +439,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                         <input
                           type="radio"
                           id="lights_ok_ok"
-                          name="lights_ok"
                           value="true"
-                          checked={formState.lights_ok === true}
-                          onChange={handleInputChange}
+                          {...register('lights_ok', { valueAsBoolean: true })}
                           className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
                           disabled={!canAdd}
                         />
@@ -464,10 +450,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                         <input
                           type="radio"
                           id="lights_ok_nok"
-                          name="lights_ok"
                           value="false"
-                          checked={formState.lights_ok === false}
-                          onChange={handleInputChange}
+                          {...register('lights_ok', { valueAsBoolean: true })}
                           className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
                           disabled={!canAdd}
                         />
@@ -482,10 +466,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                         <input
                           type="radio"
                           id="oil_level_ok_ok"
-                          name="oil_level_ok"
                           value="true"
-                          checked={formState.oil_level_ok === true}
-                          onChange={handleInputChange}
+                          {...register('oil_level_ok', { valueAsBoolean: true })}
                           className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
                           disabled={!canAdd}
                         />
@@ -495,10 +477,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                         <input
                           type="radio"
                           id="oil_level_ok_nok"
-                          name="oil_level_ok"
                           value="false"
-                          checked={formState.oil_level_ok === false}
-                          onChange={handleInputChange}
+                          {...register('oil_level_ok', { valueAsBoolean: true })}
                           className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
                           disabled={!canAdd}
                         />
@@ -513,10 +493,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                         <input
                           type="radio"
                           id="fluid_levels_ok_ok"
-                          name="fluid_levels_ok"
                           value="true"
-                          checked={formState.fluid_levels_ok === true}
-                          onChange={handleInputChange}
+                          {...register('fluid_levels_ok', { valueAsBoolean: true })}
                           className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
                           disabled={!canAdd}
                         />
@@ -526,10 +504,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                         <input
                           type="radio"
                           id="fluid_levels_ok_nok"
-                          name="fluid_levels_ok"
                           value="false"
-                          checked={formState.fluid_levels_ok === false}
-                          onChange={handleInputChange}
+                          {...register('fluid_levels_ok', { valueAsBoolean: true })}
                           className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
                           disabled={!canAdd}
                         />
@@ -544,10 +520,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                         <input
                           type="radio"
                           id="brakes_ok_ok"
-                          name="brakes_ok"
                           value="true"
-                          checked={formState.brakes_ok === true}
-                          onChange={handleInputChange}
+                          {...register('brakes_ok', { valueAsBoolean: true })}
                           className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
                           disabled={!canAdd}
                         />
@@ -557,10 +531,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                         <input
                           type="radio"
                           id="brakes_ok_nok"
-                          name="brakes_ok"
                           value="false"
-                          checked={formState.brakes_ok === false}
-                          onChange={handleInputChange}
+                          {...register('brakes_ok', { valueAsBoolean: true })}
                           className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
                           disabled={!canAdd}
                         />
@@ -575,10 +547,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                         <input
                           type="radio"
                           id="wipers_ok_ok"
-                          name="wipers_ok"
                           value="true"
-                          checked={formState.wipers_ok === true}
-                          onChange={handleInputChange}
+                          {...register('wipers_ok', { valueAsBoolean: true })}
                           className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
                           disabled={!canAdd}
                         />
@@ -588,10 +558,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                         <input
                           type="radio"
                           id="wipers_ok_nok"
-                          name="wipers_ok"
                           value="false"
-                          checked={formState.wipers_ok === false}
-                          onChange={handleInputChange}
+                          {...register('wipers_ok', { valueAsBoolean: true })}
                           className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
                           disabled={!canAdd}
                         />
@@ -606,10 +574,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                         <input
                           type="radio"
                           id="horn_ok_ok"
-                          name="horn_ok"
                           value="true"
-                          checked={formState.horn_ok === true}
-                          onChange={handleInputChange}
+                          {...register('horn_ok', { valueAsBoolean: true })}
                           className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
                           disabled={!canAdd}
                         />
@@ -619,10 +585,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                         <input
                           type="radio"
                           id="horn_ok_nok"
-                          name="horn_ok"
                           value="false"
-                          checked={formState.horn_ok === false}
-                          onChange={handleInputChange}
+                          {...register('horn_ok', { valueAsBoolean: true })}
                           className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
                           disabled={!canAdd}
                         />
@@ -637,10 +601,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                         <input
                           type="radio"
                           id="mirrors_ok_ok"
-                          name="mirrors_ok"
                           value="true"
-                          checked={formState.mirrors_ok === true}
-                          onChange={handleInputChange}
+                          {...register('mirrors_ok', { valueAsBoolean: true })}
                           className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
                           disabled={!canAdd}
                         />
@@ -650,10 +612,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                         <input
                           type="radio"
                           id="mirrors_ok_nok"
-                          name="mirrors_ok"
                           value="false"
-                          checked={formState.mirrors_ok === false}
-                          onChange={handleInputChange}
+                          {...register('mirrors_ok', { valueAsBoolean: true })}
                           className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
                           disabled={!canAdd}
                         />
@@ -668,10 +628,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                         <input
                           type="radio"
                           id="ac_working_ok_ok"
-                          name="ac_working_ok"
                           value="true"
-                          checked={formState.ac_working_ok === true}
-                          onChange={handleInputChange}
+                          {...register('ac_working_ok', { valueAsBoolean: true })}
                           className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
                           disabled={!canAdd}
                         />
@@ -681,10 +639,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                         <input
                           type="radio"
                           id="ac_working_ok_nok"
-                          name="ac_working_ok"
                           value="false"
-                          checked={formState.ac_working_ok === false}
-                          onChange={handleInputChange}
+                          {...register('ac_working_ok', { valueAsBoolean: true })}
                           className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
                           disabled={!canAdd}
                         />
@@ -699,10 +655,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                         <input
                           type="radio"
                           id="windows_working_ok_ok"
-                          name="windows_working_ok"
                           value="true"
-                          checked={formState.windows_working_ok === true}
-                          onChange={handleInputChange}
+                          {...register('windows_working_ok', { valueAsBoolean: true })}
                           className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
                           disabled={!canAdd}
                         />
@@ -712,10 +666,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                         <input
                           type="radio"
                           id="windows_working_ok_nok"
-                          name="windows_working_ok"
                           value="false"
-                          checked={formState.windows_working_ok === false}
-                          onChange={handleInputChange}
+                          {...register('windows_working_ok', { valueAsBoolean: true })}
                           className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
                           disabled={!canAdd}
                         />
@@ -726,43 +678,44 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700">Observations</label>
+                  <label htmlFor="observations" className="block text-sm font-medium mb-2 text-gray-700">Observations</label>
                   <textarea
-                    name="observations"
-                    value={formState.observations || ''}
-                    onChange={handleInputChange}
+                    id="observations"
+                    {...register('observations')}
                     rows={3}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     disabled={!canAdd}
                   ></textarea>
+                  {errors.observations && <p className="text-red-500 text-sm mt-1">{errors.observations.message}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700">Points à traiter</label>
+                  <label htmlFor="issues_to_address" className="block text-sm font-medium mb-2 text-gray-700">Points à traiter</label>
                   <textarea
-                    name="issues_to_address"
-                    value={formState.issues_to_address || ''}
-                    onChange={handleInputChange}
+                    id="issues_to_address"
+                    {...register('issues_to_address')}
                     rows={3}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
                     disabled={!canAdd}
                   ></textarea>
+                  {errors.issues_to_address && <p className="text-red-500 text-sm mt-1">{errors.issues_to_address.message}</p>}
                 </div>
 
                 <div className="flex justify-end space-x-4 mt-8">
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
                     onClick={() => setShowModal(false)}
                     className="px-6 py-3 bg-gray-300 hover:bg-gray-400 rounded-lg transition-all duration-300"
                   >
                     Annuler
-                  </button>
+                  </Button>
                   {canAdd && (
-                    <button
+                    <Button
                       type="submit"
                       className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
                     >
                       Sauvegarder
-                    </button>
+                    </Button>
                   )}
                 </div>
               </form>
