@@ -337,7 +337,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
                 id="name"
                 type="text"
                 {...register('name')}
-                className="w-full bg-white border border-gray-400 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-500 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               />
               {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
             </div>
@@ -347,7 +347,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
                 id="license"
                 type="text"
                 {...register('license')}
-                className="w-full bg-white border border-gray-400 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-500 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               />
               {errors.license && <p className="text-red-500 text-sm mt-1">{errors.license.message}</p>}
             </div>
@@ -357,7 +357,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
                 id="expiration"
                 type="date"
                 {...register('expiration')}
-                className="w-full bg-white border border-gray-400 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-500 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               />
               {errors.expiration && <p className="text-red-500 text-sm mt-1">{errors.expiration.message}</p>}
             </div>
@@ -366,7 +366,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
               <select
                 id="status"
                 {...register('status')}
-                className="w-full bg-white border border-gray-400 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-500 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="Disponible">Disponible</option>
                 <option value="En mission">En mission</option>
@@ -381,7 +381,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
                 id="phone"
                 type="tel"
                 {...register('phone')}
-                className="w-full bg-white border border-gray-400 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-500 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               />
               {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>}
             </div>
