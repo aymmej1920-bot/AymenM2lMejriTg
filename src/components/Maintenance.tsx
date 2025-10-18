@@ -232,7 +232,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
             <AlertTriangle className="w-6 h-6 text-red-400 mr-4" />
             <div>
               <h3 className="text-lg font-semibold text-red-700">Maintenance Urgente</h3>
-              <p className className="text-red-600">
+              <p className="text-red-600">
                 {urgentMaintenanceCount} véhicule(s) dépassent les limites
               </p>
             </div>
