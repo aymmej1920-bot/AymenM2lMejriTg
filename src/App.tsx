@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Truck, Users, Route, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck } from 'lucide-react';
+import { Truck, Users, Route, Fuel, FileText, Wrench, BarChart3, LogOut, Sun, Moon, ClipboardCheck } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Vehicles from './components/Vehicles';
 import Drivers from './components/Drivers';
@@ -15,6 +15,7 @@ import { useSession } from './components/SessionContextProvider';
 import { supabase } from './integrations/supabase/client';
 import { showSuccess, showError, showLoading, dismissToast } from './utils/toast';
 import SkeletonLoader from './components/SkeletonLoader';
+import { useTheme } from 'next-themes'; // Import useTheme
 
 function App() {
   const { session, isLoading } = useSession();
@@ -30,6 +31,7 @@ function App() {
   });
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
+  const { theme, setTheme } = useTheme(); // Use theme hook
 
   const fetchData = useCallback(async (userId: string) => {
     setDataLoading(true);
@@ -170,7 +172,7 @@ function App() {
 
   if (isLoading || dataLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
         <header className="bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg">
           <div className="container mx-auto px-6 py-6">
             <div className="flex items-center justify-between">
@@ -187,7 +189,7 @@ function App() {
             </div>
           </div>
         </header>
-        <nav className="bg-white shadow-md sticky top-0 z-40">
+        <nav className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-40">
           <div className="container mx-auto px-6">
             <div className="flex space-x-1 overflow-x-auto py-2">
               <SkeletonLoader count={tabs.length} height="h-12" className="w-32" />
@@ -247,7 +249,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <header className="bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
@@ -263,6 +265,13 @@ function App() {
             <div className="flex items-center space-x-4">
               <span className="text-sm">Bienvenue, {currentUser?.name} ({currentUser?.role})</span>
               <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="bg-gray-700 hover:bg-gray-800 text-white px-3 py-2 rounded-lg transition-all duration-300 flex items-center space-x-2"
+              >
+                {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                <span>{theme === 'dark' ? 'Clair' : 'Sombre'}</span>
+              </button>
+              <button
                 onClick={handleLogout}
                 className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-all duration-300 flex items-center space-x-2"
               >
@@ -274,7 +283,7 @@ function App() {
         </div>
       </header>
 
-      <nav className="bg-white shadow-md sticky top-0 z-40">
+      <nav className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-40">
         <div className="container mx-auto px-6">
           <div className="flex space-x-1 overflow-x-auto py-2">
             {tabs.map((tab) => {
@@ -286,7 +295,7 @@ function App() {
                   className={`px-6 py-4 rounded-lg whitespace-nowrap transition-all duration-300 flex items-center space-x-2 ${
                     currentTab === tab.id
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
