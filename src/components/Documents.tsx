@@ -373,7 +373,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
               <select
                 id="vehicle_id"
                 {...register('vehicle_id')}
-                className="w-full bg-gray-100 border border-gray-600 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-600 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Sélectionner un véhicule</option>
                 {data.vehicles.map(vehicle => (
@@ -389,7 +389,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
               <select
                 id="type"
                 {...register('type')}
-                className="w-full bg-gray-100 border border-gray-600 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-600 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Sélectionner un type</option>
                 <option value="Assurance">Assurance</option>
@@ -406,7 +406,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
                 id="number"
                 type="text"
                 {...register('number')}
-                className="w-full bg-gray-100 border border-gray-600 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-600 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               />
               {errors.number && <p className="text-red-500 text-sm mt-1">{errors.number.message}</p>}
             </div>
@@ -416,7 +416,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
                 id="expiration"
                 type="date"
                 {...register('expiration')}
-                className="w-full bg-gray-100 border border-gray-600 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-600 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               />
               {errors.expiration && <p className="text-red-500 text-sm mt-1">{errors.expiration.message}</p>}
             </div>
