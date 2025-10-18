@@ -389,7 +389,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                   id="date"
                   type="date"
                   {...register('date')}
-                  className="w-full bg-gray-50 border border-gray-500 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full bg-gray-100 border border-gray-600 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 />
                 {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
               </div>
@@ -398,7 +398,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                 <select
                   id="status"
                   {...register('status')}
-                  className="w-full bg-gray-50 border border-gray-500 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full bg-gray-100 border border-gray-600 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="Planifié">Planifié</option>
                   <option value="En cours">En cours</option>
@@ -415,7 +415,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                 <select
                   id="vehicle_id"
                   {...register('vehicle_id')}
-                  className="w-full bg-gray-50 border border-gray-500 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full bg-gray-100 border border-gray-600 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Sélectionner un véhicule</option>
                   {data.vehicles.map(vehicle => (
@@ -431,7 +431,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                 <select
                   id="driver_id"
                   {...register('driver_id')}
-                  className="w-full bg-gray-50 border border-gray-500 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full bg-gray-100 border border-gray-600 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Sélectionner un conducteur</option>
                   {data.drivers.map(driver => (
@@ -453,7 +453,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                   min="0"
                   max="100"
                   {...register('fuel_start', { valueAsNumber: true })}
-                  className="w-full bg-gray-50 border border-gray-500 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full bg-gray-100 border border-gray-600 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                   disabled={status !== 'En cours' && status !== 'Terminé'}
                 />
                 {errors.fuel_start && <p className="text-red-500 text-sm mt-1">{errors.fuel_start.message}</p>}
@@ -464,7 +464,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                   id="km_start"
                   type="number"
                   {...register('km_start', { valueAsNumber: true })}
-                  className="w-full bg-gray-50 border border-gray-500 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full bg-gray-100 border border-gray-600 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                   disabled={status !== 'En cours' && status !== 'Terminé'}
                 />
                 {errors.km_start && <p className="text-red-500 text-sm mt-1">{errors.km_start.message}</p>}
@@ -480,7 +480,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                   min="0"
                   max="100"
                   {...register('fuel_end', { valueAsNumber: true })}
-                  className="w-full bg-gray-50 border border-gray-500 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full bg-gray-100 border border-gray-600 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                   disabled={status !== 'Terminé'}
                 />
                 {errors.fuel_end && <p className="text-red-500 text-sm mt-1">{errors.fuel_end.message}</p>}
@@ -491,7 +491,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                   id="km_end"
                   type="number"
                   {...register('km_end', { valueAsNumber: true })}
-                  className="w-full bg-gray-50 border border-gray-500 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full bg-gray-100 border border-gray-600 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                   disabled={status !== 'Terminé'}
                 />
                 {errors.km_end && <p className="text-red-500 text-sm mt-1">{errors.km_end.message}</p>}
@@ -504,7 +504,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                 id="distance"
                 type="number"
                 {...register('distance', { valueAsNumber: true })}
-                className="w-full bg-gray-50 border border-gray-500 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-gray-100 border border-gray-600 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 disabled={status !== 'Terminé'}
               />
               {errors.distance && <p className="text-red-500 text-sm mt-1">{errors.distance.message}</p>}
