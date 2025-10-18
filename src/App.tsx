@@ -170,7 +170,7 @@ function App() {
 
   if (isLoading || dataLoading) {
     return (
-      <div className="min-h-screen bg-indigo-50 flex flex-col"> {/* Changed from bg-gray-50 */}
+      <div className="min-h-screen bg-gray-50 flex flex-col"> {/* Reverted to bg-gray-50 */}
         <header className="bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg">
           <div className="container mx-auto px-6 py-6">
             <div className="flex items-center justify-between">
@@ -247,7 +247,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-indigo-50"> {/* Changed from bg-gray-50 */}
+    <div className="min-h-screen bg-gray-50"> {/* Reverted to bg-gray-50 */}
       <header className="bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
@@ -286,7 +286,7 @@ function App() {
                   className={`px-6 py-4 rounded-lg whitespace-nowrap transition-all duration-300 flex items-center space-x-2 ${
                     currentTab === tab.id
                       ? 'bg-blue-600 text-white'
-                      : 'bg-indigo-100 hover:bg-indigo-200 text-gray-700' // Changed inactive tab colors
+                      : 'bg-gray-100 hover:bg-indigo-200 text-gray-700' // Reverted inactive tab colors
                   }`}
                 >
                   <Icon className="w-5 h-5" />
