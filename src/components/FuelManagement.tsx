@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Fuel, DollarSign, TrendingUp, ChevronUp, ChevronDown, Search } from 'lucide-react';
+import { Plus, Edit2, Trash2, Fuel, DollarSign, TrendingUp, ChevronUp, ChevronDown, Search, Calendar } from 'lucide-react';
 import { FleetData, FuelEntry } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date';
@@ -34,7 +34,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [fuelEntryToDelete, setFuelEntryToDelete] = useState<string | null>(null);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FuelEntryFormData>({
+  const { register, handleSubmit, reset, formState: { errors = {} } } = useForm<FuelEntryFormData>({
     resolver: zodResolver(fuelEntrySchema),
     defaultValues: {
       date: new Date().toISOString().split('T')[0],
@@ -375,12 +375,15 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
             <div>
               <label htmlFor="date" className="block text-sm font-semibold mb-2 text-gray-900">Date</label>
-              <input
-                id="date"
-                type="date"
-                {...register('date')}
-                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              />
+              <div className="relative flex items-center">
+                <input
+                  id="date"
+                  type="date"
+                  {...register('date')}
+                  className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                />
+                <Calendar className="absolute right-3 w-5 h-5 text-gray-400 pointer-events-none" />
+              </div>
               {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
             </div>
             <div>

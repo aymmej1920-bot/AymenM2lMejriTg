@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Wrench, AlertTriangle, Clock, ClipboardCheck, ChevronUp, ChevronDown, Search } from 'lucide-react';
+import { Plus, Wrench, AlertTriangle, Clock, ClipboardCheck, ChevronUp, ChevronDown, Search, Calendar } from 'lucide-react';
 import { FleetData, MaintenanceEntry, PreDepartureChecklist } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date';
@@ -31,7 +31,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
   const [showModal, setShowModal] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<MaintenanceEntryFormData>({
+  const { register, handleSubmit, reset, formState: { errors = {} } } = useForm<MaintenanceEntryFormData>({
     resolver: zodResolver(maintenanceEntrySchema),
     defaultValues: {
       vehicle_id: '',
@@ -505,12 +505,15 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
             </div>
             <div>
               <label htmlFor="date" className="block text-sm font-semibold mb-2 text-gray-900">Date</label>
-              <input
-                id="date"
-                type="date"
-                {...register('date')}
-                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              />
+              <div className="relative flex items-center">
+                <input
+                  id="date"
+                  type="date"
+                  {...register('date')}
+                  className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                />
+                <Calendar className="absolute right-3 w-5 h-5 text-gray-400 pointer-events-none" />
+              </div>
               {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
             </div>
             <div>

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Edit2, Trash2, ChevronUp, ChevronDown, Search } from 'lucide-react';
+import { Plus, Edit2, Trash2, ChevronUp, ChevronDown, Search, Calendar } from 'lucide-react';
 import { FleetData, Vehicle } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date';
@@ -34,7 +34,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [vehicleToDelete, setVehicleToDelete] = useState<string | null>(null);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<VehicleFormData>({
+  const { register, handleSubmit, reset, formState: { errors = {} } } = useForm<VehicleFormData>({
     resolver: zodResolver(vehicleSchema),
     defaultValues: {
       plate: '',
@@ -384,12 +384,15 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
             </div>
             <div>
               <label htmlFor="last_service_date" className="block text-sm font-semibold mb-2 text-gray-900">Date dernière vidange</label>
-              <input
-                id="last_service_date"
-                type="date"
-                {...register('last_service_date')}
-                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              />
+              <div className="relative flex items-center">
+                <input
+                  id="last_service_date"
+                  type="date"
+                  {...register('last_service_date')}
+                  className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                />
+                <Calendar className="absolute right-3 w-5 h-5 text-gray-400 pointer-events-none" />
+              </div>
               {errors.last_service_date && <p className="text-red-500 text-sm mt-1">{errors.last_service_date.message}</p>}
             </div>
             <div>
