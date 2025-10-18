@@ -379,7 +379,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                 id="date"
                 type="date"
                 {...register('date')}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-400 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
               />
               {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
             </div>
@@ -388,7 +388,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
               <select
                 id="vehicle_id"
                 {...register('vehicle_id')}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-400 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Sélectionner un véhicule</option>
                 {data.vehicles.map(vehicle => (
@@ -406,7 +406,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                 type="number"
                 step="0.1"
                 {...register('liters', { valueAsNumber: true })}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-400 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
               />
               {errors.liters && <p className="text-red-500 text-sm mt-1">{errors.liters.message}</p>}
             </div>
@@ -417,7 +417,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                 type="number"
                 step="0.01"
                 {...register('price_per_liter', { valueAsNumber: true })}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-400 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
               />
               {errors.price_per_liter && <p className="text-red-500 text-sm mt-1">{errors.price_per_liter.message}</p>}
             </div>
@@ -427,7 +427,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                 id="mileage"
                 type="number"
                 {...register('mileage', { valueAsNumber: true })}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-400 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
               />
               {errors.mileage && <p className="text-red-500 text-sm mt-1">{errors.mileage.message}</p>}
             </div>

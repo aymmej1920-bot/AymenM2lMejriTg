@@ -232,7 +232,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
             <AlertTriangle className="w-6 h-6 text-red-400 mr-4" />
             <div>
               <h3 className="text-lg font-semibold text-red-700">Maintenance Urgente</h3>
-              <p className="text-red-600">
+              <p className className="text-red-600">
                 {urgentMaintenanceCount} véhicule(s) dépassent les limites
               </p>
             </div>
@@ -478,7 +478,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
               <select
                 id="vehicle_id"
                 {...register('vehicle_id')}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-400 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Sélectionner un véhicule</option>
                 {data.vehicles.map(vehicle => (
@@ -494,7 +494,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
               <select
                 id="type"
                 {...register('type')}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-400 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="Vidange">Vidange</option>
                 <option value="Révision">Révision</option>
@@ -509,7 +509,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
                 id="date"
                 type="date"
                 {...register('date')}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-400 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
               />
               {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
             </div>
@@ -519,7 +519,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
                 id="mileage"
                 type="number"
                 {...register('mileage', { valueAsNumber: true })}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-400 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
               />
               {errors.mileage && <p className="text-red-500 text-sm mt-1">{errors.mileage.message}</p>}
             </div>
@@ -530,7 +530,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
                 type="number"
                 step="0.01"
                 {...register('cost', { valueAsNumber: true })}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-400 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
               />
               {errors.cost && <p className="text-red-500 text-sm mt-1">{errors.cost.message}</p>}
             </div>
