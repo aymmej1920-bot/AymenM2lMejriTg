@@ -385,7 +385,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                   id="date"
                   type="date"
                   {...register('date')}
-                  className="w-full bg-white border border-gray-900 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                   disabled={!canAdd}
                 />
                 {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
@@ -395,7 +395,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                 <select
                   id="vehicle_id"
                   {...register('vehicle_id')}
-                  className="w-full bg-white border border-gray-900 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                   disabled={!canAdd}
                 >
                   <option value="">Sélectionner un véhicule</option>
@@ -414,7 +414,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
               <select
                 id="driver_id"
                 {...register('driver_id')}
-                className="w-full bg-white border border-gray-900 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 disabled={!canAdd}
               >
                 <option value="">Sélectionner un conducteur</option>
@@ -440,7 +440,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       className="h-4 w-4 text-green-600 bg-white border border-gray-900 shadow-sm focus:ring-green-500"
                       disabled={!canAdd}
                     />
-                    <label htmlFor="tire_pressure_ok_ok" className="text-sm text-gray-900">OK</label>
+                    <label htmlFor="tire_pressure_ok_ok" className="text-sm font-semibold text-gray-900">OK</label>
                   </div>
                   <div className="flex items-center space-x-1">
                     <input
@@ -451,7 +451,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       className="h-4 w-4 text-red-600 bg-white border border-gray-900 shadow-sm focus:ring-red-500"
                       disabled={!canAdd}
                     />
-                    <label htmlFor="tire_pressure_ok_nok" className="text-sm text-gray-900">NOK</label>
+                    <label htmlFor="tire_pressure_ok_nok" className="text-sm font-semibold text-gray-900">NOK</label>
                   </div>
                 </div>
               </div>
@@ -467,7 +467,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       className="h-4 w-4 text-green-600 bg-white border border-gray-900 shadow-sm focus:ring-green-500"
                       disabled={!canAdd}
                     />
-                    <label htmlFor="lights_ok_ok" className="text-sm text-gray-900">OK</label>
+                    <label htmlFor="lights_ok_ok" className="text-sm font-semibold text-gray-900">OK</label>
                   </div>
                   <div className="flex items-center space-x-1">
                     <input
@@ -478,7 +478,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       className="h-4 w-4 text-red-600 bg-white border border-gray-900 shadow-sm focus:ring-red-500"
                       disabled={!canAdd}
                     />
-                    <label htmlFor="lights_ok_nok" className="text-sm text-gray-900">NOK</label>
+                    <label htmlFor="lights_ok_nok" className="text-sm font-semibold text-gray-900">NOK</label>
                   </div>
                 </div>
               </div>
@@ -494,7 +494,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       className="h-4 w-4 text-green-600 bg-white border border-gray-900 shadow-sm focus:ring-green-500"
                       disabled={!canAdd}
                     />
-                    <label htmlFor="oil_level_ok_ok" className="text-sm text-gray-900">OK</label>
+                    <label htmlFor="oil_level_ok_ok" className="text-sm font-semibold text-gray-900">OK</label>
                   </div>
                   <div className="flex items-center space-x-1">
                     <input
@@ -505,7 +505,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       className="h-4 w-4 text-red-600 bg-white border border-gray-900 shadow-sm focus:ring-red-500"
                       disabled={!canAdd}
                     />
-                    <label htmlFor="oil_level_ok_nok" className="text-sm text-gray-900">NOK</label>
+                    <label htmlFor="oil_level_ok_nok" className="text-sm font-semibold text-gray-900">NOK</label>
                   </div>
                 </div>
               </div>
@@ -521,7 +521,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       className="h-4 w-4 text-green-600 bg-white border border-gray-900 shadow-sm focus:ring-green-500"
                       disabled={!canAdd}
                     />
-                    <label htmlFor="fluid_levels_ok_ok" className="text-sm text-gray-900">OK</label>
+                    <label htmlFor="fluid_levels_ok_ok" className="text-sm font-semibold text-gray-900">OK</label>
                   </div>
                   <div className="flex items-center space-x-1">
                     <input
@@ -532,7 +532,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       className="h-4 w-4 text-red-600 bg-white border border-gray-900 shadow-sm focus:ring-red-500"
                       disabled={!canAdd}
                     />
-                    <label htmlFor="fluid_levels_ok_nok" className="text-sm text-gray-900">NOK</label>
+                    <label htmlFor="fluid_levels_ok_nok" className="text-sm font-semibold text-gray-900">NOK</label>
                   </div>
                 </div>
               </div>
@@ -548,7 +548,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       className="h-4 w-4 text-green-600 bg-white border border-gray-900 shadow-sm focus:ring-green-500"
                       disabled={!canAdd}
                     />
-                    <label htmlFor="brakes_ok_ok" className="text-sm text-gray-900">OK</label>
+                    <label htmlFor="brakes_ok_ok" className="text-sm font-semibold text-gray-900">OK</label>
                   </div>
                   <div className="flex items-center space-x-1">
                     <input
@@ -559,7 +559,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       className="h-4 w-4 text-red-600 bg-white border border-gray-900 shadow-sm focus:ring-red-500"
                       disabled={!canAdd}
                     />
-                    <label htmlFor="brakes_ok_nok" className="text-sm text-gray-900">NOK</label>
+                    <label htmlFor="brakes_ok_nok" className="text-sm font-semibold text-gray-900">NOK</label>
                   </div>
                 </div>
               </div>
@@ -575,7 +575,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       className="h-4 w-4 text-green-600 bg-white border border-gray-900 shadow-sm focus:ring-green-500"
                       disabled={!canAdd}
                     />
-                    <label htmlFor="wipers_ok_ok" className="text-sm text-gray-900">OK</label>
+                    <label htmlFor="wipers_ok_ok" className="text-sm font-semibold text-gray-900">OK</label>
                   </div>
                   <div className="flex items-center space-x-1">
                     <input
@@ -586,7 +586,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       className="h-4 w-4 text-red-600 bg-white border border-gray-900 shadow-sm focus:ring-red-500"
                       disabled={!canAdd}
                     />
-                    <label htmlFor="wipers_ok_nok" className="text-sm text-gray-900">NOK</label>
+                    <label htmlFor="wipers_ok_nok" className="text-sm font-semibold text-gray-900">NOK</label>
                   </div>
                 </div>
               </div>
@@ -602,7 +602,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       className="h-4 w-4 text-green-600 bg-white border border-gray-900 shadow-sm focus:ring-green-500"
                       disabled={!canAdd}
                     />
-                    <label htmlFor="horn_ok_ok" className="text-sm text-gray-900">OK</label>
+                    <label htmlFor="horn_ok_ok" className="text-sm font-semibold text-gray-900">OK</label>
                   </div>
                   <div className="flex items-center space-x-1">
                     <input
@@ -613,7 +613,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       className="h-4 w-4 text-red-600 bg-white border border-gray-900 shadow-sm focus:ring-red-500"
                       disabled={!canAdd}
                     />
-                    <label htmlFor="horn_ok_nok" className="text-sm text-gray-900">NOK</label>
+                    <label htmlFor="horn_ok_nok" className="text-sm font-semibold text-gray-900">NOK</label>
                   </div>
                 </div>
               </div>
@@ -629,7 +629,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       className="h-4 w-4 text-green-600 bg-white border border-gray-900 shadow-sm focus:ring-green-500"
                       disabled={!canAdd}
                     />
-                    <label htmlFor="mirrors_ok_ok" className="text-sm text-gray-900">OK</label>
+                    <label htmlFor="mirrors_ok_ok" className="text-sm font-semibold text-gray-900">OK</label>
                   </div>
                   <div className="flex items-center space-x-1">
                     <input
@@ -640,7 +640,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       className="h-4 w-4 text-red-600 bg-white border border-gray-900 shadow-sm focus:ring-red-500"
                       disabled={!canAdd}
                     />
-                    <label htmlFor="mirrors_ok_nok" className="text-sm text-gray-900">NOK</label>
+                    <label htmlFor="mirrors_ok_nok" className="text-sm font-semibold text-gray-900">NOK</label>
                   </div>
                 </div>
               </div>
@@ -656,7 +656,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       className="h-4 w-4 text-green-600 bg-white border border-gray-900 shadow-sm focus:ring-green-500"
                       disabled={!canAdd}
                     />
-                    <label htmlFor="ac_working_ok_ok" className="text-sm text-gray-900">OK</label>
+                    <label htmlFor="ac_working_ok_ok" className="text-sm font-semibold text-gray-900">OK</label>
                   </div>
                   <div className="flex items-center space-x-1">
                     <input
@@ -667,7 +667,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       className="h-4 w-4 text-red-600 bg-white border border-gray-900 shadow-sm focus:ring-red-500"
                       disabled={!canAdd}
                     />
-                    <label htmlFor="ac_working_ok_nok" className="text-sm text-gray-900">NOK</label>
+                    <label htmlFor="ac_working_ok_nok" className="text-sm font-semibold text-gray-900">NOK</label>
                   </div>
                 </div>
               </div>
@@ -683,7 +683,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       className="h-4 w-4 text-green-600 bg-white border border-gray-900 shadow-sm focus:ring-green-500"
                       disabled={!canAdd}
                     />
-                    <label htmlFor="windows_working_ok_ok" className="text-sm text-gray-900">OK</label>
+                    <label htmlFor="windows_working_ok_ok" className="text-sm font-semibold text-gray-900">OK</label>
                   </div>
                   <div className="flex items-center space-x-1">
                     <input
@@ -694,7 +694,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       className="h-4 w-4 text-red-600 bg-white border border-gray-900 shadow-sm focus:ring-red-500"
                       disabled={!canAdd}
                     />
-                    <label htmlFor="windows_working_ok_nok" className="text-sm text-gray-900">NOK</label>
+                    <label htmlFor="windows_working_ok_nok" className="text-sm font-semibold text-gray-900">NOK</label>
                   </div>
                 </div>
               </div>
@@ -706,7 +706,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                 id="observations"
                 {...register('observations')}
                 rows={3}
-                className="w-full bg-white border border-gray-900 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 disabled={!canAdd}
               ></textarea>
               {errors.observations && <p className="text-red-500 text-sm mt-1">{errors.observations.message}</p>}
@@ -717,7 +717,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                 id="issues_to_address"
                 {...register('issues_to_address')}
                 rows={3}
-                className="w-full bg-white border border-gray-900 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 disabled={!canAdd}
               ></textarea>
               {errors.issues_to_address && <p className="text-red-500 text-sm mt-1">{errors.issues_to_address.message}</p>}
