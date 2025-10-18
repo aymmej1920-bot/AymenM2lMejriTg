@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Phone, ChevronUp, ChevronDown, Search, Calendar } from 'lucide-react';
 import { FleetData, Driver } from '../types';
-import { showSuccess } => '../utils/toast';
+import { showSuccess } from '../utils/toast'; // Corrected import syntax
 import { formatDate } from '../utils/date';
 import ConfirmDialog from './ConfirmDialog';
 import { Button } from './ui/button';

@@ -29,7 +29,7 @@ interface PreDepartureChecklistProps {
 const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ data, onAdd }) => {
   const [showModal, setShowModal] = useState(false);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<PreDepartureChecklistFormData>({
+  const { register, handleSubmit, reset, formState: { errors = {} } } = useForm<PreDepartureChecklistFormData>({
     resolver: zodResolver(preDepartureChecklistSchema),
     defaultValues: {
       vehicle_id: '',

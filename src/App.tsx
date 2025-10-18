@@ -214,15 +214,15 @@ function App() {
       case 'dashboard':
         return <Dashboard key="dashboard-view" data={fleetData} userRole={userRole} />;
       case 'vehicles':
-        return <Vehicles key="vehicles-view" data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('vehicles', newData, 'update')} onDelete={(id) => handleUpdateData('vehicles', { id }, 'delete')} onAdd={(newData) => handleUpdateData('vehicles', newData, 'insert')} />;
+        return <Vehicles key="vehicles-view" data={fleetData} userRole={userRole} onUpdate={(newData: Vehicle) => handleUpdateData('vehicles', newData, 'update')} onDelete={(id: string) => handleUpdateData('vehicles', { id }, 'delete')} onAdd={(newData: Omit<Vehicle, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('vehicles', newData, 'insert')} />;
       case 'drivers':
-        return <Drivers key="drivers-view" data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('drivers', newData, 'update')} onDelete={(id) => handleUpdateData('drivers', { id }, 'delete')} onAdd={(newData) => handleUpdateData('drivers', newData, 'insert')} />;
+        return <Drivers key="drivers-view" data={fleetData} userRole={userRole} onUpdate={(newData: Driver) => handleUpdateData('drivers', newData, 'update')} onDelete={(id: string) => handleUpdateData('drivers', { id }, 'delete')} onAdd={(newData: Omit<Driver, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('drivers', newData, 'insert')} />;
       case 'tours':
-        return <Tours key="tours-view" data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('tours', newData, 'update')} onDelete={(id) => handleUpdateData('tours', { id }, 'delete')} onAdd={(newData) => handleUpdateData('tours', newData, 'insert')} />;
+        return <Tours key="tours-view" data={fleetData} userRole={userRole} onUpdate={(newData: Tour) => handleUpdateData('tours', newData, 'update')} onDelete={(id: string) => handleUpdateData('tours', { id }, 'delete')} onAdd={(newData: Omit<Tour, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('tours', newData, 'insert')} />;
       case 'fuel':
-        return <FuelManagement key="fuel-view" data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('fuel_entries', newData, 'update')} onDelete={(id) => handleUpdateData('fuel_entries', { id }, 'delete')} onAdd={(newData) => handleUpdateData('fuel_entries', newData, 'insert')} />;
+        return <FuelManagement key="fuel-view" data={fleetData} userRole={userRole} onUpdate={(newData: FuelEntry) => handleUpdateData('fuel_entries', newData, 'update')} onDelete={(id: string) => handleUpdateData('fuel_entries', { id }, 'delete')} onAdd={(newData: Omit<FuelEntry, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('fuel_entries', newData, 'insert')} />;
       case 'documents':
-        return <Documents key="documents-view" data={fleetData} userRole={userRole} onUpdate={(newData) => handleUpdateData('documents', newData, 'update')} onDelete={(id) => handleUpdateData('documents', { id }, 'delete')} onAdd={(newData) => handleUpdateData('documents', newData, 'insert')} />;
+        return <Documents key="documents-view" data={fleetData} userRole={userRole} onUpdate={(newData: Document) => handleUpdateData('documents', newData, 'update')} onDelete={(id: string) => handleUpdateData('documents', { id }, 'delete')} onAdd={(newData: Omit<Document, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('documents', newData, 'insert')} />;
       case 'maintenance':
         return <Maintenance 
           key="maintenance-view"
