@@ -8,6 +8,9 @@ import { Button } from './ui/button';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { fuelEntrySchema } from '../types/formSchemas'; // Import the schema
+import { z } from 'zod'; // Import z
+
+type FuelEntryFormData = z.infer<typeof fuelEntrySchema>;
 
 interface FuelManagementProps {
   data: FleetData;
@@ -23,7 +26,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [fuelEntryToDelete, setFuelEntryToDelete] = useState<string | null>(null);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FuelEntry>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<FuelEntryFormData>({
     resolver: zodResolver(fuelEntrySchema),
     defaultValues: {
       date: new Date().toISOString().split('T')[0],
@@ -145,9 +148,9 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
     }
   };
 
-  const onSubmit = (formData: FuelEntry) => {
+  const onSubmit = (formData: FuelEntryFormData) => {
     if (editingFuel) {
-      onUpdate(formData);
+      onUpdate({ ...formData, id: editingFuel.id, user_id: editingFuel.user_id, created_at: editingFuel.created_at });
       showSuccess('Enregistrement de carburant mis à jour avec succès !');
     } else {
       onAdd(formData);

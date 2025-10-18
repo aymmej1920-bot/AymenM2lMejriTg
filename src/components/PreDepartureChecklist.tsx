@@ -7,6 +7,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { preDepartureChecklistSchema } from '../types/formSchemas'; // Import the schema
 import { Button } from './ui/button'; // Import shadcn Button
+import { z } from 'zod'; // Import z
+
+type PreDepartureChecklistFormData = z.infer<typeof preDepartureChecklistSchema>;
 
 interface PreDepartureChecklistProps {
   data: FleetData;
@@ -17,7 +20,7 @@ interface PreDepartureChecklistProps {
 const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ data, onAdd }) => {
   const [showModal, setShowModal] = useState(false);
 
-  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<PreDepartureChecklistFormData>({
     resolver: zodResolver(preDepartureChecklistSchema),
     defaultValues: {
       vehicle_id: '',
@@ -149,7 +152,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
     setShowModal(true);
   };
 
-  const onSubmit = (formData: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>) => {
+  const onSubmit = (formData: PreDepartureChecklistFormData) => {
     if (!canAdd) return;
 
     const { vehicle_id, date } = formData;
@@ -413,7 +416,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                           type="radio"
                           id="tire_pressure_ok_ok"
                           value="true"
-                          {...register('tire_pressure_ok', { valueAsBoolean: true })}
+                          {...register('tire_pressure_ok')}
                           className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
                           disabled={!canAdd}
                         />
@@ -424,7 +427,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                           type="radio"
                           id="tire_pressure_ok_nok"
                           value="false"
-                          {...register('tire_pressure_ok', { valueAsBoolean: true })}
+                          {...register('tire_pressure_ok')}
                           className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
                           disabled={!canAdd}
                         />
@@ -440,7 +443,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                           type="radio"
                           id="lights_ok_ok"
                           value="true"
-                          {...register('lights_ok', { valueAsBoolean: true })}
+                          {...register('lights_ok')}
                           className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
                           disabled={!canAdd}
                         />
@@ -451,7 +454,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                           type="radio"
                           id="lights_ok_nok"
                           value="false"
-                          {...register('lights_ok', { valueAsBoolean: true })}
+                          {...register('lights_ok')}
                           className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
                           disabled={!canAdd}
                         />
@@ -467,7 +470,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                           type="radio"
                           id="oil_level_ok_ok"
                           value="true"
-                          {...register('oil_level_ok', { valueAsBoolean: true })}
+                          {...register('oil_level_ok')}
                           className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
                           disabled={!canAdd}
                         />
@@ -478,7 +481,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                           type="radio"
                           id="oil_level_ok_nok"
                           value="false"
-                          {...register('oil_level_ok', { valueAsBoolean: true })}
+                          {...register('oil_level_ok')}
                           className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
                           disabled={!canAdd}
                         />
@@ -494,7 +497,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                           type="radio"
                           id="fluid_levels_ok_ok"
                           value="true"
-                          {...register('fluid_levels_ok', { valueAsBoolean: true })}
+                          {...register('fluid_levels_ok')}
                           className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
                           disabled={!canAdd}
                         />
@@ -505,7 +508,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                           type="radio"
                           id="fluid_levels_ok_nok"
                           value="false"
-                          {...register('fluid_levels_ok', { valueAsBoolean: true })}
+                          {...register('fluid_levels_ok')}
                           className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
                           disabled={!canAdd}
                         />
@@ -521,7 +524,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                           type="radio"
                           id="brakes_ok_ok"
                           value="true"
-                          {...register('brakes_ok', { valueAsBoolean: true })}
+                          {...register('brakes_ok')}
                           className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
                           disabled={!canAdd}
                         />
@@ -532,7 +535,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                           type="radio"
                           id="brakes_ok_nok"
                           value="false"
-                          {...register('brakes_ok', { valueAsBoolean: true })}
+                          {...register('brakes_ok')}
                           className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
                           disabled={!canAdd}
                         />
@@ -548,7 +551,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                           type="radio"
                           id="wipers_ok_ok"
                           value="true"
-                          {...register('wipers_ok', { valueAsBoolean: true })}
+                          {...register('wipers_ok')}
                           className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
                           disabled={!canAdd}
                         />
@@ -559,7 +562,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                           type="radio"
                           id="wipers_ok_nok"
                           value="false"
-                          {...register('wipers_ok', { valueAsBoolean: true })}
+                          {...register('wipers_ok')}
                           className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
                           disabled={!canAdd}
                         />
@@ -575,7 +578,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                           type="radio"
                           id="horn_ok_ok"
                           value="true"
-                          {...register('horn_ok', { valueAsBoolean: true })}
+                          {...register('horn_ok')}
                           className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
                           disabled={!canAdd}
                         />
@@ -586,7 +589,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                           type="radio"
                           id="horn_ok_nok"
                           value="false"
-                          {...register('horn_ok', { valueAsBoolean: true })}
+                          {...register('horn_ok')}
                           className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
                           disabled={!canAdd}
                         />
@@ -602,7 +605,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                           type="radio"
                           id="mirrors_ok_ok"
                           value="true"
-                          {...register('mirrors_ok', { valueAsBoolean: true })}
+                          {...register('mirrors_ok')}
                           className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
                           disabled={!canAdd}
                         />
@@ -613,7 +616,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                           type="radio"
                           id="mirrors_ok_nok"
                           value="false"
-                          {...register('mirrors_ok', { valueAsBoolean: true })}
+                          {...register('mirrors_ok')}
                           className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
                           disabled={!canAdd}
                         />
@@ -629,7 +632,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                           type="radio"
                           id="ac_working_ok_ok"
                           value="true"
-                          {...register('ac_working_ok', { valueAsBoolean: true })}
+                          {...register('ac_working_ok')}
                           className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
                           disabled={!canAdd}
                         />
@@ -640,7 +643,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                           type="radio"
                           id="ac_working_ok_nok"
                           value="false"
-                          {...register('ac_working_ok', { valueAsBoolean: true })}
+                          {...register('ac_working_ok')}
                           className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
                           disabled={!canAdd}
                         />
@@ -656,7 +659,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                           type="radio"
                           id="windows_working_ok_ok"
                           value="true"
-                          {...register('windows_working_ok', { valueAsBoolean: true })}
+                          {...register('windows_working_ok')}
                           className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
                           disabled={!canAdd}
                         />
@@ -667,7 +670,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                           type="radio"
                           id="windows_working_ok_nok"
                           value="false"
-                          {...register('windows_working_ok', { valueAsBoolean: true })}
+                          {...register('windows_working_ok')}
                           className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
                           disabled={!canAdd}
                         />

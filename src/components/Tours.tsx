@@ -8,6 +8,9 @@ import { Button } from './ui/button';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { tourSchema } from '../types/formSchemas'; // Import the schema
+import { z } from 'zod'; // Import z
+
+type TourFormData = z.infer<typeof tourSchema>;
 
 interface ToursProps {
   data: FleetData;
@@ -23,7 +26,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [tourToDelete, setTourToDelete] = useState<string | null>(null);
 
-  const { register, handleSubmit, watch, reset, formState: { errors } } = useForm<Tour>({
+  const { register, handleSubmit, watch, reset, formState: { errors } } = useForm<TourFormData>({
     resolver: zodResolver(tourSchema),
     defaultValues: {
       date: new Date().toISOString().split('T')[0],
@@ -135,9 +138,9 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
     }
   };
 
-  const onSubmit = (formData: Tour) => {
+  const onSubmit = (formData: TourFormData) => {
     if (editingTour) {
-      onUpdate(formData);
+      onUpdate({ ...formData, id: editingTour.id, user_id: editingTour.user_id, created_at: editingTour.created_at });
       showSuccess('Tournée mise à jour avec succès !');
     } else {
       onAdd(formData);

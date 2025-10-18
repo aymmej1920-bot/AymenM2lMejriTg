@@ -8,6 +8,9 @@ import { Button } from './ui/button';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { driverSchema } from '../types/formSchemas'; // Import the schema
+import { z } from 'zod'; // Import z
+
+type DriverFormData = z.infer<typeof driverSchema>;
 
 interface DriversProps {
   data: FleetData;
@@ -23,7 +26,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [driverToDelete, setDriverToDelete] = useState<string | null>(null);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<Driver>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<DriverFormData>({
     resolver: zodResolver(driverSchema),
     defaultValues: {
       name: '',
@@ -112,9 +115,9 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
     }
   };
 
-  const onSubmit = (formData: Driver) => {
+  const onSubmit = (formData: DriverFormData) => {
     if (editingDriver) {
-      onUpdate(formData);
+      onUpdate({ ...formData, id: editingDriver.id, user_id: editingDriver.user_id, created_at: editingDriver.created_at });
       showSuccess('Conducteur mis à jour avec succès !');
     } else {
       onAdd(formData);

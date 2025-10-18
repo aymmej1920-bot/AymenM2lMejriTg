@@ -8,6 +8,9 @@ import { Button } from './ui/button';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { documentSchema } from '../types/formSchemas'; // Import the schema
+import { z } from 'zod'; // Import z
+
+type DocumentFormData = z.infer<typeof documentSchema>;
 
 interface DocumentsProps {
   data: FleetData;
@@ -23,7 +26,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<Document>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<DocumentFormData>({
     resolver: zodResolver(documentSchema),
     defaultValues: {
       vehicle_id: '',
@@ -133,9 +136,9 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
     }
   };
 
-  const onSubmit = (formData: Document) => {
+  const onSubmit = (formData: DocumentFormData) => {
     if (editingDocument) {
-      onUpdate(formData);
+      onUpdate({ ...formData, id: editingDocument.id, user_id: editingDocument.user_id, created_at: editingDocument.created_at });
       showSuccess('Document mis à jour avec succès !');
     } else {
       onAdd(formData);

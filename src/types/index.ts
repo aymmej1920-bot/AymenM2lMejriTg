@@ -28,11 +28,11 @@ export interface Tour {
   vehicle_id: string; // Foreign key to vehicles.id
   driver_id: string; // Foreign key to drivers.id
   status: string;
-  fuel_start: number | null; // Changed to match SQL column name
-  km_start: number | null; // Changed to match SQL column name
-  fuel_end: number | null; // Changed to match SQL column name
-  km_end: number | null; // Changed to match SQL column name
-  distance: number | null;
+  fuel_start: number | null | undefined; // Updated to allow undefined
+  km_start: number | null | undefined; // Updated to allow undefined
+  fuel_end: number | null | undefined; // Updated to allow undefined
+  km_end: number | null | undefined; // Updated to allow undefined
+  distance: number | null | undefined; // Updated to allow undefined
   created_at?: string;
 }
 
@@ -72,7 +72,7 @@ export interface PreDepartureChecklist {
   id: string;
   user_id: string;
   vehicle_id: string;
-  driver_id: string | null;
+  driver_id: string | null | undefined; // Updated to allow undefined
   date: string;
   tire_pressure_ok: boolean;
   lights_ok: boolean;
@@ -82,10 +82,10 @@ export interface PreDepartureChecklist {
   wipers_ok: boolean;
   horn_ok: boolean;
   mirrors_ok: boolean;
-  ac_working_ok: boolean; // Nouveau champ
-  windows_working_ok: boolean; // Nouveau champ
-  observations: string | null;
-  issues_to_address: string | null;
+  ac_working_ok: boolean;
+  windows_working_ok: boolean;
+  observations: string | null | undefined; // Updated to allow undefined
+  issues_to_address: string | null | undefined; // Updated to allow undefined
   created_at?: string;
 }
 

@@ -8,6 +8,9 @@ import { Button } from './ui/button';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { vehicleSchema } from '../types/formSchemas'; // Import the schema
+import { z } from 'zod'; // Import z
+
+type VehicleFormData = z.infer<typeof vehicleSchema>;
 
 interface VehiclesProps {
   data: FleetData;
@@ -23,7 +26,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [vehicleToDelete, setVehicleToDelete] = useState<string | null>(null);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<Vehicle>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<VehicleFormData>({
     resolver: zodResolver(vehicleSchema),
     defaultValues: {
       plate: '',
@@ -112,9 +115,9 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
     }
   };
 
-  const onSubmit = (formData: Vehicle) => {
+  const onSubmit = (formData: VehicleFormData) => {
     if (editingVehicle) {
-      onUpdate(formData);
+      onUpdate({ ...formData, id: editingVehicle.id, user_id: editingVehicle.user_id, created_at: editingVehicle.created_at });
       showSuccess('Véhicule mis à jour avec succès !');
     } else {
       onAdd(formData);

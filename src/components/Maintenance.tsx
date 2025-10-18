@@ -7,6 +7,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { maintenanceEntrySchema } from '../types/formSchemas'; // Import the schema
 import { Button } from './ui/button'; // Import shadcn Button
+import { z } from 'zod'; // Import z
+
+type MaintenanceEntryFormData = z.infer<typeof maintenanceEntrySchema>;
 
 interface MaintenanceProps {
   data: FleetData;
@@ -20,7 +23,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
   const [showModal, setShowModal] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<Omit<MaintenanceEntry, 'id' | 'user_id' | 'created_at'>>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<MaintenanceEntryFormData>({
     resolver: zodResolver(maintenanceEntrySchema),
     defaultValues: {
       vehicle_id: '',
@@ -126,7 +129,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
     setShowModal(true);
   };
 
-  const onSubmit = (maintenanceData: Omit<MaintenanceEntry, 'id' | 'user_id' | 'created_at'>) => {
+  const onSubmit = (maintenanceData: MaintenanceEntryFormData) => {
     onAdd(maintenanceData);
     showSuccess('Entrée de maintenance ajoutée avec succès !');
 
