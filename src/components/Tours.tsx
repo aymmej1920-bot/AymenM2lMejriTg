@@ -374,7 +374,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
 
       {/* Modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="sm:max-w-[600px]"> {/* Increased max-width for more fields */}
+        <DialogContent className="sm:max-w-[600px] bg-gray-50"> {/* Increased max-width for more fields */}
           <DialogHeader>
             <DialogTitle>{editingTour ? 'Modifier une Tournée' : 'Ajouter une Tournée'}</DialogTitle>
             <DialogDescription>

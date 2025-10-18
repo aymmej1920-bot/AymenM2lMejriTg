@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Phone, ChevronUp, ChevronDown, Search, Calendar } from 'lucide-react';
 import { FleetData, Driver } from '../types';
-import { showSuccess } from '../utils/toast'; // Corrected import syntax
+import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date';
 import ConfirmDialog from './ConfirmDialog';
 import { Button } from './ui/button';
@@ -323,7 +323,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
 
       {/* Modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] bg-gray-50">
           <DialogHeader>
             <DialogTitle>{editingDriver ? 'Modifier un Conducteur' : 'Ajouter un Conducteur'}</DialogTitle>
             <DialogDescription>
