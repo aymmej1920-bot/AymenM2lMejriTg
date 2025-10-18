@@ -471,7 +471,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
             <DialogDescription>
               Ajoutez un nouvel enregistrement de maintenance pour un véhicule.
             </DialogDescription>
-          </DialogDescription>
+          </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
             <div>
               <label htmlFor="vehicle_id" className="block text-sm font-medium mb-2 text-gray-900">Véhicule</label>
