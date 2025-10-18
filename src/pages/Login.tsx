@@ -23,14 +23,14 @@ const Login: React.FC = () => {
             variables: {
               default: {
                 colors: {
-                  brand: 'hsl(240 5.9% 10%)', // A dark gray for brand color
-                  brandAccent: 'hsl(240 5.9% 10%)', // Accent color
+                  brand: 'hsl(262 83% 58%)', // Un violet vibrant, similaire à purple-600
+                  brandAccent: 'hsl(221 83% 53%)', // Un bleu vibrant, similaire à blue-600
                 },
               },
             },
           }}
           theme="light"
-          redirectTo={window.location.origin} // Redirect to the app's root after auth
+          redirectTo={window.location.origin} // Redirige vers la racine de l'application après l'authentification
         />
       </div>
     </div>
