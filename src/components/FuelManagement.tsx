@@ -374,7 +374,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
             <div>
-              <label htmlFor="date" className="block text-sm font-medium mb-2 text-gray-700">Date</label>
+              <label htmlFor="date" className="block text-sm font-medium mb-2 text-gray-900">Date</label>
               <input
                 id="date"
                 type="date"
@@ -384,7 +384,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
               {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
             </div>
             <div>
-              <label htmlFor="vehicle_id" className="block text-sm font-medium mb-2 text-gray-700">Véhicule</label>
+              <label htmlFor="vehicle_id" className="block text-sm font-medium mb-2 text-gray-900">Véhicule</label>
               <select
                 id="vehicle_id"
                 {...register('vehicle_id')}
@@ -400,7 +400,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
               {errors.vehicle_id && <p className="text-red-500 text-sm mt-1">{errors.vehicle_id.message}</p>}
             </div>
             <div>
-              <label htmlFor="liters" className="block text-sm font-medium mb-2 text-gray-700">Litres</label>
+              <label htmlFor="liters" className="block text-sm font-medium mb-2 text-gray-900">Litres</label>
               <input
                 id="liters"
                 type="number"
@@ -411,7 +411,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
               {errors.liters && <p className="text-red-500 text-sm mt-1">{errors.liters.message}</p>}
             </div>
             <div>
-              <label htmlFor="price_per_liter" className="block text-sm font-medium mb-2 text-gray-700">Prix par litre (TND)</label>
+              <label htmlFor="price_per_liter" className="block text-sm font-medium mb-2 text-gray-900">Prix par litre (TND)</label>
               <input
                 id="price_per_liter"
                 type="number"
@@ -422,7 +422,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
               {errors.price_per_liter && <p className="text-red-500 text-sm mt-1">{errors.price_per_liter.message}</p>}
             </div>
             <div>
-              <label htmlFor="mileage" className="block text-sm font-medium mb-2 text-gray-700">Kilométrage</label>
+              <label htmlFor="mileage" className="block text-sm font-medium mb-2 text-gray-900">Kilométrage</label>
               <input
                 id="mileage"
                 type="number"
