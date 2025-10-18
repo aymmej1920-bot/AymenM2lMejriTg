@@ -9,6 +9,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { tourSchema } from '../types/formSchemas'; // Import the schema
 import { z } from 'zod'; // Import z
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from './ui/dialog'; // Import shadcn/ui Dialog components
 
 type TourFormData = z.infer<typeof tourSchema>;
 
@@ -365,167 +373,164 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
       )}
 
       {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-screen overflow-y-auto">
-            <div className="p-8">
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">
-                {editingTour ? 'Modifier une Tournée' : 'Ajouter une Tournée'}
-              </h3>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="date" className="block text-sm font-medium mb-2 text-gray-700">Date</label>
-                    <input
-                      id="date"
-                      type="date"
-                      {...register('date')}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
-                  </div>
-                  <div>
-                    <label htmlFor="status" className="block text-sm font-medium mb-2 text-gray-700">Statut</label>
-                    <select
-                      id="status"
-                      {...register('status')}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="Planifié">Planifié</option>
-                      <option value="En cours">En cours</option>
-                      <option value="Terminé">Terminé</option>
-                      <option value="Annulé">Annulé</option>
-                    </select>
-                    {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status.message}</p>}
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="vehicle_id" className="block text-sm font-medium mb-2 text-gray-700">Véhicule</label>
-                    <select
-                      id="vehicle_id"
-                      {...register('vehicle_id')}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="">Sélectionner un véhicule</option>
-                      {data.vehicles.map(vehicle => (
-                        <option key={vehicle.id} value={vehicle.id}>
-                          {vehicle.plate} - {vehicle.type}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.vehicle_id && <p className="text-red-500 text-sm mt-1">{errors.vehicle_id.message}</p>}
-                  </div>
-                  <div>
-                    <label htmlFor="driver_id" className="block text-sm font-medium mb-2 text-gray-700">Conducteur</label>
-                    <select
-                      id="driver_id"
-                      {...register('driver_id')}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="">Sélectionner un conducteur</option>
-                      {data.drivers.map(driver => (
-                        <option key={driver.id} value={driver.id}>
-                          {driver.name}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.driver_id && <p className="text-red-500 text-sm mt-1">{errors.driver_id.message}</p>}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="fuel_start" className="block text-sm font-medium mb-2 text-gray-700">Niveau fuel début (%)</label>
-                    <input
-                      id="fuel_start"
-                      type="number"
-                      min="0"
-                      max="100"
-                      {...register('fuel_start', { valueAsNumber: true })}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                      disabled={status !== 'En cours' && status !== 'Terminé'}
-                    />
-                    {errors.fuel_start && <p className="text-red-500 text-sm mt-1">{errors.fuel_start.message}</p>}
-                  </div>
-                  <div>
-                    <label htmlFor="km_start" className="block text-sm font-medium mb-2 text-gray-700">Km début</label>
-                    <input
-                      id="km_start"
-                      type="number"
-                      {...register('km_start', { valueAsNumber: true })}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                      disabled={status !== 'En cours' && status !== 'Terminé'}
-                    />
-                    {errors.km_start && <p className="text-red-500 text-sm mt-1">{errors.km_start.message}</p>}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="fuel_end" className="block text-sm font-medium mb-2 text-gray-700">Niveau fuel fin (%)</label>
-                    <input
-                      id="fuel_end"
-                      type="number"
-                      min="0"
-                      max="100"
-                      {...register('fuel_end', { valueAsNumber: true })}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                      disabled={status !== 'Terminé'}
-                    />
-                    {errors.fuel_end && <p className="text-red-500 text-sm mt-1">{errors.fuel_end.message}</p>}
-                  </div>
-                  <div>
-                    <label htmlFor="km_end" className="block text-sm font-medium mb-2 text-gray-700">Km fin</label>
-                    <input
-                      id="km_end"
-                      type="number"
-                      {...register('km_end', { valueAsNumber: true })}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                      disabled={status !== 'Terminé'}
-                    />
-                    {errors.km_end && <p className="text-red-500 text-sm mt-1">{errors.km_end.message}</p>}
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="distance" className="block text-sm font-medium mb-2 text-gray-700">Distance (km)</label>
-                  <input
-                    id="distance"
-                    type="number"
-                    {...register('distance', { valueAsNumber: true })}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                    disabled={status !== 'Terminé'}
-                  />
-                  {errors.distance && <p className="text-red-500 text-sm mt-1">{errors.distance.message}</p>}
-                </div>
-
-                {errors.status && errors.status.message && (
-                  <p className="text-red-500 text-sm mt-1">{errors.status.message}</p>
-                )}
-
-                <div className="flex justify-end space-x-4 mt-8">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowModal(false)}
-                    className="px-6 py-3 bg-gray-300 hover:bg-gray-400 rounded-lg transition-all duration-300"
-                  >
-                    Annuler
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
-                  >
-                    Sauvegarder
-                  </Button>
-                </div>
-              </form>
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="sm:max-w-[600px]"> {/* Increased max-width for more fields */}
+          <DialogHeader>
+            <DialogTitle>{editingTour ? 'Modifier une Tournée' : 'Ajouter une Tournée'}</DialogTitle>
+            <DialogDescription>
+              {editingTour ? 'Modifiez les détails de la tournée.' : 'Ajoutez une nouvelle tournée.'}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="date" className="block text-sm font-medium mb-2 text-gray-700">Date</label>
+                <input
+                  id="date"
+                  type="date"
+                  {...register('date')}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                />
+                {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
+              </div>
+              <div>
+                <label htmlFor="status" className="block text-sm font-medium mb-2 text-gray-700">Statut</label>
+                <select
+                  id="status"
+                  {...register('status')}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="Planifié">Planifié</option>
+                  <option value="En cours">En cours</option>
+                  <option value="Terminé">Terminé</option>
+                  <option value="Annulé">Annulé</option>
+                </select>
+                {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status.message}</p>}
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="vehicle_id" className="block text-sm font-medium mb-2 text-gray-700">Véhicule</label>
+                <select
+                  id="vehicle_id"
+                  {...register('vehicle_id')}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Sélectionner un véhicule</option>
+                  {data.vehicles.map(vehicle => (
+                    <option key={vehicle.id} value={vehicle.id}>
+                      {vehicle.plate} - {vehicle.type}
+                    </option>
+                  ))}
+                </select>
+                {errors.vehicle_id && <p className="text-red-500 text-sm mt-1">{errors.vehicle_id.message}</p>}
+              </div>
+              <div>
+                <label htmlFor="driver_id" className="block text-sm font-medium mb-2 text-gray-700">Conducteur</label>
+                <select
+                  id="driver_id"
+                  {...register('driver_id')}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Sélectionner un conducteur</option>
+                  {data.drivers.map(driver => (
+                    <option key={driver.id} value={driver.id}>
+                      {driver.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.driver_id && <p className="text-red-500 text-sm mt-1">{errors.driver_id.message}</p>}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="fuel_start" className="block text-sm font-medium mb-2 text-gray-700">Niveau fuel début (%)</label>
+                <input
+                  id="fuel_start"
+                  type="number"
+                  min="0"
+                  max="100"
+                  {...register('fuel_start', { valueAsNumber: true })}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={status !== 'En cours' && status !== 'Terminé'}
+                />
+                {errors.fuel_start && <p className="text-red-500 text-sm mt-1">{errors.fuel_start.message}</p>}
+              </div>
+              <div>
+                <label htmlFor="km_start" className="block text-sm font-medium mb-2 text-gray-700">Km début</label>
+                <input
+                  id="km_start"
+                  type="number"
+                  {...register('km_start', { valueAsNumber: true })}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={status !== 'En cours' && status !== 'Terminé'}
+                />
+                {errors.km_start && <p className="text-red-500 text-sm mt-1">{errors.km_start.message}</p>}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="fuel_end" className="block text-sm font-medium mb-2 text-gray-700">Niveau fuel fin (%)</label>
+                <input
+                  id="fuel_end"
+                  type="number"
+                  min="0"
+                  max="100"
+                  {...register('fuel_end', { valueAsNumber: true })}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={status !== 'Terminé'}
+                />
+                {errors.fuel_end && <p className="text-red-500 text-sm mt-1">{errors.fuel_end.message}</p>}
+              </div>
+              <div>
+                <label htmlFor="km_end" className="block text-sm font-medium mb-2 text-gray-700">Km fin</label>
+                <input
+                  id="km_end"
+                  type="number"
+                  {...register('km_end', { valueAsNumber: true })}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={status !== 'Terminé'}
+                />
+                {errors.km_end && <p className="text-red-500 text-sm mt-1">{errors.km_end.message}</p>}
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="distance" className="block text-sm font-medium mb-2 text-gray-700">Distance (km)</label>
+              <input
+                id="distance"
+                type="number"
+                {...register('distance', { valueAsNumber: true })}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                disabled={status !== 'Terminé'}
+              />
+              {errors.distance && <p className="text-red-500 text-sm mt-1">{errors.distance.message}</p>}
+            </div>
+
+            {errors.status && errors.status.message && (
+              <p className="text-red-500 text-sm mt-1">{errors.status.message}</p>
+            )}
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowModal(false)}
+              >
+                Annuler
+              </Button>
+              <Button
+                type="submit"
+              >
+                Sauvegarder
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={showConfirmDialog}

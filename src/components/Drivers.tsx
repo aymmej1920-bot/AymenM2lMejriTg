@@ -9,6 +9,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { driverSchema } from '../types/formSchemas'; // Import the schema
 import { z } from 'zod'; // Import z
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from './ui/dialog'; // Import shadcn/ui Dialog components
 
 type DriverFormData = z.infer<typeof driverSchema>;
 
@@ -314,89 +322,86 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
       )}
 
       {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
-            <div className="p-8">
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">
-                {editingDriver ? 'Modifier un Conducteur' : 'Ajouter un Conducteur'}
-              </h3>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium mb-2 text-gray-700">Nom complet</label>
-                  <input
-                    id="name"
-                    type="text"
-                    {...register('name')}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
-                </div>
-                <div>
-                  <label htmlFor="license" className="block text-sm font-medium mb-2 text-gray-700">Numéro de permis</label>
-                  <input
-                    id="license"
-                    type="text"
-                    {...register('license')}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  {errors.license && <p className="text-red-500 text-sm mt-1">{errors.license.message}</p>}
-                </div>
-                <div>
-                  <label htmlFor="expiration" className="block text-sm font-medium mb-2 text-gray-700">Date d'expiration</label>
-                  <input
-                    id="expiration"
-                    type="date"
-                    {...register('expiration')}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  {errors.expiration && <p className="text-red-500 text-sm mt-1">{errors.expiration.message}</p>}
-                </div>
-                <div>
-                  <label htmlFor="status" className="block text-sm font-medium mb-2 text-gray-700">Statut</label>
-                  <select
-                    id="status"
-                    {...register('status')}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="Disponible">Disponible</option>
-                    <option value="En mission">En mission</option>
-                    <option value="Repos">Repos</option>
-                    <option value="Congé">Congé</option>
-                  </select>
-                  {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status.message}</p>}
-                </div>
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium mb-2 text-gray-700">Téléphone</label>
-                  <input
-                    id="phone"
-                    type="tel"
-                    {...register('phone')}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>}
-                </div>
-                <div className="flex justify-end space-x-4 mt-8">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowModal(false)}
-                    className="px-6 py-3 bg-gray-300 hover:bg-gray-400 rounded-lg transition-all duration-300"
-                  >
-                    Annuler
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
-                  >
-                    Sauvegarder
-                  </Button>
-                </div>
-              </form>
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>{editingDriver ? 'Modifier un Conducteur' : 'Ajouter un Conducteur'}</DialogTitle>
+            <DialogDescription>
+              {editingDriver ? 'Modifiez les détails du conducteur.' : 'Ajoutez un nouveau conducteur.'}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium mb-2 text-gray-700">Nom complet</label>
+              <input
+                id="name"
+                type="text"
+                {...register('name')}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
             </div>
-          </div>
-        </div>
-      )}
+            <div>
+              <label htmlFor="license" className="block text-sm font-medium mb-2 text-gray-700">Numéro de permis</label>
+              <input
+                id="license"
+                type="text"
+                {...register('license')}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {errors.license && <p className="text-red-500 text-sm mt-1">{errors.license.message}</p>}
+            </div>
+            <div>
+              <label htmlFor="expiration" className="block text-sm font-medium mb-2 text-gray-700">Date d'expiration</label>
+              <input
+                id="expiration"
+                type="date"
+                {...register('expiration')}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {errors.expiration && <p className="text-red-500 text-sm mt-1">{errors.expiration.message}</p>}
+            </div>
+            <div>
+              <label htmlFor="status" className="block text-sm font-medium mb-2 text-gray-700">Statut</label>
+              <select
+                id="status"
+                {...register('status')}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="Disponible">Disponible</option>
+                <option value="En mission">En mission</option>
+                <option value="Repos">Repos</option>
+                <option value="Congé">Congé</option>
+              </select>
+              {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status.message}</p>}
+            </div>
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium mb-2 text-gray-700">Téléphone</label>
+              <input
+                id="phone"
+                type="tel"
+                {...register('phone')}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>}
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowModal(false)}
+              >
+                Annuler
+              </Button>
+              <Button
+                type="submit"
+              >
+                Sauvegarder
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={showConfirmDialog}

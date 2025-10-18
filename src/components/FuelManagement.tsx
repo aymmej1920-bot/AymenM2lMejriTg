@@ -9,6 +9,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { fuelEntrySchema } from '../types/formSchemas'; // Import the schema
 import { z } from 'zod'; // Import z
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from './ui/dialog'; // Import shadcn/ui Dialog components
 
 type FuelEntryFormData = z.infer<typeof fuelEntrySchema>;
 
@@ -356,93 +364,90 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
       )}
 
       {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
-            <div className="p-8">
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">
-                {editingFuel ? 'Modifier un Plein' : 'Ajouter un Plein'}
-              </h3>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <div>
-                  <label htmlFor="date" className="block text-sm font-medium mb-2 text-gray-700">Date</label>
-                  <input
-                    id="date"
-                    type="date"
-                    {...register('date')}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
-                </div>
-                <div>
-                  <label htmlFor="vehicle_id" className="block text-sm font-medium mb-2 text-gray-700">Véhicule</label>
-                  <select
-                    id="vehicle_id"
-                    {...register('vehicle_id')}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="">Sélectionner un véhicule</option>
-                    {data.vehicles.map(vehicle => (
-                      <option key={vehicle.id} value={vehicle.id}>
-                        {vehicle.plate} - {vehicle.type}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.vehicle_id && <p className="text-red-500 text-sm mt-1">{errors.vehicle_id.message}</p>}
-                </div>
-                <div>
-                  <label htmlFor="liters" className="block text-sm font-medium mb-2 text-gray-700">Litres</label>
-                  <input
-                    id="liters"
-                    type="number"
-                    step="0.1"
-                    {...register('liters', { valueAsNumber: true })}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  {errors.liters && <p className="text-red-500 text-sm mt-1">{errors.liters.message}</p>}
-                </div>
-                <div>
-                  <label htmlFor="price_per_liter" className="block text-sm font-medium mb-2 text-gray-700">Prix par litre (TND)</label>
-                  <input
-                    id="price_per_liter"
-                    type="number"
-                    step="0.01"
-                    {...register('price_per_liter', { valueAsNumber: true })}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  {errors.price_per_liter && <p className="text-red-500 text-sm mt-1">{errors.price_per_liter.message}</p>}
-                </div>
-                <div>
-                  <label htmlFor="mileage" className="block text-sm font-medium mb-2 text-gray-700">Kilométrage</label>
-                  <input
-                    id="mileage"
-                    type="number"
-                    {...register('mileage', { valueAsNumber: true })}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  {errors.mileage && <p className="text-red-500 text-sm mt-1">{errors.mileage.message}</p>}
-                </div>
-                <div className="flex justify-end space-x-4 mt-8">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowModal(false)}
-                    className="px-6 py-3 bg-gray-300 hover:bg-gray-400 rounded-lg transition-all duration-300"
-                  >
-                    Annuler
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
-                  >
-                    Sauvegarder
-                  </Button>
-                </div>
-              </form>
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>{editingFuel ? 'Modifier un Plein' : 'Ajouter un Plein'}</DialogTitle>
+            <DialogDescription>
+              {editingFuel ? 'Modifiez les détails du plein.' : 'Ajoutez un nouvel enregistrement de carburant.'}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
+            <div>
+              <label htmlFor="date" className="block text-sm font-medium mb-2 text-gray-700">Date</label>
+              <input
+                id="date"
+                type="date"
+                {...register('date')}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
             </div>
-          </div>
-        </div>
-      )}
+            <div>
+              <label htmlFor="vehicle_id" className="block text-sm font-medium mb-2 text-gray-700">Véhicule</label>
+              <select
+                id="vehicle_id"
+                {...register('vehicle_id')}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Sélectionner un véhicule</option>
+                {data.vehicles.map(vehicle => (
+                  <option key={vehicle.id} value={vehicle.id}>
+                    {vehicle.plate} - {vehicle.type}
+                  </option>
+                ))}
+              </select>
+              {errors.vehicle_id && <p className="text-red-500 text-sm mt-1">{errors.vehicle_id.message}</p>}
+            </div>
+            <div>
+              <label htmlFor="liters" className="block text-sm font-medium mb-2 text-gray-700">Litres</label>
+              <input
+                id="liters"
+                type="number"
+                step="0.1"
+                {...register('liters', { valueAsNumber: true })}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {errors.liters && <p className="text-red-500 text-sm mt-1">{errors.liters.message}</p>}
+            </div>
+            <div>
+              <label htmlFor="price_per_liter" className="block text-sm font-medium mb-2 text-gray-700">Prix par litre (TND)</label>
+              <input
+                id="price_per_liter"
+                type="number"
+                step="0.01"
+                {...register('price_per_liter', { valueAsNumber: true })}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {errors.price_per_liter && <p className="text-red-500 text-sm mt-1">{errors.price_per_liter.message}</p>}
+            </div>
+            <div>
+              <label htmlFor="mileage" className="block text-sm font-medium mb-2 text-gray-700">Kilométrage</label>
+              <input
+                id="mileage"
+                type="number"
+                {...register('mileage', { valueAsNumber: true })}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {errors.mileage && <p className="text-red-500 text-sm mt-1">{errors.mileage.message}</p>}
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowModal(false)}
+              >
+                Annuler
+              </Button>
+              <Button
+                type="submit"
+              >
+                Sauvegarder
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={showConfirmDialog}

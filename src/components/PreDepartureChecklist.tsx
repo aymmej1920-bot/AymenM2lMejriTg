@@ -8,6 +8,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { preDepartureChecklistSchema } from '../types/formSchemas'; // Import the schema
 import { Button } from './ui/button'; // Import shadcn Button
 import { z } from 'zod'; // Import z
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from './ui/dialog'; // Import shadcn/ui Dialog components
 
 type PreDepartureChecklistFormData = z.infer<typeof preDepartureChecklistSchema>;
 
@@ -90,10 +98,10 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
       const bValue = b[sortColumn];
 
       // Handle null/undefined values first
-      if (aValue == null) {
+      if (aValue === null || aValue === undefined) {
         return sortDirection === 'asc' ? -1 : 1;
       }
-      if (bValue == null) {
+      if (bValue === null || bValue === undefined) {
         return sortDirection === 'asc' ? 1 : -1;
       }
 
@@ -360,380 +368,379 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
       )}
 
       {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-screen overflow-y-auto">
-            <div className="p-8">
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">Nouvelle Checklist Avant Départ</h3>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="date" className="block text-sm font-medium mb-2 text-gray-700">Date</label>
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Nouvelle Checklist Avant Départ</DialogTitle>
+            <DialogDescription>
+              Remplissez les détails de la checklist avant le départ du véhicule.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="date" className="block text-sm font-medium mb-2 text-gray-700">Date</label>
+                <input
+                  id="date"
+                  type="date"
+                  {...register('date')}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={!canAdd}
+                />
+                {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
+              </div>
+              <div>
+                <label htmlFor="vehicle_id" className="block text-sm font-medium mb-2 text-gray-700">Véhicule</label>
+                <select
+                  id="vehicle_id"
+                  {...register('vehicle_id')}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={!canAdd}
+                >
+                  <option value="">Sélectionner un véhicule</option>
+                  {data.vehicles.map(vehicle => (
+                    <option key={vehicle.id} value={vehicle.id}>
+                      {vehicle.plate} - {vehicle.type}
+                    </option>
+                  ))}
+                </select>
+                {errors.vehicle_id && <p className="text-red-500 text-sm mt-1">{errors.vehicle_id.message}</p>}
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="driver_id" className="block text-sm font-medium mb-2 text-gray-700">Conducteur (Optionnel)</label>
+              <select
+                id="driver_id"
+                {...register('driver_id')}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                disabled={!canAdd}
+              >
+                <option value="">Sélectionner un conducteur</option>
+                {data.drivers.map(driver => (
+                  <option key={driver.id} value={driver.id}>
+                    {driver.name}
+                  </option>
+                ))}
+              </select>
+              {errors.driver_id && <p className="text-red-500 text-sm mt-1">{errors.driver_id.message}</p>}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700">Pression des pneus</label>
+                <div className="flex space-x-4">
+                  <div className="flex items-center space-x-1">
                     <input
-                      id="date"
-                      type="date"
-                      {...register('date')}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                      type="radio"
+                      id="tire_pressure_ok_ok"
+                      value="true"
+                      {...register('tire_pressure_ok')}
+                      className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
                       disabled={!canAdd}
                     />
-                    {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
+                    <label htmlFor="tire_pressure_ok_ok" className="text-sm text-gray-700">OK</label>
                   </div>
-                  <div>
-                    <label htmlFor="vehicle_id" className="block text-sm font-medium mb-2 text-gray-700">Véhicule</label>
-                    <select
-                      id="vehicle_id"
-                      {...register('vehicle_id')}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="radio"
+                      id="tire_pressure_ok_nok"
+                      value="false"
+                      {...register('tire_pressure_ok')}
+                      className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
                       disabled={!canAdd}
-                    >
-                      <option value="">Sélectionner un véhicule</option>
-                      {data.vehicles.map(vehicle => (
-                        <option key={vehicle.id} value={vehicle.id}>
-                          {vehicle.plate} - {vehicle.type}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.vehicle_id && <p className="text-red-500 text-sm mt-1">{errors.vehicle_id.message}</p>}
+                    />
+                    <label htmlFor="tire_pressure_ok_nok" className="text-sm text-gray-700">NOK</label>
                   </div>
                 </div>
-
-                <div>
-                  <label htmlFor="driver_id" className="block text-sm font-medium mb-2 text-gray-700">Conducteur (Optionnel)</label>
-                  <select
-                    id="driver_id"
-                    {...register('driver_id')}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                    disabled={!canAdd}
-                  >
-                    <option value="">Sélectionner un conducteur</option>
-                    {data.drivers.map(driver => (
-                      <option key={driver.id} value={driver.id}>
-                        {driver.name}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.driver_id && <p className="text-red-500 text-sm mt-1">{errors.driver_id.message}</p>}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-gray-700">Pression des pneus</label>
-                    <div className="flex space-x-4">
-                      <div className="flex items-center space-x-1">
-                        <input
-                          type="radio"
-                          id="tire_pressure_ok_ok"
-                          value="true"
-                          {...register('tire_pressure_ok')}
-                          className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
-                          disabled={!canAdd}
-                        />
-                        <label htmlFor="tire_pressure_ok_ok" className="text-sm text-gray-700">OK</label>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <input
-                          type="radio"
-                          id="tire_pressure_ok_nok"
-                          value="false"
-                          {...register('tire_pressure_ok')}
-                          className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
-                          disabled={!canAdd}
-                        />
-                        <label htmlFor="tire_pressure_ok_nok" className="text-sm text-gray-700">NOK</label>
-                      </div>
-                    </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700">Feux</label>
+                <div className="flex space-x-4">
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="radio"
+                      id="lights_ok_ok"
+                      value="true"
+                      {...register('lights_ok')}
+                      className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                      disabled={!canAdd}
+                    />
+                    <label htmlFor="lights_ok_ok" className="text-sm text-gray-700">OK</label>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-gray-700">Feux</label>
-                    <div className="flex space-x-4">
-                      <div className="flex items-center space-x-1">
-                        <input
-                          type="radio"
-                          id="lights_ok_ok"
-                          value="true"
-                          {...register('lights_ok')}
-                          className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
-                          disabled={!canAdd}
-                        />
-                        <label htmlFor="lights_ok_ok" className="text-sm text-gray-700">OK</label>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <input
-                          type="radio"
-                          id="lights_ok_nok"
-                          value="false"
-                          {...register('lights_ok')}
-                          className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
-                          disabled={!canAdd}
-                        />
-                        <label htmlFor="lights_ok_nok" className="text-sm text-gray-700">NOK</label>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-gray-700">Niveau d'huile</label>
-                    <div className="flex space-x-4">
-                      <div className="flex items-center space-x-1">
-                        <input
-                          type="radio"
-                          id="oil_level_ok_ok"
-                          value="true"
-                          {...register('oil_level_ok')}
-                          className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
-                          disabled={!canAdd}
-                        />
-                        <label htmlFor="oil_level_ok_ok" className="text-sm text-gray-700">OK</label>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <input
-                          type="radio"
-                          id="oil_level_ok_nok"
-                          value="false"
-                          {...register('oil_level_ok')}
-                          className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
-                          disabled={!canAdd}
-                        />
-                        <label htmlFor="oil_level_ok_nok" className="text-sm text-gray-700">NOK</label>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-gray-700">Niveaux de fluides</label>
-                    <div className="flex space-x-4">
-                      <div className="flex items-center space-x-1">
-                        <input
-                          type="radio"
-                          id="fluid_levels_ok_ok"
-                          value="true"
-                          {...register('fluid_levels_ok')}
-                          className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
-                          disabled={!canAdd}
-                        />
-                        <label htmlFor="fluid_levels_ok_ok" className="text-sm text-gray-700">OK</label>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <input
-                          type="radio"
-                          id="fluid_levels_ok_nok"
-                          value="false"
-                          {...register('fluid_levels_ok')}
-                          className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
-                          disabled={!canAdd}
-                        />
-                        <label htmlFor="fluid_levels_ok_nok" className="text-sm text-gray-700">NOK</label>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-gray-700">Freins</label>
-                    <div className="flex space-x-4">
-                      <div className="flex items-center space-x-1">
-                        <input
-                          type="radio"
-                          id="brakes_ok_ok"
-                          value="true"
-                          {...register('brakes_ok')}
-                          className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
-                          disabled={!canAdd}
-                        />
-                        <label htmlFor="brakes_ok_ok" className="text-sm text-gray-700">OK</label>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <input
-                          type="radio"
-                          id="brakes_ok_nok"
-                          value="false"
-                          {...register('brakes_ok')}
-                          className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
-                          disabled={!canAdd}
-                        />
-                        <label htmlFor="brakes_ok_nok" className="text-sm text-gray-700">NOK</label>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-gray-700">Essuie-glaces</label>
-                    <div className="flex space-x-4">
-                      <div className="flex items-center space-x-1">
-                        <input
-                          type="radio"
-                          id="wipers_ok_ok"
-                          value="true"
-                          {...register('wipers_ok')}
-                          className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
-                          disabled={!canAdd}
-                        />
-                        <label htmlFor="wipers_ok_ok" className="text-sm text-gray-700">OK</label>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <input
-                          type="radio"
-                          id="wipers_ok_nok"
-                          value="false"
-                          {...register('wipers_ok')}
-                          className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
-                          disabled={!canAdd}
-                        />
-                        <label htmlFor="wipers_ok_nok" className="text-sm text-gray-700">NOK</label>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-gray-700">Klaxon</label>
-                    <div className="flex space-x-4">
-                      <div className="flex items-center space-x-1">
-                        <input
-                          type="radio"
-                          id="horn_ok_ok"
-                          value="true"
-                          {...register('horn_ok')}
-                          className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
-                          disabled={!canAdd}
-                        />
-                        <label htmlFor="horn_ok_ok" className="text-sm text-gray-700">OK</label>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <input
-                          type="radio"
-                          id="horn_ok_nok"
-                          value="false"
-                          {...register('horn_ok')}
-                          className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
-                          disabled={!canAdd}
-                        />
-                        <label htmlFor="horn_ok_nok" className="text-sm text-gray-700">NOK</label>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-gray-700">Rétroviseurs</label>
-                    <div className="flex space-x-4">
-                      <div className="flex items-center space-x-1">
-                        <input
-                          type="radio"
-                          id="mirrors_ok_ok"
-                          value="true"
-                          {...register('mirrors_ok')}
-                          className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
-                          disabled={!canAdd}
-                        />
-                        <label htmlFor="mirrors_ok_ok" className="text-sm text-gray-700">OK</label>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <input
-                          type="radio"
-                          id="mirrors_ok_nok"
-                          value="false"
-                          {...register('mirrors_ok')}
-                          className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
-                          disabled={!canAdd}
-                        />
-                        <label htmlFor="mirrors_ok_nok" className="text-sm text-gray-700">NOK</label>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-gray-700">Climatiseur</label>
-                    <div className="flex space-x-4">
-                      <div className="flex items-center space-x-1">
-                        <input
-                          type="radio"
-                          id="ac_working_ok_ok"
-                          value="true"
-                          {...register('ac_working_ok')}
-                          className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
-                          disabled={!canAdd}
-                        />
-                        <label htmlFor="ac_working_ok_ok" className="text-sm text-gray-700">OK</label>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <input
-                          type="radio"
-                          id="ac_working_ok_nok"
-                          value="false"
-                          {...register('ac_working_ok')}
-                          className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
-                          disabled={!canAdd}
-                        />
-                        <label htmlFor="ac_working_ok_nok" className="text-sm text-gray-700">NOK</label>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-gray-700">Vitres</label>
-                    <div className="flex space-x-4">
-                      <div className="flex items-center space-x-1">
-                        <input
-                          type="radio"
-                          id="windows_working_ok_ok"
-                          value="true"
-                          {...register('windows_working_ok')}
-                          className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
-                          disabled={!canAdd}
-                        />
-                        <label htmlFor="windows_working_ok_ok" className="text-sm text-gray-700">OK</label>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <input
-                          type="radio"
-                          id="windows_working_ok_nok"
-                          value="false"
-                          {...register('windows_working_ok')}
-                          className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
-                          disabled={!canAdd}
-                        />
-                        <label htmlFor="windows_working_ok_nok" className="text-sm text-gray-700">NOK</label>
-                      </div>
-                    </div>
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="radio"
+                      id="lights_ok_nok"
+                      value="false"
+                      {...register('lights_ok')}
+                      className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
+                      disabled={!canAdd}
+                    />
+                    <label htmlFor="lights_ok_nok" className="text-sm text-gray-700">NOK</label>
                   </div>
                 </div>
-
-                <div>
-                  <label htmlFor="observations" className="block text-sm font-medium mb-2 text-gray-700">Observations</label>
-                  <textarea
-                    id="observations"
-                    {...register('observations')}
-                    rows={3}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                    disabled={!canAdd}
-                  ></textarea>
-                  {errors.observations && <p className="text-red-500 text-sm mt-1">{errors.observations.message}</p>}
+              </div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700">Niveau d'huile</label>
+                <div className="flex space-x-4">
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="radio"
+                      id="oil_level_ok_ok"
+                      value="true"
+                      {...register('oil_level_ok')}
+                      className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                      disabled={!canAdd}
+                    />
+                    <label htmlFor="oil_level_ok_ok" className="text-sm text-gray-700">OK</label>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="radio"
+                      id="oil_level_ok_nok"
+                      value="false"
+                      {...register('oil_level_ok')}
+                      className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
+                      disabled={!canAdd}
+                    />
+                    <label htmlFor="oil_level_ok_nok" className="text-sm text-gray-700">NOK</label>
+                  </div>
                 </div>
-                <div>
-                  <label htmlFor="issues_to_address" className="block text-sm font-medium mb-2 text-gray-700">Points à traiter</label>
-                  <textarea
-                    id="issues_to_address"
-                    {...register('issues_to_address')}
-                    rows={3}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                    disabled={!canAdd}
-                  ></textarea>
-                  {errors.issues_to_address && <p className="text-red-500 text-sm mt-1">{errors.issues_to_address.message}</p>}
+              </div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700">Niveaux de fluides</label>
+                <div className="flex space-x-4">
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="radio"
+                      id="fluid_levels_ok_ok"
+                      value="true"
+                      {...register('fluid_levels_ok')}
+                      className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                      disabled={!canAdd}
+                    />
+                    <label htmlFor="fluid_levels_ok_ok" className="text-sm text-gray-700">OK</label>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="radio"
+                      id="fluid_levels_ok_nok"
+                      value="false"
+                      {...register('fluid_levels_ok')}
+                      className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
+                      disabled={!canAdd}
+                    />
+                    <label htmlFor="fluid_levels_ok_nok" className="text-sm text-gray-700">NOK</label>
+                  </div>
                 </div>
-
-                <div className="flex justify-end space-x-4 mt-8">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowModal(false)}
-                    className="px-6 py-3 bg-gray-300 hover:bg-gray-400 rounded-lg transition-all duration-300"
-                  >
-                    Annuler
-                  </Button>
-                  {canAdd && (
-                    <Button
-                      type="submit"
-                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
-                    >
-                      Sauvegarder
-                    </Button>
-                  )}
+              </div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700">Freins</label>
+                <div className="flex space-x-4">
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="radio"
+                      id="brakes_ok_ok"
+                      value="true"
+                      {...register('brakes_ok')}
+                      className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                      disabled={!canAdd}
+                    />
+                    <label htmlFor="brakes_ok_ok" className="text-sm text-gray-700">OK</label>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="radio"
+                      id="brakes_ok_nok"
+                      value="false"
+                      {...register('brakes_ok')}
+                      className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
+                      disabled={!canAdd}
+                    />
+                    <label htmlFor="brakes_ok_nok" className="text-sm text-gray-700">NOK</label>
+                  </div>
                 </div>
-              </form>
+              </div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700">Essuie-glaces</label>
+                <div className="flex space-x-4">
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="radio"
+                      id="wipers_ok_ok"
+                      value="true"
+                      {...register('wipers_ok')}
+                      className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                      disabled={!canAdd}
+                    />
+                    <label htmlFor="wipers_ok_ok" className="text-sm text-gray-700">OK</label>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="radio"
+                      id="wipers_ok_nok"
+                      value="false"
+                      {...register('wipers_ok')}
+                      className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
+                      disabled={!canAdd}
+                    />
+                    <label htmlFor="wipers_ok_nok" className="text-sm text-gray-700">NOK</label>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700">Klaxon</label>
+                <div className="flex space-x-4">
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="radio"
+                      id="horn_ok_ok"
+                      value="true"
+                      {...register('horn_ok')}
+                      className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                      disabled={!canAdd}
+                    />
+                    <label htmlFor="horn_ok_ok" className="text-sm text-gray-700">OK</label>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="radio"
+                      id="horn_ok_nok"
+                      value="false"
+                      {...register('horn_ok')}
+                      className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
+                      disabled={!canAdd}
+                    />
+                    <label htmlFor="horn_ok_nok" className="text-sm text-gray-700">NOK</label>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700">Rétroviseurs</label>
+                <div className="flex space-x-4">
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="radio"
+                      id="mirrors_ok_ok"
+                      value="true"
+                      {...register('mirrors_ok')}
+                      className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                      disabled={!canAdd}
+                    />
+                    <label htmlFor="mirrors_ok_ok" className="text-sm text-gray-700">OK</label>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="radio"
+                      id="mirrors_ok_nok"
+                      value="false"
+                      {...register('mirrors_ok')}
+                      className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
+                      disabled={!canAdd}
+                    />
+                    <label htmlFor="mirrors_ok_nok" className="text-sm text-gray-700">NOK</label>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700">Climatiseur</label>
+                <div className="flex space-x-4">
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="radio"
+                      id="ac_working_ok_ok"
+                      value="true"
+                      {...register('ac_working_ok')}
+                      className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                      disabled={!canAdd}
+                    />
+                    <label htmlFor="ac_working_ok_ok" className="text-sm text-gray-700">OK</label>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="radio"
+                      id="ac_working_ok_nok"
+                      value="false"
+                      {...register('ac_working_ok')}
+                      className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
+                      disabled={!canAdd}
+                    />
+                    <label htmlFor="ac_working_ok_nok" className="text-sm text-gray-700">NOK</label>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700">Vitres</label>
+                <div className="flex space-x-4">
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="radio"
+                      id="windows_working_ok_ok"
+                      value="true"
+                      {...register('windows_working_ok')}
+                      className="h-4 w-4 text-green-600 border-gray-300 focus:ring-green-500"
+                      disabled={!canAdd}
+                    />
+                    <label htmlFor="windows_working_ok_ok" className="text-sm text-gray-700">OK</label>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="radio"
+                      id="windows_working_ok_nok"
+                      value="false"
+                      {...register('windows_working_ok')}
+                      className="h-4 w-4 text-red-600 border-gray-300 focus:ring-red-500"
+                      disabled={!canAdd}
+                    />
+                    <label htmlFor="windows_working_ok_nok" className="text-sm text-gray-700">NOK</label>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+
+            <div>
+              <label htmlFor="observations" className="block text-sm font-medium mb-2 text-gray-700">Observations</label>
+              <textarea
+                id="observations"
+                {...register('observations')}
+                rows={3}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                disabled={!canAdd}
+              ></textarea>
+              {errors.observations && <p className="text-red-500 text-sm mt-1">{errors.observations.message}</p>}
+            </div>
+            <div>
+              <label htmlFor="issues_to_address" className="block text-sm font-medium mb-2 text-gray-700">Points à traiter</label>
+              <textarea
+                id="issues_to_address"
+                {...register('issues_to_address')}
+                rows={3}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+                disabled={!canAdd}
+              ></textarea>
+              {errors.issues_to_address && <p className="text-red-500 text-sm mt-1">{errors.issues_to_address.message}</p>}
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowModal(false)}
+              >
+                Annuler
+              </Button>
+              {canAdd && (
+                <Button
+                  type="submit"
+                >
+                  Sauvegarder
+                </Button>
+              )}
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -9,6 +9,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { vehicleSchema } from '../types/formSchemas'; // Import the schema
 import { z } from 'zod'; // Import z
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from './ui/dialog'; // Import shadcn/ui Dialog components
 
 type VehicleFormData = z.infer<typeof vehicleSchema>;
 
@@ -318,102 +326,99 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
       )}
 
       {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
-            <div className="p-8">
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">
-                {editingVehicle ? 'Modifier un Véhicule' : 'Ajouter un Véhicule'}
-              </h3>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <div>
-                  <label htmlFor="plate" className="block text-sm font-medium mb-2 text-gray-700">Plaque d'immatriculation</label>
-                  <input
-                    id="plate"
-                    type="text"
-                    {...register('plate')}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  {errors.plate && <p className="text-red-500 text-sm mt-1">{errors.plate.message}</p>}
-                </div>
-                <div>
-                  <label htmlFor="type" className="block text-sm font-medium mb-2 text-gray-700">Type de véhicule</label>
-                  <select
-                    id="type"
-                    {...register('type')}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="Camionnette">Camionnette</option>
-                    <option value="Camion">Camion</option>
-                    <option value="Fourgon">Fourgon</option>
-                    <option value="Utilitaire">Utilitaire</option>
-                  </select>
-                  {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>}
-                </div>
-                <div>
-                  <label htmlFor="status" className="block text-sm font-medium mb-2 text-gray-700">Statut</label>
-                  <select
-                    id="status"
-                    {...register('status')}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="Disponible">Disponible</option>
-                    <option value="En mission">En mission</option>
-                    <option value="Maintenance">Maintenance</option>
-                  </select>
-                  {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status.message}</p>}
-                </div>
-                <div>
-                  <label htmlFor="mileage" className="block text-sm font-medium mb-2 text-gray-700">Kilométrage actuel</label>
-                  <input
-                    id="mileage"
-                    type="number"
-                    {...register('mileage', { valueAsNumber: true })}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  {errors.mileage && <p className="text-red-500 text-sm mt-1">{errors.mileage.message}</p>}
-                </div>
-                <div>
-                  <label htmlFor="last_service_date" className="block text-sm font-medium mb-2 text-gray-700">Date dernière vidange</label>
-                  <input
-                    id="last_service_date"
-                    type="date"
-                    {...register('last_service_date')}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  {errors.last_service_date && <p className="text-red-500 text-sm mt-1">{errors.last_service_date.message}</p>}
-                </div>
-                <div>
-                  <label htmlFor="last_service_mileage" className="block text-sm font-medium mb-2 text-gray-700">Kilométrage dernière vidange</label>
-                  <input
-                    id="last_service_mileage"
-                    type="number"
-                    {...register('last_service_mileage', { valueAsNumber: true })}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  {errors.last_service_mileage && <p className="text-red-500 text-sm mt-1">{errors.last_service_mileage.message}</p>}
-                </div>
-                <div className="flex justify-end space-x-4 mt-8">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowModal(false)}
-                    className="px-6 py-3 bg-gray-300 hover:bg-gray-400 rounded-lg transition-all duration-300"
-                  >
-                    Annuler
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
-                  >
-                    Sauvegarder
-                  </Button>
-                </div>
-              </form>
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>{editingVehicle ? 'Modifier un Véhicule' : 'Ajouter un Véhicule'}</DialogTitle>
+            <DialogDescription>
+              {editingVehicle ? 'Modifiez les détails du véhicule.' : 'Ajoutez un nouveau véhicule à votre flotte.'}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
+            <div>
+              <label htmlFor="plate" className="block text-sm font-medium mb-2 text-gray-700">Plaque d'immatriculation</label>
+              <input
+                id="plate"
+                type="text"
+                {...register('plate')}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {errors.plate && <p className="text-red-500 text-sm mt-1">{errors.plate.message}</p>}
             </div>
-          </div>
-        </div>
-      )}
+            <div>
+              <label htmlFor="type" className="block text-sm font-medium mb-2 text-gray-700">Type de véhicule</label>
+              <select
+                id="type"
+                {...register('type')}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="Camionnette">Camionnette</option>
+                <option value="Camion">Camion</option>
+                <option value="Fourgon">Fourgon</option>
+                <option value="Utilitaire">Utilitaire</option>
+              </select>
+              {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>}
+            </div>
+            <div>
+              <label htmlFor="status" className="block text-sm font-medium mb-2 text-gray-700">Statut</label>
+              <select
+                id="status"
+                {...register('status')}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="Disponible">Disponible</option>
+                <option value="En mission">En mission</option>
+                <option value="Maintenance">Maintenance</option>
+              </select>
+              {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status.message}</p>}
+            </div>
+            <div>
+              <label htmlFor="mileage" className="block text-sm font-medium mb-2 text-gray-700">Kilométrage actuel</label>
+              <input
+                id="mileage"
+                type="number"
+                {...register('mileage', { valueAsNumber: true })}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {errors.mileage && <p className="text-red-500 text-sm mt-1">{errors.mileage.message}</p>}
+            </div>
+            <div>
+              <label htmlFor="last_service_date" className="block text-sm font-medium mb-2 text-gray-700">Date dernière vidange</label>
+              <input
+                id="last_service_date"
+                type="date"
+                {...register('last_service_date')}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {errors.last_service_date && <p className="text-red-500 text-sm mt-1">{errors.last_service_date.message}</p>}
+            </div>
+            <div>
+              <label htmlFor="last_service_mileage" className="block text-sm font-medium mb-2 text-gray-700">Kilométrage dernière vidange</label>
+              <input
+                id="last_service_mileage"
+                type="number"
+                {...register('last_service_mileage', { valueAsNumber: true })}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {errors.last_service_mileage && <p className="text-red-500 text-sm mt-1">{errors.last_service_mileage.message}</p>}
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowModal(false)}
+              >
+                Annuler
+              </Button>
+              <Button
+                type="submit"
+              >
+                Sauvegarder
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={showConfirmDialog}

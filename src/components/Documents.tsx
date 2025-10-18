@@ -9,6 +9,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { documentSchema } from '../types/formSchemas'; // Import the schema
 import { z } from 'zod'; // Import z
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from './ui/dialog'; // Import shadcn/ui Dialog components
 
 type DocumentFormData = z.infer<typeof documentSchema>;
 
@@ -351,87 +359,84 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
       )}
 
       {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
-            <div className="p-8">
-              <h3 className="text-2xl font-bold text-gray-800 mb-6">
-                {editingDocument ? 'Modifier un Document' : 'Ajouter un Document'}
-              </h3>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <div>
-                  <label htmlFor="vehicle_id" className="block text-sm font-medium mb-2 text-gray-700">Véhicule</label>
-                  <select
-                    id="vehicle_id"
-                    {...register('vehicle_id')}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="">Sélectionner un véhicule</option>
-                    {data.vehicles.map(vehicle => (
-                      <option key={vehicle.id} value={vehicle.id}>
-                        {vehicle.plate} - {vehicle.type}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.vehicle_id && <p className="text-red-500 text-sm mt-1">{errors.vehicle_id.message}</p>}
-                </div>
-                <div>
-                  <label htmlFor="type" className="block text-sm font-medium mb-2 text-gray-700">Type de document</label>
-                  <select
-                    id="type"
-                    {...register('type')}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="">Sélectionner un type</option>
-                    <option value="Assurance">Assurance</option>
-                    <option value="Contrôle Technique">Contrôle Technique</option>
-                    <option value="Taxe Véhicule">Taxe Véhicule</option>
-                    <option value="Vignette">Vignette</option>
-                    <option value="Permis de Circulation">Permis de Circulation</option>
-                  </select>
-                  {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>}
-                </div>
-                <div>
-                  <label htmlFor="number" className="block text-sm font-medium mb-2 text-gray-700">Numéro de document</label>
-                  <input
-                    id="number"
-                    type="text"
-                    {...register('number')}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  {errors.number && <p className="text-red-500 text-sm mt-1">{errors.number.message}</p>}
-                </div>
-                <div>
-                  <label htmlFor="expiration" className="block text-sm font-medium mb-2 text-gray-700">Date d'expiration</label>
-                  <input
-                    id="expiration"
-                    type="date"
-                    {...register('expiration')}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  {errors.expiration && <p className="text-red-500 text-sm mt-1">{errors.expiration.message}</p>}
-                </div>
-                <div className="flex justify-end space-x-4 mt-8">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowModal(false)}
-                    className="px-6 py-3 bg-gray-300 hover:bg-gray-400 rounded-lg transition-all duration-300"
-                  >
-                    Annuler
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-300"
-                  >
-                    Sauvegarder
-                  </Button>
-                </div>
-              </form>
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>{editingDocument ? 'Modifier un Document' : 'Ajouter un Document'}</DialogTitle>
+            <DialogDescription>
+              {editingDocument ? 'Modifiez les détails du document.' : 'Ajoutez un nouveau document.'}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
+            <div>
+              <label htmlFor="vehicle_id" className="block text-sm font-medium mb-2 text-gray-700">Véhicule</label>
+              <select
+                id="vehicle_id"
+                {...register('vehicle_id')}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Sélectionner un véhicule</option>
+                {data.vehicles.map(vehicle => (
+                  <option key={vehicle.id} value={vehicle.id}>
+                    {vehicle.plate} - {vehicle.type}
+                  </option>
+                ))}
+              </select>
+              {errors.vehicle_id && <p className="text-red-500 text-sm mt-1">{errors.vehicle_id.message}</p>}
             </div>
-          </div>
-        </div>
-      )}
+            <div>
+              <label htmlFor="type" className="block text-sm font-medium mb-2 text-gray-700">Type de document</label>
+              <select
+                id="type"
+                {...register('type')}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Sélectionner un type</option>
+                <option value="Assurance">Assurance</option>
+                <option value="Contrôle Technique">Contrôle Technique</option>
+                <option value="Taxe Véhicule">Taxe Véhicule</option>
+                <option value="Vignette">Vignette</option>
+                <option value="Permis de Circulation">Permis de Circulation</option>
+              </select>
+              {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>}
+            </div>
+            <div>
+              <label htmlFor="number" className="block text-sm font-medium mb-2 text-gray-700">Numéro de document</label>
+              <input
+                id="number"
+                type="text"
+                {...register('number')}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {errors.number && <p className="text-red-500 text-sm mt-1">{errors.number.message}</p>}
+            </div>
+            <div>
+              <label htmlFor="expiration" className="block text-sm font-medium mb-2 text-gray-700">Date d'expiration</label>
+              <input
+                id="expiration"
+                type="date"
+                {...register('expiration')}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {errors.expiration && <p className="text-red-500 text-sm mt-1">{errors.expiration.message}</p>}
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowModal(false)}
+              >
+                Annuler
+              </Button>
+              <Button
+                type="submit"
+              >
+                Sauvegarder
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={showConfirmDialog}
