@@ -276,7 +276,7 @@ function App() {
 
       <nav className="bg-white shadow-md sticky top-0 z-40">
         <div className="container mx-auto px-6">
-          <div className="flex space-x-1 overflow-x-auto py-2 border-2 border-red-500"> 
+          <div className="flex space-x-1 overflow-x-auto py-2"> 
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
