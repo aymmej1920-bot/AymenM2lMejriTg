@@ -1,14 +1,13 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Phone, ChevronUp, ChevronDown, Search, Calendar, Download } from 'lucide-react';
-import { FleetData, Driver } from '../types';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { Phone, Calendar, AlertTriangle } from 'lucide-react'; // Maintenu uniquement les icônes utilisées dans le formulaire ou les alertes spécifiques
+import { FleetData, Driver, DataTableColumn } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date';
-import ConfirmDialog from './ConfirmDialog';
 import { Button } from './ui/button';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { driverSchema } from '../types/formSchemas'; // Import the schema
-import { z } from 'zod'; // Import z
+import { driverSchema } from '../types/formSchemas';
+import { z } from 'zod';
 import {
   Dialog,
   DialogContent,
@@ -16,8 +15,8 @@ import {
   DialogFooter,
   DialogTitle,
   DialogDescription,
-} from './ui/dialog'; // Import shadcn/ui Dialog components
-import { exportToXLSX } from '../utils/export'; // Import the export utility
+} from './ui/dialog';
+import DataTable from './DataTable'; // Import the new DataTable component
 
 type DriverFormData = z.infer<typeof driverSchema>;
 
@@ -32,8 +31,6 @@ interface DriversProps {
 const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [driverToDelete, setDriverToDelete] = useState<string | null>(null);
 
   const { register, handleSubmit, reset, formState: { errors = {} } } = useForm<DriverFormData>({
     resolver: zodResolver(driverSchema),
@@ -60,59 +57,6 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
     }
   }, [editingDriver, reset]);
 
-  // State for filtering, sorting, and pagination
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState<string>(''); // New state for status filter
-  const [sortColumn, setSortColumn] = useState<keyof Driver>('name');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10; // You can adjust this value
-
-  // Get unique statuses for filter options
-  const uniqueStatuses = useMemo(() => {
-    const statuses = new Set(data.drivers.map(d => d.status));
-    return Array.from(statuses);
-  }, [data.drivers]);
-
-  // Filtered and sorted data
-  const filteredAndSortedDrivers = useMemo(() => {
-    let filtered = data.drivers.filter(driver => {
-      const matchesSearch = 
-        driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        driver.license.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        driver.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        driver.phone.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesStatus = selectedStatus ? driver.status === selectedStatus : true;
-
-      return matchesSearch && matchesStatus;
-    });
-
-    filtered.sort((a, b) => {
-      const aValue = a[sortColumn];
-      const bValue = b[sortColumn];
-
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-      }
-      // For date strings, we can compare them directly as strings if they are in YYYY-MM-DD format
-      if (sortColumn === 'expiration' && typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-      }
-      // Fallback for other types or if values are null/undefined
-      return 0;
-    });
-    return filtered;
-  }, [data.drivers, searchTerm, selectedStatus, sortColumn, sortDirection]);
-
-  // Paginated data
-  const totalPages = Math.ceil(filteredAndSortedDrivers.length / itemsPerPage);
-  const currentDrivers = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return filteredAndSortedDrivers.slice(startIndex, endIndex);
-  }, [filteredAndSortedDrivers, currentPage, itemsPerPage]);
-
   const handleAddDriver = () => {
     setEditingDriver(null);
     setShowModal(true);
@@ -121,19 +65,6 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
   const handleEditDriver = (driver: Driver) => {
     setEditingDriver(driver);
     setShowModal(true);
-  };
-
-  const confirmDeleteDriver = (driverId: string) => {
-    setDriverToDelete(driverId);
-    setShowConfirmDialog(true);
-  };
-
-  const executeDeleteDriver = () => {
-    if (driverToDelete) {
-      onDelete(driverToDelete);
-      showSuccess('Conducteur supprimé avec succès !');
-      setDriverToDelete(null);
-    }
   };
 
   const onSubmit = (formData: DriverFormData) => {
@@ -154,12 +85,14 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
       'Repos': 'bg-gray-100 text-gray-800',
       'Congé': 'bg-blue-100 text-blue-800'
     };
-    return `px-3 py-1 text-xs rounded-full font-medium ${classes[status as keyof typeof classes] || 'bg-gray-100 text-gray-800'}`;
+    return <span className={`px-3 py-1 text-xs rounded-full font-medium ${classes[status as keyof typeof classes] || 'bg-gray-100 text-gray-800'}`}>{status}</span>;
   };
 
   const getDaysUntilExpiration = (expirationDate: string) => {
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const expiry = new Date(expirationDate);
+    expiry.setHours(0, 0, 0, 0);
     const timeDiff = expiry.getTime() - today.getTime();
     return Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
   };
@@ -168,213 +101,77 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
     return getDaysUntilExpiration(expirationDate) < 60;
   };
 
-  const handleSort = (column: keyof Driver) => {
-    if (sortColumn === column) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortColumn(column);
-      setSortDirection('asc');
-    }
-  };
+  const columns: DataTableColumn<Driver>[] = useMemo(() => [
+    { key: 'name', label: 'Nom', sortable: true, defaultVisible: true },
+    { key: 'license', label: 'N° Permis', sortable: true, defaultVisible: true },
+    {
+      key: 'expiration',
+      label: 'Expiration',
+      sortable: true,
+      defaultVisible: true,
+      render: (item) => {
+        const daysLeft = getDaysUntilExpiration(item.expiration);
+        return (
+          <div className={`${daysLeft < 60 ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
+            {formatDate(item.expiration)}
+            {daysLeft < 60 && (
+              <div className="text-xs text-red-500">
+                Expire dans {daysLeft} jours
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+    { key: 'status', label: 'Statut', sortable: true, defaultVisible: true, render: (item) => getStatusBadge(item.status) },
+    {
+      key: 'phone',
+      label: 'Téléphone',
+      sortable: true,
+      defaultVisible: true,
+      render: (item) => (
+        <div className="flex items-center space-x-2">
+          <Phone className="w-4 h-4" />
+          <span>{item.phone}</span>
+        </div>
+      ),
+    },
+  ], []);
 
-  const renderSortIcon = (column: keyof Driver) => {
-    if (sortColumn === column) {
-      return sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />;
-    }
-    return null;
-  };
+  const expiringDrivers = data.drivers.filter(driver => isExpiringSoon(driver.expiration));
 
-  const handleExportDrivers = () => {
-    const dataToExport = filteredAndSortedDrivers.map(driver => ({
-      Nom: driver.name,
-      "N° Permis": driver.license,
-      Expiration: formatDate(driver.expiration),
-      Statut: driver.status,
-      Téléphone: driver.phone,
-    }));
-
-    const headers = ["Nom", "N° Permis", "Expiration", "Statut", "Téléphone"];
-
-    exportToXLSX(dataToExport, { fileName: 'conducteurs', headers });
-    showSuccess('Conducteurs exportés avec succès au format XLSX !');
-  };
+  const renderAlerts = useCallback(() => {
+    if (expiringDrivers.length === 0) return null;
+    return (
+      <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
+        <div className="flex items-center">
+          <AlertTriangle className="w-5 h-5 text-red-400 mr-3" />
+          <div>
+            <h3 className="text-red-800 font-semibold">Attention!</h3>
+            <p className="text-red-700">
+              {expiringDrivers.length} permis de conduire expirent dans moins de 60 jours.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }, [expiringDrivers]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-4xl font-bold text-gray-800">Gestion des Conducteurs</h2>
-        <div className="flex space-x-4">
-          <Button
-            onClick={handleExportDrivers}
-            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
-          >
-            <Download className="w-5 h-5" />
-            <span>Exporter XLSX</span>
-          </Button>
-          <Button
-            onClick={handleAddDriver}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
-          >
-            <Plus className="w-5 h-5" />
-            <span>Ajouter Conducteur</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* Search and Filter Inputs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Rechercher un conducteur par nom, permis, statut ou téléphone..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1); // Reset to first page on new search
-            }}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-          />
-        </div>
-
-        <div>
-          <select
-            value={selectedStatus}
-            onChange={(e) => {
-              setSelectedStatus(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="">Tous les statuts</option>
-            {uniqueStatuses.map(status => (
-              <option key={status} value={status}>{status}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        <table className="min-w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('name')}>
-                <div className="flex items-center">
-                  Nom {renderSortIcon('name')}
-                </div>
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('license')}>
-                <div className="flex items-center">
-                  N° Permis {renderSortIcon('license')}
-                </div>
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('expiration')}>
-                <div className="flex items-center">
-                  Expiration {renderSortIcon('expiration')}
-                </div>
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('status')}>
-                <div className="flex items-center">
-                  Statut {renderSortIcon('status')}
-                </div>
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('phone')}>
-                <div className="flex items-center">
-                  Téléphone {renderSortIcon('phone')}
-                </div>
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {currentDrivers.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
-                  Aucun conducteur trouvé.
-                </td>
-              </tr>
-            ) : (
-              currentDrivers.map((driver) => (
-                <tr key={driver.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{driver.name}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{driver.license}</td>
-                  <td className={`px-6 py-4 text-sm ${isExpiringSoon(driver.expiration) ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
-                    {formatDate(driver.expiration)}
-                    {isExpiringSoon(driver.expiration) && (
-                      <div className="text-xs text-red-500">
-                        Expire dans {getDaysUntilExpiration(driver.expiration)} jours
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-sm">
-                    <span className={getStatusBadge(driver.status)}>{driver.status}</span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    <div className="flex items-center space-x-2">
-                      <Phone className="w-4 h-4" />
-                      <span>{driver.phone}</span>
-                    </div>
-                  </td>
-                    <td className="px-6 py-4 text-sm">
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEditDriver(driver)}
-                          className="text-blue-600 hover:text-blue-900 transition-colors"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => confirmDeleteDriver(driver.id)}
-                          className="text-red-600 hover:text-red-900 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Pagination Controls */}
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center space-x-2 mt-4">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-            disabled={currentPage === 1}
-            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Précédent
-          </Button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-            <Button
-              key={page}
-              variant={currentPage === page ? 'default' : 'outline'}
-              onClick={() => setCurrentPage(page)}
-              className={`px-4 py-2 rounded-lg ${
-                currentPage === page ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'
-              }`}
-            >
-              {page}
-            </Button>
-          ))}
-          <Button
-            variant="outline"
-            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-            disabled={currentPage === totalPages}
-            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Suivant
-          </Button>
-        </div>
-      )}
+    <>
+      <DataTable
+        title="Gestion des Conducteurs"
+        data={data.drivers}
+        columns={columns}
+        onAdd={handleAddDriver}
+        onEdit={handleEditDriver}
+        onDelete={onDelete}
+        addLabel="Ajouter Conducteur"
+        searchPlaceholder="Rechercher un conducteur par nom, permis, statut ou téléphone..."
+        exportFileName="conducteurs"
+        isLoading={false}
+        renderAlerts={renderAlerts}
+      />
 
       {/* Modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
@@ -460,17 +257,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
           </form>
         </DialogContent>
       </Dialog>
-
-      <ConfirmDialog
-        open={showConfirmDialog}
-        onOpenChange={setShowConfirmDialog}
-        title="Confirmer la suppression"
-        description="Êtes-vous sûr de vouloir supprimer ce conducteur ? Cette action est irréversible."
-        onConfirm={executeDeleteDriver}
-        confirmText="Supprimer"
-        variant="destructive"
-      />
-    </div>
+    </>
   );
 };
 
