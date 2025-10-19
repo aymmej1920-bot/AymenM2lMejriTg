@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Wrench, AlertTriangle, Clock, ClipboardCheck, ChevronUp, ChevronDown, Search, Calendar, Download } from 'lucide-react';
-import { FleetData, MaintenanceEntry, PreDepartureChecklist } from '../types';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { Plus, Wrench, AlertTriangle, Clock, ClipboardCheck, Calendar } from 'lucide-react';
+import { FleetData, MaintenanceEntry, PreDepartureChecklist, DataTableColumn } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date';
 import { useForm } from 'react-hook-form';
@@ -16,7 +16,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from './ui/dialog'; // Import shadcn/ui Dialog components
-import { exportToXLSX } from '../utils/export'; // Import the export utility
+import DataTable from './DataTable'; // Import the new DataTable component
 
 type MaintenanceEntryFormData = z.infer<typeof maintenanceEntrySchema>;
 
@@ -63,16 +63,11 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
     }
   }, [selectedVehicleId, reset, data.vehicles]);
 
-  // State for filtering, sorting, and pagination
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedVehicleFilter, setSelectedVehicleFilter] = useState<string>(''); // New state for vehicle filter
-  const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>(''); // New state for type filter
+  // State for filtering for Maintenance History
+  const [selectedVehicleFilter, setSelectedVehicleFilter] = useState<string>('');
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
-  const [sortColumn, setSortColumn] = useState<keyof MaintenanceEntry>('date');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10; // You can adjust this value
 
   // Get unique types for filter options
   const uniqueMaintenanceTypes = useMemo(() => {
@@ -80,19 +75,9 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
     return Array.from(types);
   }, [data.maintenance]);
 
-  // Filtered and sorted data for Maintenance History
-  const filteredAndSortedMaintenanceEntries = useMemo(() => {
-    let filtered = data.maintenance.filter(entry => {
-      const vehicle = data.vehicles.find(v => v.id === entry.vehicle_id);
-      
-      const matchesSearch = (
-        entry.date.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (vehicle?.plate || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        entry.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        entry.mileage.toString().includes(searchTerm) ||
-        entry.cost.toString().includes(searchTerm)
-      );
-
+  // Filtered data for Maintenance History (DataTable will handle sorting and search)
+  const filteredMaintenanceEntries = useMemo(() => {
+    return data.maintenance.filter(entry => {
       const matchesVehicle = selectedVehicleFilter ? entry.vehicle_id === selectedVehicleFilter : true;
       const matchesType = selectedTypeFilter ? entry.type === selectedTypeFilter : true;
 
@@ -104,62 +89,29 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
         (!start || entryDate >= start) &&
         (!end || entryDate <= end);
 
-      return matchesSearch && matchesVehicle && matchesType && matchesDateRange;
+      return matchesVehicle && matchesType && matchesDateRange;
     });
-
-    filtered.sort((a, b) => {
-      const aValue = a[sortColumn];
-      const bValue = b[sortColumn];
-
-      // Handle null/undefined values first (though not expected for these columns)
-      if (aValue === null || aValue === undefined) {
-        return sortDirection === 'asc' ? -1 : 1;
-      }
-      if (bValue === null || bValue === undefined) {
-        return sortDirection === 'asc' ? 1 : -1;
-      }
-
-      // Special handling for vehicle_id to sort by plate
-      if (sortColumn === 'vehicle_id') {
-        const aVehicle = data.vehicles.find(v => v.id === a.vehicle_id);
-        const bVehicle = data.vehicles.find(v => v.id === b.vehicle_id);
-        const aPlate = aVehicle?.plate || '';
-        const bPlate = bVehicle?.plate || '';
-        return sortDirection === 'asc' ? aPlate.localeCompare(bPlate) : bPlate.localeCompare(aPlate);
-      }
-
-      // For date strings (like 'date'), compare them directly as strings
-      if (sortColumn === 'date' && typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-      }
-      
-      // General number comparison
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
-        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
-      }
-      
-      // General string comparison (fallback for other string columns)
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-      }
-      
-      // Fallback for other types
-      return 0;
-    });
-    return filtered;
-  }, [data.maintenance, data.vehicles, searchTerm, selectedVehicleFilter, selectedTypeFilter, startDate, endDate, sortColumn, sortDirection]);
-
-  // Paginated data for Maintenance History
-  const totalPages = Math.ceil(filteredAndSortedMaintenanceEntries.length / itemsPerPage);
-  const currentMaintenanceEntries = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return filteredAndSortedMaintenanceEntries.slice(startIndex, endIndex);
-  }, [filteredAndSortedMaintenanceEntries, currentPage, itemsPerPage]);
+  }, [data.maintenance, selectedVehicleFilter, selectedTypeFilter, startDate, endDate]);
 
   const handleAddMaintenance = (vehicleId?: string) => {
     setSelectedVehicleId(vehicleId || '');
     setShowModal(true);
+  };
+
+  const handleEditMaintenance = (maintenanceEntry: MaintenanceEntry) => {
+    // For now, DataTable doesn't support editing, but if it did, this would be the handler
+    // This function is currently not used by DataTable, but kept for future expansion
+    console.log("Edit maintenance entry:", maintenanceEntry);
+    // You would typically set editingFuel and show the modal here
+    // setEditingFuel(maintenanceEntry);
+    // setShowModal(true);
+  };
+
+  const handleDeleteMaintenance = (id: string) => {
+    // This function is currently not used by DataTable, but kept for future expansion
+    console.log("Delete maintenance entry with ID:", id);
+    // You would typically call onDelete here
+    // onDelete(id);
   };
 
   const onSubmit = (maintenanceData: MaintenanceEntryFormData) => {
@@ -208,63 +160,85 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
   // Filter checklists with issues to address
   const checklistsWithIssues = preDepartureChecklists.filter(cl => cl.issues_to_address && cl.issues_to_address.trim() !== '');
 
-  const handleSort = (column: keyof MaintenanceEntry) => {
-    if (sortColumn === column) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortColumn(column);
-      setSortDirection('asc');
-    }
-  };
+  const columns: DataTableColumn<MaintenanceEntry>[] = useMemo(() => [
+    { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item) => formatDate(item.date) },
+    {
+      key: 'vehicle_id',
+      label: 'Véhicule',
+      sortable: true,
+      defaultVisible: true,
+      render: (item) => data.vehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A',
+    },
+    { key: 'type', label: 'Type', sortable: true, defaultVisible: true },
+    { key: 'mileage', label: 'Kilométrage', sortable: true, defaultVisible: true, render: (item) => `${item.mileage.toLocaleString()} km` },
+    { key: 'cost', label: 'Coût', sortable: true, defaultVisible: true, render: (item) => `${item.cost.toFixed(2)} TND` },
+  ], [data.vehicles]);
 
-  const renderSortIcon = (column: keyof MaintenanceEntry) => {
-    if (sortColumn === column) {
-      return sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />;
-    }
-    return null;
-  };
-
-  const handleExportMaintenanceHistory = () => {
-    const dataToExport = filteredAndSortedMaintenanceEntries.map(maintenance => {
-      const vehicle = data.vehicles.find(v => v.id === maintenance.vehicle_id);
-      return {
-        Date: formatDate(maintenance.date),
-        Véhicule: vehicle?.plate || 'N/A',
-        Type: maintenance.type,
-        Kilométrage: maintenance.mileage,
-        "Coût (TND)": maintenance.cost.toFixed(2),
-      };
-    });
-
-    const headers = [
-      "Date", "Véhicule", "Type", "Kilométrage", "Coût (TND)"
-    ];
-
-    exportToXLSX(dataToExport, { fileName: 'historique_maintenance', headers });
-    showSuccess('Historique de maintenance exporté avec succès au format XLSX !');
-  };
+  const renderFilters = useCallback((_searchTerm: string, _setSearchTerm: (term: string) => void) => {
+    return (
+      <>
+        <div>
+          <select
+            value={selectedVehicleFilter}
+            onChange={(e) => setSelectedVehicleFilter(e.target.value)}
+            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">Tous les véhicules</option>
+            {data.vehicles.map(vehicle => (
+              <option key={vehicle.id} value={vehicle.id}>
+                {vehicle.plate} - {vehicle.type}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <select
+            value={selectedTypeFilter}
+            onChange={(e) => setSelectedTypeFilter(e.target.value)}
+            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">Tous les types</option>
+            {uniqueMaintenanceTypes.map(type => (
+              <option key={type} value={type}>{type}</option>
+            ))}
+          </select>
+        </div>
+        <div className="relative">
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            placeholder="Date de début"
+          />
+          <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+        </div>
+        <div className="relative">
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            placeholder="Date de fin"
+          />
+          <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+        </div>
+      </>
+    );
+  }, [data.vehicles, uniqueMaintenanceTypes, selectedVehicleFilter, selectedTypeFilter, startDate, endDate]);
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Suivi Maintenance & Vidanges</h2>
-        <div className="flex space-x-4">
-          <Button
-            onClick={handleExportMaintenanceHistory}
-            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
-          >
-            <Download className="w-5 h-5" />
-            <span>Exporter Historique</span>
-          </Button>
-          <Button
-            key="add-maintenance-button"
-            onClick={() => handleAddMaintenance()}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
-          >
-            <Plus className="w-5 h-5" />
-            <span>Ajouter Maintenance</span>
-          </Button>
-        </div>
+        <Button
+          key="add-maintenance-button"
+          onClick={() => handleAddMaintenance()}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+        >
+          <Plus className="w-5 h-5" />
+          <span>Ajouter Maintenance</span>
+        </Button>
       </div>
 
       {/* Alertes maintenance */}
@@ -359,6 +333,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Dernière Vidange</th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Km Dernière Vidange</th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Prochaine Vidange</th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Statut</th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
@@ -400,185 +375,21 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
         </table>
       </div>
 
-      {/* Historique des maintenances */}
+      {/* Historique des maintenances - Now using DataTable */}
       {data.maintenance.length > 0 && (
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-800">Historique des Maintenances</h3>
-          </div>
-
-          {/* Search and Filter Inputs for History */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 px-6 py-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Rechercher dans l'historique par véhicule, type, date ou coût..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setCurrentPage(1); // Reset to first page on new search
-                }}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              />
-            </div>
-
-            <div>
-              <select
-                value={selectedVehicleFilter}
-                onChange={(e) => {
-                  setSelectedVehicleFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Tous les véhicules</option>
-                {data.vehicles.map(vehicle => (
-                  <option key={vehicle.id} value={vehicle.id}>
-                    {vehicle.plate} - {vehicle.type}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <select
-                value={selectedTypeFilter}
-                onChange={(e) => {
-                  setSelectedTypeFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Tous les types</option>
-                {uniqueMaintenanceTypes.map(type => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="relative">
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => {
-                  setStartDate(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder="Date de début"
-              />
-              <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-            </div>
-
-            <div className="relative">
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => {
-                  setEndDate(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder="Date de fin"
-              />
-              <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('date')}>
-                    <div className="flex items-center">
-                      Date {renderSortIcon('date')}
-                    </div>
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('vehicle_id')}>
-                    <div className="flex items-center">
-                      Véhicule {renderSortIcon('vehicle_id')}
-                    </div>
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('type')}>
-                    <div className="flex items-center">
-                      Type {renderSortIcon('type')}
-                    </div>
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('mileage')}>
-                    <div className="flex items-center">
-                      Kilométrage {renderSortIcon('mileage')}
-                    </div>
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('cost')}>
-                    <div className="flex items-center">
-                      Coût {renderSortIcon('cost')}
-                    </div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {currentMaintenanceEntries.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
-                      Aucun enregistrement de maintenance trouvé.
-                    </td>
-                  </tr>
-                ) : (
-                  currentMaintenanceEntries.map((maintenance) => {
-                    const vehicle = data.vehicles.find(v => v.id === maintenance.vehicle_id);
-                    return (
-                      <tr key={maintenance.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(maintenance.date)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                          {vehicle?.plate || 'Véhicule inconnu'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{maintenance.type}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {maintenance.mileage.toLocaleString()} km
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
-                          {maintenance.cost.toFixed(2)} TND
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination Controls for History */}
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center space-x-2 mt-4 py-4">
-              <button
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Précédent
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`px-4 py-2 rounded-lg ${
-                    currentPage === page ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-              <button
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Suivant
-              </button>
-            </div>
-          )}
-        </div>
+        <DataTable
+          title="Historique des Maintenances"
+          data={filteredMaintenanceEntries}
+          columns={columns}
+          onAdd={() => handleAddMaintenance()} // Re-use existing add handler
+          onEdit={handleEditMaintenance} // Placeholder for future edit functionality
+          onDelete={handleDeleteMaintenance} // Placeholder for future delete functionality
+          addLabel="Ajouter Maintenance"
+          searchPlaceholder="Rechercher dans l'historique par véhicule, type, date ou coût..."
+          exportFileName="historique_maintenance"
+          isLoading={false}
+          renderFilters={renderFilters}
+        />
       )}
 
       {/* Modal */}
