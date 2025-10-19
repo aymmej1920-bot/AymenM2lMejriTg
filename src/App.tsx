@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Truck, Users, Route, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck, FileText as ReportIcon } from 'lucide-react'; // Removed CalendarDays icon
+import { Truck, Users, Route, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck, FileText as ReportIcon } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Vehicles from './components/Vehicles';
 import Drivers from './components/Drivers';
@@ -183,6 +183,7 @@ function App() {
                 <div>
                   <h1 className="text-3xl font-bold">Fleet Manager Pro</h1>
                   <p className="text-purple-100 text-sm">Système de Gestion de Flotte Avancé</p>
+                  <p className="text-purple-100 text-xs mt-1">M2L&TG</p> {/* Added this line */}
                 </div>
               </div>
               <SkeletonLoader height="h-10" className="w-32" />
@@ -263,6 +264,7 @@ function App() {
               <div>
                 <h1 className="text-3xl font-bold">Fleet Manager Pro</h1>
                 <p className="text-purple-100 text-sm">Système de Gestion de Flotte Avancé</p>
+                <p className="text-purple-100 text-xs mt-1">M2L&TG</p> {/* Added this line */}
               </div>
             </div>
             <div className="flex items-center space-x-4">
