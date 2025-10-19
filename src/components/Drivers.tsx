@@ -9,11 +9,14 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from './ui/dialog';
 import DataTable from './DataTable';
-import DynamicForm, { DynamicFormFieldConfig } from './forms/DynamicForm'; // Import DynamicForm and DynamicFormFieldConfig
 import { driverSchema } from '../types/formSchemas';
 import { z } from 'zod';
+import { useForm, FormProvider } from 'react-hook-form'; // Import useForm and FormProvider
+import FormField from './forms/FormField'; // Import FormField
+import { Button } from './ui/button'; // Import Button for DialogFooter
 
 type DriverFormData = z.infer<typeof driverSchema>;
 
@@ -28,6 +31,33 @@ interface DriversProps {
 const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
+
+  const methods = useForm<DriverFormData>({
+    resolver: zodResolver(driverSchema),
+    defaultValues: useMemo(() => editingDriver || {
+      name: '',
+      license: '',
+      expiration: new Date().toISOString().split('T')[0],
+      status: 'Disponible',
+      phone: '',
+    }, [editingDriver]),
+  });
+
+  const { handleSubmit, reset } = methods;
+
+  React.useEffect(() => {
+    if (editingDriver) {
+      reset(editingDriver);
+    } else {
+      reset({
+        name: '',
+        license: '',
+        expiration: new Date().toISOString().split('T')[0],
+        status: 'Disponible',
+        phone: '',
+      });
+    }
+  }, [editingDriver, reset]);
 
   const handleAddDriver = () => {
     setEditingDriver(null);
@@ -97,27 +127,6 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
     },
   ], []);
 
-  const driverFormFields: DynamicFormFieldConfig<DriverFormData>[] = useMemo(() => [
-    { name: 'name', label: 'Nom complet', type: 'text', placeholder: 'Ex: John Doe' },
-    { name: 'license', label: 'Numéro de permis', type: 'text', placeholder: 'Ex: 123456789' },
-    { name: 'expiration', label: "Date d'expiration", type: 'date' },
-    { name: 'status', label: 'Statut', type: 'select', options: [
-      { value: 'Disponible', label: 'Disponible' },
-      { value: 'En mission', label: 'En mission' },
-      { value: 'Repos', label: 'Repos' },
-      { value: 'Congé', label: 'Congé' },
-    ]},
-    { name: 'phone', label: 'Téléphone', type: 'tel', placeholder: 'Ex: +216 22 123 456' },
-  ], []);
-
-  const defaultFormValues = useMemo(() => editingDriver || {
-    name: '',
-    license: '',
-    expiration: new Date().toISOString().split('T')[0],
-    status: 'Disponible',
-    phone: '',
-  }, [editingDriver]);
-
   const expiringDrivers = data.drivers.filter(driver => getDaysUntilExpiration(driver.expiration) < 60);
 
   const renderAlerts = useCallback(() => {
@@ -162,13 +171,28 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
               {editingDriver ? 'Modifiez les détails du conducteur.' : 'Ajoutez un nouveau conducteur.'}
             </DialogDescription>
           </DialogHeader>
-          <DynamicForm<DriverFormData>
-            schema={driverSchema}
-            defaultValues={defaultFormValues}
-            onSubmit={onSubmit}
-            fields={driverFormFields}
-            onCancel={() => setShowModal(false)}
-          />
+          <FormProvider {...methods}>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
+              <FormField name="name" label="Nom complet" type="text" placeholder="Ex: John Doe" />
+              <FormField name="license" label="Numéro de permis" type="text" placeholder="Ex: 123456789" />
+              <FormField name="expiration" label="Date d'expiration" type="date" />
+              <FormField name="status" label="Statut" type="select" options={[
+                { value: 'Disponible', label: 'Disponible' },
+                { value: 'En mission', label: 'En mission' },
+                { value: 'Repos', label: 'Repos' },
+                { value: 'Congé', label: 'Congé' },
+              ]} />
+              <FormField name="phone" label="Téléphone" type="tel" placeholder="Ex: +216 22 123 456" />
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setShowModal(false)}>
+                  Annuler
+                </Button>
+                <Button type="submit">
+                  Sauvegarder
+                </Button>
+              </DialogFooter>
+            </form>
+          </FormProvider>
         </DialogContent>
       </Dialog>
     </>

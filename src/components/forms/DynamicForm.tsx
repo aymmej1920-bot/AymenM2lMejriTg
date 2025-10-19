@@ -1,3 +1,4 @@
+import React from 'react'; // Import React for React.BaseSyntheticEvent
 import { useForm, FormProvider, FieldValues, Path, DefaultValues, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -20,8 +21,8 @@ export interface DynamicFormFieldConfig<TFieldValues extends FieldValues> {
   gridColumn?: string; // For Tailwind CSS grid column spanning, e.g., 'col-span-2'
 }
 
-interface DynamicFormProps<TFieldValues extends FieldValues> {
-  schema: z.ZodType<TFieldValues>; // Simplified schema type to z.ZodType<TFieldValues>
+interface DynamicFormProps<TFieldValues extends FieldValues> { // Ensure TFieldValues extends FieldValues
+  schema: z.ZodSchema<TFieldValues>;
   defaultValues: DefaultValues<TFieldValues>;
   onSubmit: SubmitHandler<TFieldValues>; // Use SubmitHandler here
   fields: DynamicFormFieldConfig<TFieldValues>[];
@@ -32,7 +33,7 @@ interface DynamicFormProps<TFieldValues extends FieldValues> {
   gridCols?: string; // For Tailwind CSS grid columns, e.g., 'col-span-1' or 'col-cols-2'
 }
 
-const DynamicForm = <TFieldValues extends FieldValues>({
+const DynamicForm = <TFieldValues extends FieldValues>({ // Ensure TFieldValues extends FieldValues
   schema,
   defaultValues,
   onSubmit,
@@ -50,9 +51,14 @@ const DynamicForm = <TFieldValues extends FieldValues>({
 
   const { handleSubmit } = methods;
 
+  // Define an intermediate handler to help TypeScript resolve generics
+  const formSubmitHandler: SubmitHandler<TFieldValues> = (data, event) => {
+    onSubmit(data, event);
+  };
+
   return (
     <FormProvider {...methods}>
-      <form onSubmit={handleSubmit(onSubmit)} className={className}>
+      <form onSubmit={handleSubmit(formSubmitHandler)} className={className}>
         <div className={`grid ${gridCols} gap-4`}>
           {fields.map((fieldConfig) => (
             <FormField

@@ -8,11 +8,14 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from './ui/dialog';
 import DataTable from './DataTable';
-import DynamicForm, { DynamicFormFieldConfig } from './forms/DynamicForm'; // Import DynamicForm and DynamicFormFieldConfig
 import { vehicleSchema } from '../types/formSchemas'; // Import the schema
 import { z } from 'zod';
+import { useForm, FormProvider } from 'react-hook-form'; // Import useForm and FormProvider
+import FormField from './forms/FormField'; // Import FormField
+import { Button } from './ui/button'; // Import Button for DialogFooter
 
 type VehicleFormData = z.infer<typeof vehicleSchema>;
 
@@ -27,6 +30,35 @@ interface VehiclesProps {
 const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
+
+  const methods = useForm<VehicleFormData>({
+    resolver: zodResolver(vehicleSchema),
+    defaultValues: useMemo(() => editingVehicle || {
+      plate: '',
+      type: 'Camionnette',
+      status: 'Disponible',
+      mileage: 0,
+      last_service_date: new Date().toISOString().split('T')[0],
+      last_service_mileage: 0,
+    }, [editingVehicle]),
+  });
+
+  const { handleSubmit, reset } = methods;
+
+  React.useEffect(() => {
+    if (editingVehicle) {
+      reset(editingVehicle);
+    } else {
+      reset({
+        plate: '',
+        type: 'Camionnette',
+        status: 'Disponible',
+        mileage: 0,
+        last_service_date: new Date().toISOString().split('T')[0],
+        last_service_mileage: 0,
+      });
+    }
+  }, [editingVehicle, reset]);
 
   const handleAddVehicle = () => {
     setEditingVehicle(null);
@@ -101,33 +133,6 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
     },
   ], []);
 
-  const vehicleFormFields: DynamicFormFieldConfig<VehicleFormData>[] = useMemo(() => [
-    { name: 'plate', label: "Plaque d'immatriculation", type: 'text', placeholder: "Ex: 123TU456" },
-    { name: 'type', label: 'Type de véhicule', type: 'select', options: [
-      { value: 'Camionnette', label: 'Camionnette' },
-      { value: 'Camion', label: 'Camion' },
-      { value: 'Fourgon', label: 'Fourgon' },
-      { value: 'Utilitaire', label: 'Utilitaire' },
-    ]},
-    { name: 'status', label: 'Statut', type: 'select', options: [
-      { value: 'Disponible', label: 'Disponible' },
-      { value: 'En mission', label: 'En mission' },
-      { value: 'Maintenance', label: 'Maintenance' },
-    ]},
-    { name: 'mileage', label: 'Kilométrage actuel', type: 'number', min: 0 },
-    { name: 'last_service_date', label: 'Date dernière vidange', type: 'date' },
-    { name: 'last_service_mileage', label: 'Kilométrage dernière vidange', type: 'number', min: 0 },
-  ], []);
-
-  const defaultFormValues = useMemo(() => editingVehicle || {
-    plate: '',
-    type: 'Camionnette',
-    status: 'Disponible',
-    mileage: 0,
-    last_service_date: new Date().toISOString().split('T')[0],
-    last_service_mileage: 0,
-  }, [editingVehicle]);
-
   return (
     <>
       <DataTable
@@ -152,13 +157,33 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
               {editingVehicle ? 'Modifiez les détails du véhicule.' : 'Ajoutez un nouveau véhicule à votre flotte.'}
             </DialogDescription>
           </DialogHeader>
-          <DynamicForm<VehicleFormData>
-            schema={vehicleSchema}
-            defaultValues={defaultFormValues}
-            onSubmit={onSubmit}
-            fields={vehicleFormFields}
-            onCancel={() => setShowModal(false)}
-          />
+          <FormProvider {...methods}>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
+              <FormField name="plate" label="Plaque d'immatriculation" type="text" placeholder="Ex: 123TU456" />
+              <FormField name="type" label="Type de véhicule" type="select" options={[
+                { value: 'Camionnette', label: 'Camionnette' },
+                { value: 'Camion', label: 'Camion' },
+                { value: 'Fourgon', label: 'Fourgon' },
+                { value: 'Utilitaire', label: 'Utilitaire' },
+              ]} />
+              <FormField name="status" label="Statut" type="select" options={[
+                { value: 'Disponible', label: 'Disponible' },
+                { value: 'En mission', label: 'En mission' },
+                { value: 'Maintenance', label: 'Maintenance' },
+              ]} />
+              <FormField name="mileage" label="Kilométrage actuel" type="number" min={0} />
+              <FormField name="last_service_date" label="Date dernière vidange" type="date" />
+              <FormField name="last_service_mileage" label="Kilométrage dernière vidange" type="number" min={0} />
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setShowModal(false)}>
+                  Annuler
+                </Button>
+                <Button type="submit">
+                  Sauvegarder
+                </Button>
+              </DialogFooter>
+            </form>
+          </FormProvider>
         </DialogContent>
       </Dialog>
     </>
