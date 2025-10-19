@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Truck, Users, Route, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck, FileText as ReportIcon } from 'lucide-react'; // Added ReportIcon
+import { Truck, Users, Route, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck, FileText as ReportIcon } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Vehicles from './components/Vehicles';
 import Drivers from './components/Drivers';
@@ -9,7 +9,7 @@ import Documents from './components/Documents';
 import Maintenance from './components/Maintenance';
 import Summary from './components/Summary';
 import PreDepartureChecklistComponent from './components/PreDepartureChecklist';
-import Reports from './pages/Reports'; // Import the new Reports component
+import Reports from './pages/Reports';
 import Login from './pages/Login';
 import { FleetData, AuthUser, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist } from './types';
 import { useSession } from './components/SessionContextProvider';
@@ -83,7 +83,7 @@ function App() {
         id: session?.user?.id || userId,
         email: session?.user?.email || '',
         name: profileData?.first_name || session?.user?.email?.split('@')[0] || 'User',
-        role: profileData?.role || 'utilisateur', // Use the actual role from profileData, default to 'utilisateur'
+        role: profileData?.role || 'utilisateur',
       });
 
     } catch (error) {
@@ -166,7 +166,7 @@ function App() {
     { id: 'documents', name: 'Documents', icon: FileText },
     { id: 'maintenance', name: 'Maintenance', icon: Wrench },
     { id: 'checklists', name: 'Checklists', icon: ClipboardCheck },
-    { id: 'reports', name: 'Rapports', icon: ReportIcon }, // New Reports tab
+    { id: 'reports', name: 'Rapports', icon: ReportIcon },
     { id: 'summary', name: 'Résumé', icon: BarChart3 }
   ];
 
@@ -189,18 +189,19 @@ function App() {
             </div>
           </div>
         </header>
-        <nav className="bg-white shadow-md sticky top-0 z-40">
-          <div className="container mx-auto px-6">
-            <div className="flex space-x-1 overflow-x-auto py-2">
-              <SkeletonLoader count={tabs.length} height="h-12" className="w-32" />
+        {/* New sidebar structure for skeleton loader */}
+        <div className="flex flex-1">
+          <aside className="w-64 bg-white shadow-md p-4">
+            <div className="flex flex-col space-y-2">
+              <SkeletonLoader count={tabs.length} height="h-12" className="w-full" />
             </div>
-          </div>
-        </nav>
-        <main className="container mx-auto px-6 py-8 flex-grow">
-          <SkeletonLoader count={5} height="h-16" className="w-full mb-4" />
-          <SkeletonLoader count={3} height="h-24" className="w-full mb-4" />
-          <SkeletonLoader count={2} height="h-64" className="w-full mb-4" />
-        </main>
+          </aside>
+          <main className="flex-1 container mx-auto px-6 py-8">
+            <SkeletonLoader count={5} height="h-16" className="w-full mb-4" />
+            <SkeletonLoader count={3} height="h-24" className="w-full mb-4" />
+            <SkeletonLoader count={2} height="h-64" className="w-full mb-4" />
+          </main>
+        </div>
       </div>
     );
   }
@@ -210,7 +211,7 @@ function App() {
   }
 
   const renderContent = () => {
-    const userRole = currentUser?.role || 'utilisateur'; // Default to 'utilisateur' if role is not set
+    const userRole = currentUser?.role || 'utilisateur';
 
     switch (currentTab) {
       case 'dashboard':
@@ -241,7 +242,7 @@ function App() {
           userRole={userRole} 
           onAdd={(newData: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('pre_departure_checklists', newData, 'insert')} 
         />;
-      case 'reports': // New case for Reports tab
+      case 'reports':
         return <Reports key="reports-view" data={fleetData} userRole={userRole} />;
       case 'summary':
         return <Summary key="summary-view" data={fleetData} />;
@@ -251,7 +252,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
@@ -278,33 +279,35 @@ function App() {
         </div>
       </header>
 
-      <nav className="bg-white shadow-md sticky top-0 z-40">
-        <div className="container mx-auto px-6">
-          <div className="flex space-x-1 overflow-x-auto py-2"> 
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setCurrentTab(tab.id)}
-                  className={`px-6 py-4 rounded-lg whitespace-nowrap transition-all duration-300 flex items-center space-x-2 ${
-                    currentTab === tab.id
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 hover:bg-indigo-200 text-gray-700'
-                  }`}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span>{tab.name}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </nav>
+      <div className="flex flex-1"> {/* New flex container for sidebar and main content */}
+        <aside className="w-64 bg-white shadow-md sticky top-0 h-screen overflow-y-auto z-40"> {/* Sidebar */}
+          <nav className="p-4">
+            <div className="flex flex-col space-y-2"> {/* Vertical stacking for tabs */}
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setCurrentTab(tab.id)}
+                    className={`w-full px-4 py-3 rounded-lg transition-all duration-300 flex items-center space-x-3 justify-start ${ // Adjusted styling
+                      currentTab === tab.id
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 hover:bg-indigo-200 text-gray-700'
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span>{tab.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+        </aside>
 
-      <main className="container mx-auto px-6 py-8">
-        {renderContent()}
-      </main>
+        <main className="flex-1 container mx-auto px-6 py-8"> {/* Main content */}
+          {renderContent()}
+        </main>
+      </div>
     </div>
   );
 }
