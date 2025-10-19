@@ -3,40 +3,30 @@ import { Truck, Users, Route, MapPin, Fuel, AlertCircle, Wrench } from 'lucide-r
 import { FleetData } from '../types';
 import MonthlyPerformanceChart from './charts/MonthlyPerformanceChart';
 import CostDistributionChart from './charts/CostDistributionChart';
+import { useFleetStats } from '../hooks/useFleetStats'; // Import the new hook
 
 interface SummaryProps {
   data: FleetData;
 }
 
 const Summary: React.FC<SummaryProps> = ({ data }) => {
-  const totalVehicles = data.vehicles.length;
-  const activeDrivers = data.drivers.filter(d => d.status !== 'Congé').length;
-  const toursThisMonth = data.tours.length;
-  const totalDistance = data.tours.filter(t => t.distance).reduce((sum, t) => sum + (t.distance || 0), 0);
-  const totalFuelCost = data.fuel.reduce((sum, f) => sum + (f.liters * f.price_per_liter), 0);
-  const totalLiters = data.fuel.reduce((sum, f) => sum + f.liters, 0);
-  const avgPrice = totalLiters > 0 ? totalFuelCost / totalLiters : 0;
-  const maintenanceCost = data.maintenance.reduce((sum, m) => sum + m.cost, 0);
-
-  const expiringDocsCount = data.documents.filter(doc => {
-    const today = new Date();
-    const expiry = new Date(doc.expiration);
-    const daysLeft = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    return daysLeft < 30;
-  }).length;
-
-  const upcomingMaintenanceCount = data.vehicles.filter(vehicle => {
-    const nextService = (vehicle.last_service_mileage || 0) + 10000;
-    const kmUntilService = nextService - vehicle.mileage;
-    return kmUntilService <= 1000;
-  }).length;
-
-  const validDocsCount = data.documents.filter(doc => {
-    const today = new Date();
-    const expiry = new Date(doc.expiration);
-    const daysLeft = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    return daysLeft >= 30;
-  }).length;
+  const {
+    totalVehicles,
+    activeDrivers,
+    toursThisMonth,
+    totalDistance,
+    totalFuelCost,
+    totalLiters,
+    avgPricePerLiter,
+    totalMaintenanceCost,
+    expiringDocsCount,
+    validDocsCount,
+    upcomingMaintenanceCount,
+    avgKmPerVehicle,
+    avgFuelCostPerVehicle,
+    avgToursPerVehicle,
+    totalCostPerVehicle,
+  } = useFleetStats(data);
 
   const kpis = [
     {
@@ -68,11 +58,11 @@ const Summary: React.FC<SummaryProps> = ({ data }) => {
   const fuelStats = [
     { label: 'Total Litres', value: `${totalLiters.toFixed(2)} L` },
     { label: 'Coût Total', value: `${totalFuelCost.toFixed(2)} TND`, color: 'text-green-600' },
-    { label: 'Prix Moyen/L', value: `${avgPrice.toFixed(2)} TND` },
+    { label: 'Prix Moyen/L', value: `${avgPricePerLiter.toFixed(2)} TND` },
   ];
 
   const maintenanceStats = [
-    { label: 'Coût Total Maintenance', value: `${maintenanceCost.toFixed(2)} TND`, color: 'text-red-600' },
+    { label: 'Coût Total Maintenance', value: `${totalMaintenanceCost.toFixed(2)} TND`, color: 'text-red-600' },
     { label: 'Maintenance à venir', value: `${upcomingMaintenanceCount} véhicules`, color: upcomingMaintenanceCount > 0 ? 'text-orange-600' : 'text-gray-900' },
   ];
 
@@ -176,19 +166,19 @@ const Summary: React.FC<SummaryProps> = ({ data }) => {
         <h3 className="text-xl font-semibold mb-6 text-gray-800">Aperçu des Performances</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="text-center p-4 bg-blue-50 rounded-lg">
-            <div className="text-3xl font-bold text-blue-600 mb-2">{(totalDistance / totalVehicles || 0).toFixed(0)}</div>
+            <div className="text-3xl font-bold text-blue-600 mb-2">{avgKmPerVehicle.toFixed(0)}</div>
             <div className="text-sm text-blue-700">Km moyen/véhicule</div>
           </div>
           <div className="text-center p-4 bg-green-50 rounded-lg">
-            <div className="text-3xl font-bold text-green-600 mb-2">{(totalFuelCost / totalVehicles || 0).toFixed(0)}</div>
+            <div className="text-3xl font-bold text-green-600 mb-2">{avgFuelCostPerVehicle.toFixed(0)}</div>
             <div className="text-sm text-green-700">TND/véhicule (carburant)</div>
           </div>
           <div className="text-center p-4 bg-orange-50 rounded-lg">
-            <div className="text-3xl font-bold text-orange-600 mb-2">{(toursThisMonth / totalVehicles || 0).toFixed(1)}</div>
+            <div className="text-3xl font-bold text-orange-600 mb-2">{avgToursPerVehicle.toFixed(1)}</div>
             <div className="text-sm text-orange-700">Tournées/véhicule</div>
           </div>
           <div className="text-center p-4 bg-purple-50 rounded-lg">
-            <div className="text-3xl font-bold text-purple-600 mb-2">{((totalFuelCost + maintenanceCost) / totalVehicles || 0).toFixed(0)}</div>
+            <div className="text-3xl font-bold text-purple-600 mb-2">{totalCostPerVehicle.toFixed(0)}</div>
             <div className="text-sm text-purple-700">Coût total/véhicule</div>
           </div>
         </div>
