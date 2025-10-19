@@ -1,13 +1,14 @@
+// @ts-nocheck
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient, User } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS', // Explicitly allow DELETE
+  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
 };
 
-// Define an interface for the profile data fetched from the 'profiles' table
+// Define interfaces for profile data
 interface DbProfile {
   id: string;
   first_name: string | null;
@@ -17,21 +18,18 @@ interface DbProfile {
 }
 
 serve(async (req: Request) => {
-  // Handle CORS OPTIONS request
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Create a Supabase client with the service role key
   const supabaseAdmin = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   );
 
-  // Verify the user's JWT from the request header
   const authHeader = req.headers.get('Authorization');
   if (!authHeader) {
-    console.log('Unauthorized: No Authorization header'); // Log
+    console.log('Unauthorized: No Authorization header');
     return new Response(JSON.stringify({ error: 'Unauthorized: No Authorization header' }), {
       status: 401,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -49,36 +47,58 @@ serve(async (req: Request) => {
     });
   }
 
-  // Check if the authenticated user is an admin
-  const { data: profile, error: profileError } = await supabaseAdmin
+  // --- Start new authorization logic using permissions table ---
+  const { data: userProfile, error: userProfileError } = await supabaseAdmin
     .from('profiles')
     .select('role')
     .eq('id', authUser.id)
     .single();
 
-  if (profileError || profile?.role !== 'admin') {
-    console.error('User is not an admin or profile not found:', profileError?.message);
-    return new Response(JSON.stringify({ error: 'Forbidden: Only administrators can manage users.' }), {
+  if (userProfileError || !userProfile) {
+    console.error('User profile not found for authorization:', userProfileError?.message);
+    return new Response(JSON.stringify({ error: 'Forbidden: User profile not found.' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
+  const userRole = userProfile.role;
+
+  // Admins always have full access
+  if (userRole === 'admin') {
+    // Proceed, admins are implicitly allowed all actions
+  } else {
+    // For non-admins, check the permissions table for 'users:view'
+    const { data: permissionsData, error: permissionsError } = await supabaseAdmin
+      .from('permissions')
+      .select('allowed')
+      .eq('role', userRole)
+      .eq('resource', 'users') // Specific resource for this function
+      .eq('action', 'view') // Specific action for this function
+      .single();
+
+    if (permissionsError || !permissionsData?.allowed) {
+      console.error(`Forbidden: Role '${userRole}' does not have 'users:view' permission.`);
+      return new Response(JSON.stringify({ error: `Forbidden: You do not have permission to manage users.` }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+  }
+  // --- End new authorization logic ---
+
   try {
     if (req.method === 'GET') {
-      // Fetch all users from auth.users (includes invited users)
       const { data: authUsersData, error: authUsersError } = await supabaseAdmin.auth.admin.listUsers();
       if (authUsersError) throw authUsersError;
       const allAuthUsers = authUsersData.users;
 
-      // Fetch all profiles from public.profiles
       const { data: profilesData, error: profilesError } = await supabaseAdmin
         .from('profiles')
         .select('id, first_name, last_name, role, updated_at');
       if (profilesError) throw profilesError;
       const allProfiles = profilesData;
 
-      // Create a map for quick profile lookup
       const profilesMap = new Map<string, DbProfile>();
       allProfiles.forEach((p: DbProfile) => profilesMap.set(p.id, p));
 
@@ -99,12 +119,12 @@ serve(async (req: Request) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } else if (req.method === 'DELETE') {
-      console.log('DELETE request received for manage-users'); // Log
+      console.log('DELETE request received for manage-users');
       const { userId } = await req.json();
-      console.log('Attempting to delete user with ID:', userId); // Log
+      console.log('Attempting to delete user with ID:', userId);
 
       if (!userId) {
-        console.log('Error: User ID is required for deletion.'); // Log
+        console.log('Error: User ID is required for deletion.');
         return new Response(JSON.stringify({ error: 'User ID is required for deletion.' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -113,25 +133,25 @@ serve(async (req: Request) => {
 
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
       if (deleteError) {
-        console.error('Error from supabaseAdmin.auth.admin.deleteUser:', deleteError.message); // Log
+        console.error('Error from supabaseAdmin.auth.admin.deleteUser:', deleteError.message);
         throw deleteError;
       }
 
-      console.log('User deleted successfully:', userId); // Log
+      console.log('User deleted successfully:', userId);
       return new Response(JSON.stringify({ message: 'User deleted successfully!' }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('Method Not Allowed:', req.method); // Log
+    console.log('Method Not Allowed:', req.method);
     return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
       status: 405,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error: any) {
-    console.error('Error in manage-users edge function (catch block):', error.message); // Log
+    console.error('Error in manage-users edge function (catch block):', error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

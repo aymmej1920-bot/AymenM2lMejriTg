@@ -8,7 +8,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-// Define an interface for the profile data fetched from the 'profiles' table
+// Define interfaces for profile data
 interface DbProfile {
   id: string;
   first_name: string | null;
@@ -18,21 +18,18 @@ interface DbProfile {
 }
 
 serve(async (req: Request) => {
-  // Handle CORS OPTIONS request
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Create a Supabase client with the service role key
   const supabaseAdmin = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   );
 
-  // Verify the user's JWT from the request header
   const authHeader = req.headers.get('Authorization');
   if (!authHeader) {
-    console.log('Unauthorized: No Authorization header'); // Log
+    console.log('Unauthorized: No Authorization header');
     return new Response(JSON.stringify({ error: 'Unauthorized: No Authorization header' }), {
       status: 401,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -50,20 +47,45 @@ serve(async (req: Request) => {
     });
   }
 
-  // Check if the authenticated user is an admin
-  const { data: profile, error: profileError } = await supabaseAdmin
+  // --- Start new authorization logic using permissions table ---
+  const { data: userProfile, error: userProfileError } = await supabaseAdmin
     .from('profiles')
     .select('role')
     .eq('id', authUser.id)
     .single();
 
-  if (profileError || profile?.role !== 'admin') {
-    console.error('User is not an admin or profile not found:', profileError?.message);
-    return new Response(JSON.stringify({ error: 'Forbidden: Only administrators can create users manually.' }), {
+  if (userProfileError || !userProfile) {
+    console.error('User profile not found for authorization:', userProfileError?.message);
+    return new Response(JSON.stringify({ error: 'Forbidden: User profile not found.' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
+
+  const userRole = userProfile.role;
+
+  // Admins always have full access
+  if (userRole === 'admin') {
+    // Proceed, admins are implicitly allowed all actions
+  } else {
+    // For non-admins, check the permissions table for 'users:add'
+    const { data: permissionsData, error: permissionsError } = await supabaseAdmin
+      .from('permissions')
+      .select('allowed')
+      .eq('role', userRole)
+      .eq('resource', 'users') // Specific resource for this function
+      .eq('action', 'add') // Specific action for this function (creating users)
+      .single();
+
+    if (permissionsError || !permissionsData?.allowed) {
+      console.error(`Forbidden: Role '${userRole}' does not have 'users:add' permission.`);
+      return new Response(JSON.stringify({ error: `Forbidden: You do not have permission to create users manually.` }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+  }
+  // --- End new authorization logic ---
 
   // Parse the request body
   const { email, password, first_name, last_name, role } = await req.json();
