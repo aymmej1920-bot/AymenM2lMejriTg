@@ -376,7 +376,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
         searchPlaceholder="Rechercher un véhicule par plaque, type ou statut..."
         exportFileName="suivi_maintenance_vehicules"
         isLoading={false}
-        renderRowActions={(item) => (
+        renderRowActions={(item: Vehicle) => (
           canAddMaintenance ? (
             <Button
               key={item.id + "-maintenance-action"}

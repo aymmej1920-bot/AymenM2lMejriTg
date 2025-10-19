@@ -9,6 +9,26 @@ import { DataTableColumn, ProcessedDataTableColumn, Resource, Action } from '../
 import DataTableColumnCustomizer from './DataTableColumnCustomizer'; // Import the new component
 import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
 
+interface DataTableProps<T extends { id: string }> {
+  title: string;
+  data: T[];
+  columns: DataTableColumn<T>[];
+  onAdd?: () => void;
+  onEdit?: (item: T) => void;
+  onDelete?: (id: string) => void;
+  addLabel?: string;
+  searchPlaceholder?: string;
+  exportFileName?: string;
+  isLoading?: boolean;
+  itemsPerPageOptions?: number[];
+  renderFilters?: (searchTerm: string, setSearchTerm: (term: string) => void) => React.ReactNode;
+  renderAlerts?: () => React.ReactNode;
+  // Optional custom row actions, if more than just edit/delete are needed
+  renderRowActions?: (item: T) => React.ReactNode;
+  customFilter?: (item: T) => boolean; // Added customFilter prop
+  resourceType: Resource; // New prop to specify the resource type for permissions
+}
+
 const DataTable = <T extends { id: string }>({
   title,
   data,
@@ -27,11 +47,10 @@ const DataTable = <T extends { id: string }>({
   customFilter, // Destructure customFilter
   resourceType, // Destructure resourceType
 }: React.PropsWithChildren<DataTableProps<T>>) => {
-  void Action; // Suppress TS6133 for Action
   const { canAccess } = usePermissions(); // Use usePermissions hook
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortColumn, setSortColumn] = useState<keyof T | string>(initialColumns.find(col => col.sortable)?.key || '');
+  const [sortColumn, setSortColumn] = useState<keyof T | string>(initialColumns.find((col: DataTableColumn<T>) => col.sortable)?.key || '');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(itemsPerPageOptions[0]);
@@ -44,7 +63,7 @@ const DataTable = <T extends { id: string }>({
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
   const allColumns = useMemo(() => {
-    return initialColumns.map(col => ({
+    return initialColumns.map((col: DataTableColumn<T>) => ({
       ...col,
       key: col.key as string, // Ensure key is string for internal use
       defaultVisible: col.defaultVisible !== false, // This makes it boolean
@@ -68,7 +87,7 @@ const DataTable = <T extends { id: string }>({
   }, [columnVisibility, columnOrder, allColumns]);
 
   const filteredAndSortedData = useMemo(() => {
-    let filtered = data.filter(item => {
+    let filtered = data.filter((item: T) => {
       const lowerCaseSearchTerm = searchTerm.toLowerCase();
       const matchesSearch = Object.values(item).some(value =>
         (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') &&
@@ -81,7 +100,7 @@ const DataTable = <T extends { id: string }>({
     });
 
     if (sortColumn) {
-      filtered.sort((a, b) => {
+      filtered.sort((a: T, b: T) => {
         const aValue = (a as any)[sortColumn];
         const bValue = (b as any)[sortColumn];
 
@@ -134,7 +153,7 @@ const DataTable = <T extends { id: string }>({
     }
 
     const headers = visibleColumns.map(col => col.label);
-    const dataToExport = filteredAndSortedData.map(item => {
+    const dataToExport = filteredAndSortedData.map((item: T) => {
       const exportedRow: { [key: string]: any } = {};
       visibleColumns.forEach(col => {
         exportedRow[col.label] = col.render ? col.render(item) : (item as any)[col.key];
@@ -260,7 +279,7 @@ const DataTable = <T extends { id: string }>({
                   </td>
                 </tr>
               ) : (
-                currentItems.map((item) => (
+                currentItems.map((item: T) => (
                   <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                     {visibleColumns.map((col) => (
                       <td key={col.key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -313,7 +332,7 @@ const DataTable = <T extends { id: string }>({
           >
             Précédent
           </Button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page: number) => (
             <Button
               key={page}
               variant={currentPage === page ? 'default' : 'outline'}
@@ -341,7 +360,7 @@ const DataTable = <T extends { id: string }>({
             }}
             className="ml-4 bg-white border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
           >
-            {itemsPerPageOptions.map(option => (
+            {itemsPerPageOptions.map((option: number) => (
               <option key={option} value={option}>{option} par page</option>
             ))}
           </select>
