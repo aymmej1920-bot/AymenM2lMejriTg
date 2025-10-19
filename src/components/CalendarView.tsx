@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react'; // Added useCallback import
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'moment/locale/fr'; // Import French locale for moment
@@ -114,7 +114,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ data }) => {
             time: 'Heure',
             event: 'Événement',
             noEventsInRange: 'Aucun événement dans cette période.',
-            showMore: (total) => `+ Voir ${total} de plus`,
+            showMore: (total: number) => `+ Voir ${total} de plus`, // Typed 'total' as number
           }}
           eventPropGetter={eventPropGetter}
           components={{
