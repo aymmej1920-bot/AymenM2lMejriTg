@@ -29,5 +29,5 @@
   "files": [],
   "include": [],
   "references": [{ "path": "./tsconfig.node.json" }],
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["node_modules", "dist", "supabase/functions"]
 }
