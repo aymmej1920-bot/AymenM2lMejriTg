@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Truck, Users, Route, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck, FileText as ReportIcon, UserCog } from 'lucide-react';
+import { Routes, Route, Link, useNavigate } from 'react-router-dom'; // Import Routes, Route, Link, useNavigate
+import { Truck, Users, Route as RouteIcon, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck, FileText as ReportIcon, UserCog } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Vehicles from './components/Vehicles';
 import Drivers from './components/Drivers';
@@ -11,7 +12,7 @@ import Summary from './components/Summary';
 import PreDepartureChecklistComponent from './components/PreDepartureChecklist';
 import Reports from './pages/Reports';
 import Login from './pages/Login';
-import UserManagement from './components/UserManagement'; // Import the new component
+import UserManagement from './components/UserManagement';
 import { FleetData, AuthUser, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist } from './types';
 import { useSession } from './components/SessionContextProvider';
 import { supabase } from './integrations/supabase/client';
@@ -20,7 +21,7 @@ import SkeletonLoader from './components/SkeletonLoader';
 
 function App() {
   const { session, isLoading } = useSession();
-  const [currentTab, setCurrentTab] = useState<string>('dashboard');
+  const navigate = useNavigate(); // Initialize useNavigate
   const [fleetData, setFleetData] = useState<FleetData>({
     vehicles: [],
     drivers: [],
@@ -98,6 +99,7 @@ function App() {
   useEffect(() => {
     if (session?.user) {
       fetchData(session.user.id);
+      navigate('/dashboard'); // Redirect to dashboard on successful login
     } else {
       setCurrentUser(null);
       setFleetData({
@@ -110,8 +112,9 @@ function App() {
         pre_departure_checklists: [],
       });
       setDataLoading(false);
+      navigate('/login'); // Redirect to login if no session
     }
-  }, [session, fetchData]);
+  }, [session, fetchData, navigate]);
 
   const handleUpdateData = async (tableName: string, newData: any, action: 'insert' | 'update' | 'delete') => {
     if (!currentUser?.id) return;
@@ -170,8 +173,6 @@ function App() {
     }
     const loadingToastId = showLoading(`Suppression de l'utilisateur ${userId}...`);
     try {
-      // Supabase auth.admin.deleteUser will delete the user from auth.users
-      // and due to CASCADE DELETE on profiles.id, it will also delete the profile.
       const { error: authError } = await supabase.auth.admin.deleteUser(userId);
 
       if (authError) throw authError;
@@ -199,21 +200,22 @@ function App() {
     });
     dismissToast(loadingToastId);
     showSuccess('Déconnexion réussie.');
+    navigate('/login'); // Redirect to login page after logout
   };
 
   const tabs = [
-    { id: 'dashboard', name: 'Dashboard', icon: BarChart3 },
-    { id: 'vehicles', name: 'Véhicules', icon: Truck },
-    { id: 'drivers', name: 'Conducteurs', icon: Users },
-    { id: 'tours', name: 'Tournées', icon: Route },
-    { id: 'fuel', name: 'Carburant', icon: Fuel },
-    { id: 'documents', name: 'Documents', icon: FileText },
-    { id: 'maintenance', name: 'Maintenance', icon: Wrench },
-    { id: 'checklists', name: 'Checklists', icon: ClipboardCheck },
-    { id: 'reports', name: 'Rapports', icon: ReportIcon },
-    { id: 'summary', name: 'Résumé', icon: BarChart3 },
+    { id: 'dashboard', name: 'Dashboard', icon: BarChart3, path: '/dashboard' },
+    { id: 'vehicles', name: 'Véhicules', icon: Truck, path: '/vehicles' },
+    { id: 'drivers', name: 'Conducteurs', icon: Users, path: '/drivers' },
+    { id: 'tours', name: 'Tournées', icon: RouteIcon, path: '/tours' }, // Renamed Route to RouteIcon to avoid conflict
+    { id: 'fuel', name: 'Carburant', icon: Fuel, path: '/fuel' },
+    { id: 'documents', name: 'Documents', icon: FileText, path: '/documents' },
+    { id: 'maintenance', name: 'Maintenance', icon: Wrench, path: '/maintenance' },
+    { id: 'checklists', name: 'Checklists', icon: ClipboardCheck, path: '/checklists' },
+    { id: 'reports', name: 'Rapports', icon: ReportIcon, path: '/reports' },
+    { id: 'summary', name: 'Résumé', icon: BarChart3, path: '/summary' },
     // Only show User Management tab if the current user is an admin
-    ...(currentUser?.role === 'admin' ? [{ id: 'user-management', name: 'Gestion Utilisateurs', icon: UserCog }] : []),
+    ...(currentUser?.role === 'admin' ? [{ id: 'user-management', name: 'Gestion Utilisateurs', icon: UserCog, path: '/user-management' }] : []),
   ];
 
   if (isLoading || dataLoading) {
@@ -253,56 +255,15 @@ function App() {
   }
 
   if (!session) {
-    return <Login />;
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="*" element={<Login />} /> {/* Redirect any other path to login if not authenticated */}
+      </Routes>
+    );
   }
 
-  const renderContent = () => {
-    const userRole = currentUser?.role || 'utilisateur';
-
-    switch (currentTab) {
-      case 'dashboard':
-        return <Dashboard key="dashboard-view" data={fleetData} userRole={userRole} />;
-      case 'vehicles':
-        return <Vehicles key="vehicles-view" data={fleetData} userRole={userRole} onUpdate={(newData: Vehicle) => handleUpdateData('vehicles', newData, 'update')} onDelete={(id: string) => handleUpdateData('vehicles', { id }, 'delete')} onAdd={(newData: Omit<Vehicle, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('vehicles', newData, 'insert')} />;
-      case 'drivers':
-        return <Drivers key="drivers-view" data={fleetData} userRole={userRole} onUpdate={(newData: Driver) => handleUpdateData('drivers', newData, 'update')} onDelete={(id: string) => handleUpdateData('drivers', { id }, 'delete')} onAdd={(newData: Omit<Driver, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('drivers', newData, 'insert')} />;
-      case 'tours':
-        return <Tours key="tours-view" data={fleetData} userRole={userRole} onUpdate={(newData: Tour) => handleUpdateData('tours', newData, 'update')} onDelete={(id: string) => handleUpdateData('tours', { id }, 'delete')} onAdd={(newData: Omit<Tour, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('tours', newData, 'insert')} />;
-      case 'fuel':
-        return <FuelManagement key="fuel-view" data={fleetData} userRole={userRole} onUpdate={(newData: FuelEntry) => handleUpdateData('fuel_entries', newData, 'update')} onDelete={(id: string) => handleUpdateData('fuel_entries', { id }, 'delete')} onAdd={(newData: Omit<FuelEntry, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('fuel_entries', newData, 'insert')} />;
-      case 'documents':
-        return <Documents key="documents-view" data={fleetData} userRole={userRole} onUpdate={(newData: Document) => handleUpdateData('documents', newData, 'update')} onDelete={(id: string) => handleUpdateData('documents', { id }, 'delete')} onAdd={(newData: Omit<Document, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('documents', newData, 'insert')} />;
-      case 'maintenance':
-        return <Maintenance 
-          key="maintenance-view"
-          data={fleetData} 
-          userRole={userRole} 
-          onUpdate={(newData) => handleUpdateData('vehicles', newData, 'update')} 
-          onAdd={(newData) => handleUpdateData('maintenance_entries', newData, 'insert')} 
-          preDepartureChecklists={fleetData.pre_departure_checklists}
-        />;
-      case 'checklists':
-        return <PreDepartureChecklistComponent 
-          key="checklists-view" 
-          data={fleetData} 
-          userRole={userRole} 
-          onAdd={(newData: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('pre_departure_checklists', newData, 'insert')} 
-        />;
-      case 'reports':
-        return <Reports key="reports-view" data={fleetData} userRole={userRole} />;
-      case 'summary':
-        return <Summary key="summary-view" data={fleetData} />;
-      case 'user-management':
-        return <UserManagement 
-          key="user-management-view" 
-          currentUserRole={userRole} 
-          onUpdateUserRole={handleUpdateUserRole}
-          onDeleteUser={handleDeleteUser}
-        />;
-      default:
-        return <Dashboard key="default-dashboard-view" data={fleetData} userRole={userRole} />;
-    }
-  };
+  const userRole = currentUser?.role || 'utilisateur';
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -340,18 +301,18 @@ function App() {
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
-                  <button
+                  <Link
                     key={tab.id}
-                    onClick={() => setCurrentTab(tab.id)}
+                    to={tab.path} // Use Link to navigate
                     className={`w-full px-4 py-3 rounded-lg transition-all duration-300 flex items-center space-x-3 justify-start ${
-                      currentTab === tab.id
+                      location.pathname === tab.path // Check current path for active state
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-100 hover:bg-indigo-200 text-gray-700'
                     }`}
                   >
                     <Icon className="w-5 h-5" />
                     <span>{tab.name}</span>
-                  </button>
+                  </Link>
                 );
               })}
             </div>
@@ -359,7 +320,39 @@ function App() {
         </aside>
 
         <main className="flex-1 px-6 py-8 min-w-0 overflow-x-auto w-full">
-          {renderContent()}
+          <Routes>
+            <Route path="/dashboard" element={<Dashboard key="dashboard-view" data={fleetData} userRole={userRole} />} />
+            <Route path="/vehicles" element={<Vehicles key="vehicles-view" data={fleetData} userRole={userRole} onUpdate={(newData: Vehicle) => handleUpdateData('vehicles', newData, 'update')} onDelete={(id: string) => handleUpdateData('vehicles', { id }, 'delete')} onAdd={(newData: Omit<Vehicle, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('vehicles', newData, 'insert')} />} />
+            <Route path="/drivers" element={<Drivers key="drivers-view" data={fleetData} userRole={userRole} onUpdate={(newData: Driver) => handleUpdateData('drivers', newData, 'update')} onDelete={(id: string) => handleUpdateData('drivers', { id }, 'delete')} onAdd={(newData: Omit<Driver, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('drivers', newData, 'insert')} />} />
+            <Route path="/tours" element={<Tours key="tours-view" data={fleetData} userRole={userRole} onUpdate={(newData: Tour) => handleUpdateData('tours', newData, 'update')} onDelete={(id: string) => handleUpdateData('tours', { id }, 'delete')} onAdd={(newData: Omit<Tour, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('tours', newData, 'insert')} />} />
+            <Route path="/fuel" element={<FuelManagement key="fuel-view" data={fleetData} userRole={userRole} onUpdate={(newData: FuelEntry) => handleUpdateData('fuel_entries', newData, 'update')} onDelete={(id: string) => handleUpdateData('fuel_entries', { id }, 'delete')} onAdd={(newData: Omit<FuelEntry, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('fuel_entries', newData, 'insert')} />} />
+            <Route path="/documents" element={<Documents key="documents-view" data={fleetData} userRole={userRole} onUpdate={(newData: Document) => handleUpdateData('documents', newData, 'update')} onDelete={(id: string) => handleUpdateData('documents', { id }, 'delete')} onAdd={(newData: Omit<Document, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('documents', newData, 'insert')} />} />
+            <Route path="/maintenance" element={<Maintenance 
+              key="maintenance-view"
+              data={fleetData} 
+              userRole={userRole} 
+              onUpdate={(newData) => handleUpdateData('vehicles', newData, 'update')} 
+              onAdd={(newData) => handleUpdateData('maintenance_entries', newData, 'insert')} 
+              preDepartureChecklists={fleetData.pre_departure_checklists}
+            />} />
+            <Route path="/checklists" element={<PreDepartureChecklistComponent 
+              key="checklists-view" 
+              data={fleetData} 
+              userRole={userRole} 
+              onAdd={(newData: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('pre_departure_checklists', newData, 'insert')} 
+            />} />
+            <Route path="/reports" element={<Reports key="reports-view" data={fleetData} userRole={userRole} />} />
+            <Route path="/summary" element={<Summary key="summary-view" data={fleetData} />} />
+            {currentUser?.role === 'admin' && (
+              <Route path="/user-management" element={<UserManagement 
+                key="user-management-view" 
+                currentUserRole={userRole} 
+                onUpdateUserRole={handleUpdateUserRole}
+                onDeleteUser={handleDeleteUser}
+              />} />
+            )}
+            <Route path="*" element={<Dashboard key="default-dashboard-view" data={fleetData} userRole={userRole} />} /> {/* Default route */}
+          </Routes>
         </main>
       </div>
     </div>
