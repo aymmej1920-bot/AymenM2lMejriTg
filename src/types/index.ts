@@ -112,3 +112,19 @@ export interface DashboardWidgetConfig {
   componentKey: string; // A key to identify the component to render
   isVisible: boolean;
 }
+
+// New interface for reusable DataTable columns
+export interface DataTableColumn<T> {
+  key: keyof T | string; // Key to access the data, or a custom string for derived values
+  label: string; // Display label for the column header
+  render?: (item: T) => React.ReactNode; // Optional custom render function for cell content
+  sortable?: boolean; // Whether the column can be sorted
+  filterable?: boolean; // Whether the column can be filtered (not implemented in generic search yet)
+  defaultVisible?: boolean; // Whether the column is visible by default
+}
+
+// New type for columns after initial processing in DataTable
+export type ProcessedDataTableColumn<T> = DataTableColumn<T> & {
+  key: string;
+  defaultVisible: boolean;
+};

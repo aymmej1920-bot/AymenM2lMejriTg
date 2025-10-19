@@ -1,14 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Edit2, Trash2, ChevronUp, ChevronDown, Search, Calendar, Download } from 'lucide-react';
-import { FleetData, Vehicle } from '../types';
+import { Calendar } from 'lucide-react'; // Only Calendar is used in the form
+import { FleetData, Vehicle, DataTableColumn } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date';
-import ConfirmDialog from './ConfirmDialog';
 import { Button } from './ui/button';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { vehicleSchema } from '../types/formSchemas'; // Import the schema
-import { z } from 'zod'; // Import z
+import { vehicleSchema } from '../types/formSchemas';
+import { z } from 'zod';
 import {
   Dialog,
   DialogContent,
@@ -16,8 +15,8 @@ import {
   DialogFooter,
   DialogTitle,
   DialogDescription,
-} from './ui/dialog'; // Import shadcn/ui Dialog components
-import { exportToXLSX } from '../utils/export'; // Import the export utility
+} from './ui/dialog';
+import DataTable from './DataTable'; // Import the new DataTable component
 
 type VehicleFormData = z.infer<typeof vehicleSchema>;
 
@@ -32,8 +31,6 @@ interface VehiclesProps {
 const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [vehicleToDelete, setVehicleToDelete] = useState<string | null>(null);
 
   const { register, handleSubmit, reset, formState: { errors = {} } } = useForm<VehicleFormData>({
     resolver: zodResolver(vehicleSchema),
@@ -62,64 +59,6 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
     }
   }, [editingVehicle, reset]);
 
-  // State for filtering, sorting, and pagination
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState<string>(''); // New state for status filter
-  const [selectedType, setSelectedType] = useState<string>(''); // New state for type filter
-  const [sortColumn, setSortColumn] = useState<keyof Vehicle>('plate');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10; // You can adjust this value
-
-  // Get unique statuses and types for filter options
-  const uniqueStatuses = useMemo(() => {
-    const statuses = new Set(data.vehicles.map(v => v.status));
-    return Array.from(statuses);
-  }, [data.vehicles]);
-
-  const uniqueTypes = useMemo(() => {
-    const types = new Set(data.vehicles.map(v => v.type));
-    return Array.from(types);
-  }, [data.vehicles]);
-
-  // Filtered and sorted data
-  const filteredAndSortedVehicles = useMemo(() => {
-    let filtered = data.vehicles.filter(vehicle => {
-      const matchesSearch = 
-        vehicle.plate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        vehicle.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        vehicle.status.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesStatus = selectedStatus ? vehicle.status === selectedStatus : true;
-      const matchesType = selectedType ? vehicle.type === selectedType : true;
-
-      return matchesSearch && matchesStatus && matchesType;
-    });
-
-    filtered.sort((a, b) => {
-      const aValue = a[sortColumn];
-      const bValue = b[sortColumn];
-
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-      }
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
-        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
-      }
-      // Fallback for other types or if values are null/undefined
-      return 0;
-    });
-    return filtered;
-  }, [data.vehicles, searchTerm, selectedStatus, selectedType, sortColumn, sortDirection]);
-
-  // Paginated data
-  const totalPages = Math.ceil(filteredAndSortedVehicles.length / itemsPerPage);
-  const currentVehicles = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return filteredAndSortedVehicles.slice(startIndex, endIndex);
-  }, [filteredAndSortedVehicles, currentPage, itemsPerPage]);
-
   const handleAddVehicle = () => {
     setEditingVehicle(null);
     setShowModal(true);
@@ -128,19 +67,6 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
   const handleEditVehicle = (vehicle: Vehicle) => {
     setEditingVehicle(vehicle);
     setShowModal(true);
-  };
-
-  const confirmDeleteVehicle = (vehicleId: string) => {
-    setVehicleToDelete(vehicleId);
-    setShowConfirmDialog(true);
-  };
-
-  const executeDeleteVehicle = () => {
-    if (vehicleToDelete) {
-      onDelete(vehicleToDelete);
-      showSuccess('Véhicule supprimé avec succès !');
-      setVehicleToDelete(null);
-    }
   };
 
   const onSubmit = (formData: VehicleFormData) => {
@@ -160,7 +86,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
       'En mission': 'bg-orange-100 text-orange-800',
       'Maintenance': 'bg-red-100 text-red-800'
     };
-    return `px-3 py-1 text-xs rounded-full font-medium ${classes[status as keyof typeof classes] || 'bg-gray-100 text-gray-800'}`;
+    return <span className={`px-3 py-1 text-xs rounded-full font-medium ${classes[status as keyof typeof classes] || 'bg-gray-100 text-gray-800'}`}>{status}</span>;
   };
 
   const getServiceStatus = (vehicle: Vehicle) => {
@@ -176,239 +102,47 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
     }
   };
 
-  const handleSort = (column: keyof Vehicle) => {
-    if (sortColumn === column) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortColumn(column);
-      setSortDirection('asc');
-    }
-  };
-
-  const renderSortIcon = (column: keyof Vehicle) => {
-    if (sortColumn === column) {
-      return sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />;
-    }
-    return null;
-  };
-
-  const handleExportVehicles = () => {
-    const dataToExport = filteredAndSortedVehicles.map(vehicle => ({
-      Plaque: vehicle.plate,
-      Type: vehicle.type,
-      Statut: vehicle.status,
-      Kilométrage: vehicle.mileage,
-      "Date Dernière Vidange": formatDate(vehicle.last_service_date),
-      "Km Dernière Vidange": vehicle.last_service_mileage,
-      "Prochaine Vidange (Km)": (vehicle.last_service_mileage || 0) + 10000,
-    }));
-
-    const headers = [
-      "Plaque", "Type", "Statut", "Kilométrage", 
-      "Date Dernière Vidange", "Km Dernière Vidange", "Prochaine Vidange (Km)"
-    ];
-
-    exportToXLSX(dataToExport, { fileName: 'vehicules', headers });
-    showSuccess('Véhicules exportés avec succès au format XLSX !');
-  };
+  const columns: DataTableColumn<Vehicle>[] = useMemo(() => [
+    { key: 'plate', label: 'Plaque', sortable: true, defaultVisible: true },
+    { key: 'type', label: 'Type', sortable: true, defaultVisible: true },
+    { key: 'status', label: 'Statut', sortable: true, defaultVisible: true, render: (item) => getStatusBadge(item.status) },
+    { key: 'mileage', label: 'Kilométrage', sortable: true, defaultVisible: true, render: (item) => `${item.mileage.toLocaleString()} km` },
+    { key: 'last_service_date', label: 'Dernière Vidange', sortable: true, defaultVisible: true, render: (item) => `${formatDate(item.last_service_date)} (${(item.last_service_mileage || 0).toLocaleString()} km)` },
+    {
+      key: 'next_service',
+      label: 'Prochaine Vidange',
+      sortable: false, // This is a derived value, sorting might be complex
+      defaultVisible: true,
+      render: (item) => {
+        const serviceStatus = getServiceStatus(item);
+        const nextServiceKm = (item.last_service_mileage || 0) + 10000;
+        return (
+          <div className={serviceStatus.class}>
+            {nextServiceKm.toLocaleString()} km
+            <br />
+            <span className="text-xs">({serviceStatus.text})</span>
+          </div>
+        );
+      },
+    },
+  ], [data]); // Re-memoize if data changes, as getServiceStatus depends on it
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-4xl font-bold text-gray-800">Gestion des Véhicules</h2>
-        <div className="flex space-x-4">
-          <Button
-            onClick={handleExportVehicles}
-            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
-          >
-            <Download className="w-5 h-5" />
-            <span>Exporter XLSX</span>
-          </Button>
-          <Button
-            onClick={handleAddVehicle}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
-          >
-            <Plus className="w-5 h-5" />
-            <span>Ajouter Véhicule</span>
-          </Button>
-        </div>
-      </div>
+    <>
+      <DataTable
+        title="Gestion des Véhicules"
+        data={data.vehicles}
+        columns={columns}
+        onAdd={handleAddVehicle}
+        onEdit={handleEditVehicle}
+        onDelete={onDelete}
+        addLabel="Ajouter Véhicule"
+        searchPlaceholder="Rechercher par plaque, type ou statut..."
+        exportFileName="vehicules"
+        isLoading={false} // Adjust based on actual loading state if needed
+      />
 
-      {/* Search and Filter Inputs */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Rechercher par plaque, type ou statut..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1); // Reset to first page on new search
-            }}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-          />
-        </div>
-
-        <div>
-          <select
-            value={selectedStatus}
-            onChange={(e) => {
-              setSelectedStatus(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="">Tous les statuts</option>
-            {uniqueStatuses.map(status => (
-              <option key={status} value={status}>{status}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <select
-            value={selectedType}
-            onChange={(e) => {
-              setSelectedType(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="">Tous les types</option>
-            {uniqueTypes.map(type => (
-              <option key={type} value={type}>{type}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        <table className="min-w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('plate')}>
-                <div className="flex items-center">
-                  Plaque {renderSortIcon('plate')}
-                </div>
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('type')}>
-                <div className="flex items-center">
-                  Type {renderSortIcon('type')}
-                </div>
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('status')}>
-                <div className="flex items-center">
-                  Statut {renderSortIcon('status')}
-                </div>
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('mileage')}>
-                <div className="flex items-center">
-                  Kilométrage {renderSortIcon('mileage')}
-                </div>
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('last_service_date')}>
-                <div className="flex items-center">
-                  Dernière Vidange {renderSortIcon('last_service_date')}
-                </div>
-              </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Prochaine Vidange</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {currentVehicles.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
-                  Aucun véhicule trouvé.
-                </td>
-              </tr>
-            ) : (
-              currentVehicles.map((vehicle) => {
-                const serviceStatus = getServiceStatus(vehicle);
-                const nextService = (vehicle.last_service_mileage || 0) + 10000;
-                
-                return (
-                  <tr key={vehicle.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{vehicle.plate}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{vehicle.type}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className={getStatusBadge(vehicle.status)}>{vehicle.status}</span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 font-semibold">{vehicle.mileage.toLocaleString()} km</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {formatDate(vehicle.last_service_date)} ({(vehicle.last_service_mileage || 0).toLocaleString()} km)
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <div className={serviceStatus.class}>
-                        {nextService.toLocaleString()} km
-                        <br />
-                        <span className="text-xs">({serviceStatus.text})</span>
-                      </div>
-                    </td>
-                      <td className="px-6 py-4 text-sm">
-                        <div className="flex space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEditVehicle(vehicle)}
-                            className="text-blue-600 hover:text-blue-900 transition-colors"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => confirmDeleteVehicle(vehicle.id)}
-                            className="text-red-600 hover:text-red-900 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Pagination Controls */}
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center space-x-2 mt-4">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-            disabled={currentPage === 1}
-            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Précédent
-          </Button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-            <Button
-              key={page}
-              variant={currentPage === page ? 'default' : 'outline'}
-              onClick={() => setCurrentPage(page)}
-              className={`px-4 py-2 rounded-lg ${
-                currentPage === page ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'
-              }`}
-            >
-              {page}
-            </Button>
-          ))}
-          <Button
-            variant="outline"
-            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-            disabled={currentPage === totalPages}
-            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Suivant
-          </Button>
-        </div>
-      )}
-
-      {/* Modal */}
+      {/* Modal for Add/Edit Vehicle */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
         <DialogContent className="sm:max-w-[425px] bg-gray-50">
           <DialogHeader>
@@ -505,17 +239,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
           </form>
         </DialogContent>
       </Dialog>
-
-      <ConfirmDialog
-        open={showConfirmDialog}
-        onOpenChange={setShowConfirmDialog}
-        title="Confirmer la suppression"
-        description="Êtes-vous sûr de vouloir supprimer ce véhicule ? Cette action est irréversible."
-        onConfirm={executeDeleteVehicle}
-        confirmText="Supprimer"
-        variant="destructive"
-      />
-    </div>
+    </>
   );
 };
 
