@@ -1,19 +1,12 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Edit2, Trash2, ChevronUp, ChevronDown, Search, Download, Settings } from 'lucide-react';
 import { Button } from './ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogFooter,
-  DialogTitle,
-  DialogDescription,
-} from './ui/dialog';
 import ConfirmDialog from './ConfirmDialog';
 import { exportToXLSX } from '../utils/export';
 import { showSuccess, showError } from '../utils/toast';
 import SkeletonLoader from './SkeletonLoader';
 import { DataTableColumn, ProcessedDataTableColumn } from '../types'; // Import the new interface
+import DataTableColumnCustomizer from './DataTableColumnCustomizer'; // Import the new component
 
 interface DataTableProps<T extends { id: string }> {
   title: string;
@@ -64,66 +57,6 @@ const DataTable = <T extends { id: string }>({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
-  // Initialize column visibility and order from localStorage or defaults
-  useEffect(() => {
-    const storageKeyVisibility = `dataTableColumnsVisibility_${exportFileName}`;
-    const storageKeyOrder = `dataTableColumnsOrder_${exportFileName}`;
-
-    const savedVisibilityRaw = localStorage.getItem(storageKeyVisibility);
-    const savedOrderRaw = localStorage.getItem(storageKeyOrder);
-
-    const defaultVisibility = initialColumns.reduce((acc, col) => {
-      acc[col.key as string] = col.defaultVisible !== false; // Default to true if not explicitly false
-      return acc;
-    }, {} as Record<string, boolean>);
-
-    const defaultOrder = initialColumns.map(col => col.key as string);
-
-    let initialColumnVisibility = defaultVisibility;
-    if (savedVisibilityRaw) {
-      try {
-        const parsed = JSON.parse(savedVisibilityRaw);
-        if (typeof parsed === 'object' && parsed !== null) {
-          initialColumnVisibility = { ...defaultVisibility, ...parsed };
-        }
-      } catch (e) {
-        console.error("Error parsing saved column visibility from localStorage", e);
-      }
-    }
-
-    let initialColumnOrder = defaultOrder;
-    if (savedOrderRaw) {
-      try {
-        const parsed = JSON.parse(savedOrderRaw);
-        if (Array.isArray(parsed)) {
-          const validParsedOrder = parsed.filter(key => initialColumns.some(col => col.key === key));
-          const newKeys = initialColumns.map(col => col.key as string).filter(key => !validParsedOrder.includes(key));
-          initialColumnOrder = [...validParsedOrder, ...newKeys];
-        }
-      } catch (e) {
-        console.error("Error parsing saved column order from localStorage", e);
-      }
-    }
-
-    setColumnVisibility(initialColumnVisibility);
-    setColumnOrder(initialColumnOrder);
-    
-    // Reset sort column if the default one is not visible or doesn't exist
-    if (!initialColumnVisibility[sortColumn as string] && initialColumnOrder.length > 0) {
-      setSortColumn(initialColumnOrder[0]);
-    }
-  }, [initialColumns, exportFileName]);
-
-  // Save column preferences to localStorage
-  useEffect(() => {
-    const storageKeyVisibility = `dataTableColumnsVisibility_${exportFileName}`;
-    const storageKeyOrder = `dataTableColumnsOrder_${exportFileName}`;
-    if (columnOrder.length > 0) {
-      localStorage.setItem(storageKeyVisibility, JSON.stringify(columnVisibility));
-      localStorage.setItem(storageKeyOrder, JSON.stringify(columnOrder));
-    }
-  }, [columnVisibility, columnOrder, exportFileName]);
-
   const allColumns = useMemo(() => {
     return initialColumns.map(col => ({
       ...col,
@@ -131,6 +64,16 @@ const DataTable = <T extends { id: string }>({
       defaultVisible: col.defaultVisible !== false, // This makes it boolean
     })) as ProcessedDataTableColumn<T>[]; // Cast to the new type
   }, [initialColumns]);
+
+  // Adjust sortColumn if the currently sorted column becomes invisible
+  useEffect(() => {
+    if (sortColumn && !columnVisibility[sortColumn as string] && columnOrder.length > 0) {
+      // Find the first visible column to sort by
+      const firstVisibleColumnKey = columnOrder.find(key => columnVisibility[key]);
+      setSortColumn(firstVisibleColumnKey || '');
+    }
+  }, [columnVisibility, columnOrder, sortColumn]);
+
 
   const visibleColumns = useMemo(() => {
     return columnOrder
@@ -196,39 +139,6 @@ const DataTable = <T extends { id: string }>({
       return sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />;
     }
     return null;
-  };
-
-  const handleToggleColumn = (key: string) => {
-    setColumnVisibility(prev => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-  };
-
-  const handleMoveColumn = useCallback((key: string, direction: 'up' | 'down') => {
-    setColumnOrder(prevOrder => {
-      const index = prevOrder.indexOf(key);
-      if (index === -1) return prevOrder;
-
-      const newOrder = [...prevOrder];
-      const [movedColumn] = newOrder.splice(index, 1);
-
-      if (direction === 'up' && index > 0) {
-        newOrder.splice(index - 1, 0, movedColumn);
-      } else if (direction === 'down' && index < newOrder.length) {
-        newOrder.splice(index + 1, 0, movedColumn);
-      }
-      return newOrder;
-    });
-  }, []);
-
-  const handleResetColumns = () => {
-    const defaultVisibility = allColumns.reduce((acc, col) => {
-      acc[col.key] = col.defaultVisible;
-      return acc;
-    }, {} as Record<string, boolean>);
-    setColumnVisibility(defaultVisibility);
-    setColumnOrder(allColumns.map(col => col.key));
   };
 
   const handleExport = () => {
@@ -447,64 +357,16 @@ const DataTable = <T extends { id: string }>({
       )}
 
       {/* Column Customization Dialog */}
-      <Dialog open={showColumnCustomizeDialog} onOpenChange={setShowColumnCustomizeDialog}>
-        <DialogContent className="sm:max-w-[425px] bg-gray-50">
-          <DialogHeader>
-            <DialogTitle>Personnaliser les Colonnes</DialogTitle>
-            <DialogDescription>
-              Choisissez les colonnes à afficher et réorganisez-les.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2 py-4">
-            {columnOrder.map((key, index) => {
-              const col = allColumns.find(c => c.key === key);
-              if (!col) return null;
-              return (
-                <div key={col.key} className="flex items-center justify-between p-2 border rounded-md bg-gray-100">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id={`col-${col.key}`}
-                      checked={columnVisibility[col.key]}
-                      onChange={() => handleToggleColumn(col.key)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor={`col-${col.key}`} className="text-sm font-medium text-gray-700">
-                      {col.label}
-                    </label>
-                  </div>
-                  <div className="flex space-x-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleMoveColumn(col.key, 'up')}
-                      disabled={index === 0}
-                    >
-                      <ChevronUp className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleMoveColumn(col.key, 'down')}
-                      disabled={index === columnOrder.length - 1}
-                    >
-                      <ChevronDown className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleResetColumns}>
-              Réinitialiser par défaut
-            </Button>
-            <Button onClick={() => setShowColumnCustomizeDialog(false)}>
-              Fermer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DataTableColumnCustomizer
+        open={showColumnCustomizeDialog}
+        onOpenChange={setShowColumnCustomizeDialog}
+        allColumns={allColumns}
+        columnVisibility={columnVisibility}
+        setColumnVisibility={setColumnVisibility}
+        columnOrder={columnOrder}
+        setColumnOrder={setColumnOrder}
+        storageKeyPrefix={`dataTable_${exportFileName}`}
+      />
 
       <ConfirmDialog
         open={showConfirmDialog}
