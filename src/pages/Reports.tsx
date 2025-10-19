@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { FleetData, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist } from '../types';
 import { Button } from '../components/ui/button';
-import { Download, Search, Settings, ChevronUp, ChevronDown } from 'lucide-react';
+import { Download, Search, Settings, ChevronUp, ChevronDown, Calendar } from 'lucide-react';
 import { exportToXLSX } from '../utils/export';
 import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date';
@@ -55,7 +55,7 @@ const getColumnConfigs = (dataSource: keyof FleetData): ColumnConfig[] => {
         { key: 'fuel_end', label: 'Fuel Fin (%)', defaultVisible: true },
         { key: 'km_end', label: 'Km Fin', defaultVisible: true },
         { key: 'distance', label: 'Distance', defaultVisible: true },
-        { key: 'consumption_per_100km', label: 'L/100km', defaultVisible: true }, // New analytical column
+        { key: 'consumption_per_100km', label: 'L/100km', defaultVisible: true },
       ];
     case 'fuel':
       return [
@@ -80,7 +80,7 @@ const getColumnConfigs = (dataSource: keyof FleetData): ColumnConfig[] => {
         { key: 'date', label: 'Date', defaultVisible: true },
         { key: 'mileage', label: 'Kilométrage', defaultVisible: true },
         { key: 'cost', label: 'Coût', defaultVisible: true },
-        { key: 'days_since_entry', label: 'Jours depuis l\'entrée', defaultVisible: true }, // New analytical column
+        { key: 'days_since_entry', label: 'Jours depuis l\'entrée', defaultVisible: true },
       ];
     case 'pre_departure_checklists':
       return [
@@ -160,7 +160,7 @@ const getRowData = (item: any, dataSource: keyof FleetData, allVehicles: Vehicle
         fuel_end: tour.fuel_end ?? '-',
         km_end: tour.km_end ?? '-',
         distance: tour.distance ?? '-',
-        consumption_per_100km: calculateConsumption(tour), // Added
+        consumption_per_100km: calculateConsumption(tour),
       };
     case 'fuel':
       const fuelEntry = item as FuelEntry;
@@ -204,7 +204,7 @@ const getRowData = (item: any, dataSource: keyof FleetData, allVehicles: Vehicle
         date: formatDate(maintenanceEntry.date),
         mileage: maintenanceEntry.mileage,
         cost: maintenanceEntry.cost,
-        days_since_entry: getDaysSinceEntry(maintenanceEntry.date), // Added
+        days_since_entry: getDaysSinceEntry(maintenanceEntry.date),
       };
     case 'pre_departure_checklists':
       const checklist = item as PreDepartureChecklist;
@@ -236,6 +236,10 @@ const getRowData = (item: any, dataSource: keyof FleetData, allVehicles: Vehicle
 const Reports: React.FC<ReportsProps> = ({ data }) => {
   const [selectedDataSource, setSelectedDataSource] = useState<keyof FleetData>('vehicles');
   const [searchTerm, setSearchTerm] = useState('');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [sortColumn, setSortColumn] = useState<string>('date'); // Default sort column
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc'); // Default sort direction
   const [showColumnCustomizeDialog, setShowColumnCustomizeDialog] = useState(false);
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
   const [columnOrder, setColumnOrder] = useState<string[]>([]);
@@ -295,6 +299,10 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
 
     setColumnVisibility(initialColumnVisibility);
     setColumnOrder(initialColumnOrder);
+    // Reset sort column to a default for the new data source if the current one isn't valid
+    if (!allPossibleColumns.some(col => col.key === sortColumn)) {
+      setSortColumn(defaultOrder[0] || 'id'); // Fallback to 'id' if no columns
+    }
   }, [selectedDataSource, allPossibleColumns]);
 
   // Save column preferences to localStorage
@@ -309,18 +317,69 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
     return data[selectedDataSource] || [];
   }, [data, selectedDataSource]);
 
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return currentData;
-
-    const lowerCaseSearchTerm = searchTerm.toLowerCase();
-
-    return currentData.filter(item => {
+  const filteredAndSortedData = useMemo(() => {
+    let filtered = currentData.filter(item => {
       const row = getRowData(item, selectedDataSource, data.vehicles, data.drivers);
-      return Object.values(row).some(value =>
-        (typeof value === 'string' || typeof value === 'number') && String(value).toLowerCase().includes(lowerCaseSearchTerm)
+      const lowerCaseSearchTerm = searchTerm.toLowerCase();
+
+      const matchesSearch = Object.values(row).some(value =>
+        (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') && String(value).toLowerCase().includes(lowerCaseSearchTerm)
       );
+
+      let matchesDateRange = true;
+      if (startDate || endDate) {
+        const itemDateString = row.date || row.expiration || row.created_at; // Attempt to find a date field
+        if (itemDateString) {
+          const itemDate = new Date(itemDateString);
+          const start = startDate ? new Date(startDate) : null;
+          const end = endDate ? new Date(endDate) : null;
+
+          matchesDateRange = 
+            (!start || itemDate >= start) &&
+            (!end || itemDate <= end);
+        }
+      }
+      return matchesSearch && matchesDateRange;
     });
-  }, [currentData, searchTerm, selectedDataSource, data.vehicles, data.drivers]);
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      const aRow = getRowData(a, selectedDataSource, data.vehicles, data.drivers);
+      const bRow = getRowData(b, selectedDataSource, data.vehicles, data.drivers);
+
+      const aValue = aRow[sortColumn];
+      const bValue = bRow[sortColumn];
+
+      // Handle null/undefined values
+      if (aValue == null && bValue == null) return 0;
+      if (aValue == null) return sortDirection === 'asc' ? -1 : 1;
+      if (bValue == null) return sortDirection === 'asc' ? 1 : -1;
+
+      // Numeric comparison
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+      }
+      // Date string comparison (assuming YYYY-MM-DD format or similar for direct string comparison)
+      if (
+        (sortColumn === 'date' || sortColumn === 'expiration' || sortColumn === 'created_at') &&
+        typeof aValue === 'string' && typeof bValue === 'string'
+      ) {
+        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+      }
+      // String comparison (default)
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+      }
+      // Boolean comparison (false before true for asc)
+      if (typeof aValue === 'boolean' && typeof bValue === 'boolean') {
+        return sortDirection === 'asc' ? (aValue === bValue ? 0 : aValue ? 1 : -1) : (aValue === bValue ? 0 : aValue ? -1 : 1);
+      }
+
+      return 0; // Fallback
+    });
+
+    return filtered;
+  }, [currentData, searchTerm, startDate, endDate, selectedDataSource, data.vehicles, data.drivers, sortColumn, sortDirection]);
 
   const visibleColumns = useMemo(() => {
     return columnOrder
@@ -361,9 +420,25 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
     setColumnOrder(allPossibleColumns.map(col => col.key));
   };
 
+  const handleSort = (columnKey: string) => {
+    if (sortColumn === columnKey) {
+      setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortColumn(columnKey);
+      setSortDirection('asc');
+    }
+  };
+
+  const renderSortIcon = (columnKey: string) => {
+    if (sortColumn === columnKey) {
+      return sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />;
+    }
+    return null;
+  };
+
   const handleExport = () => {
     const headers = visibleColumns.map(col => col.label);
-    const dataToExport = filteredData.map(item => {
+    const dataToExport = filteredAndSortedData.map(item => {
       const row = getRowData(item, selectedDataSource, data.vehicles, data.drivers);
       const exportedRow: { [key: string]: any } = {};
       visibleColumns.forEach(col => {
@@ -402,7 +477,7 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
           <label htmlFor="dataSource" className="block text-sm font-semibold mb-2 text-gray-900">Sélectionner la source de données</label>
           <select
@@ -426,6 +501,26 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
           />
         </div>
+        <div className="relative">
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            placeholder="Date de début"
+          />
+          <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+        </div>
+        <div className="relative">
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            placeholder="Date de fin"
+          />
+          <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -434,21 +529,27 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
             <thead className="bg-gray-50">
               <tr>
                 {visibleColumns.map((col) => (
-                  <th key={col.key} className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    {col.label}
+                  <th 
+                    key={col.key} 
+                    className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer"
+                    onClick={() => handleSort(col.key)}
+                  >
+                    <div className="flex items-center">
+                      {col.label} {renderSortIcon(col.key)}
+                    </div>
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredData.length === 0 ? (
+              {filteredAndSortedData.length === 0 ? (
                 <tr>
                   <td colSpan={visibleColumns.length} className="px-6 py-4 text-center text-gray-500">
                     Aucune donnée trouvée pour ce rapport.
                   </td>
                 </tr>
               ) : (
-                filteredData.map((item, rowIndex) => {
+                filteredAndSortedData.map((item, rowIndex) => {
                   const rowData = getRowData(item, selectedDataSource, data.vehicles, data.drivers);
                   return (
                     <tr key={item.id || rowIndex} className="hover:bg-gray-50">
