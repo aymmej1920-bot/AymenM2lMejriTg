@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Truck, Users, Route, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck, FileText as ReportIcon, CalendarDays } from 'lucide-react'; // Added CalendarDays icon
+import { Truck, Users, Route, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck, FileText as ReportIcon } from 'lucide-react'; // Removed CalendarDays icon
 import Dashboard from './components/Dashboard';
 import Vehicles from './components/Vehicles';
 import Drivers from './components/Drivers';
@@ -11,7 +11,6 @@ import Summary from './components/Summary';
 import PreDepartureChecklistComponent from './components/PreDepartureChecklist';
 import Reports from './pages/Reports';
 import Login from './pages/Login';
-import CalendarView from './components/CalendarView'; // Import CalendarView
 import { FleetData, AuthUser, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist } from './types';
 import { useSession } from './components/SessionContextProvider';
 import { supabase } from './integrations/supabase/client';
@@ -160,7 +159,6 @@ function App() {
 
   const tabs = [
     { id: 'dashboard', name: 'Dashboard', icon: BarChart3 },
-    { id: 'calendar', name: 'Calendrier', icon: CalendarDays }, // New Calendar tab
     { id: 'vehicles', name: 'Véhicules', icon: Truck },
     { id: 'drivers', name: 'Conducteurs', icon: Users },
     { id: 'tours', name: 'Tournées', icon: Route },
@@ -218,8 +216,6 @@ function App() {
     switch (currentTab) {
       case 'dashboard':
         return <Dashboard key="dashboard-view" data={fleetData} userRole={userRole} />;
-      case 'calendar': // New case for CalendarView
-        return <CalendarView key="calendar-view" data={fleetData} />;
       case 'vehicles':
         return <Vehicles key="vehicles-view" data={fleetData} userRole={userRole} onUpdate={(newData: Vehicle) => handleUpdateData('vehicles', newData, 'update')} onDelete={(id: string) => handleUpdateData('vehicles', { id }, 'delete')} onAdd={(newData: Omit<Vehicle, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('vehicles', newData, 'insert')} />;
       case 'drivers':
