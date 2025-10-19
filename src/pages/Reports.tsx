@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { FleetData, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist, DataTableColumn } from '../types';
-import { Calendar } from 'lucide-react'; // Only Calendar is needed for date inputs
+import { Calendar, Search } from 'lucide-react'; // Only Calendar and Search are needed for date inputs and search icon
 import { formatDate } from '../utils/date';
 import DataTable from '../components/DataTable'; // Import the new DataTable component
 
@@ -176,12 +176,13 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
     return (
       <>
         <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
             placeholder="Rechercher dans le rapport..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             disabled={!selectedDataSource}
           />
         </div>
