@@ -151,7 +151,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
             <DialogDescription>
               {editingVehicle ? 'Modifiez les détails du véhicule.' : 'Ajoutez un nouveau véhicule à votre flotte.'}
             </DialogDescription>
-          </DialogDescription>
+          </DialogHeader>
           <DynamicForm<VehicleFormData>
             schema={vehicleSchema}
             defaultValues={defaultFormValues}
