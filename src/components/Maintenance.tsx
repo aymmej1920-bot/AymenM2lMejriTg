@@ -583,7 +583,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
 
       {/* Modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] bg-gray-50">
           <DialogHeader>
             <DialogTitle>Enregistrer une Maintenance</DialogTitle>
             <DialogDescription>
