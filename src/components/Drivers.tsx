@@ -15,6 +15,7 @@ import DataTable from './DataTable';
 import { driverSchema } from '../types/formSchemas';
 import { z } from 'zod';
 import { useForm, FormProvider } from 'react-hook-form'; // Import useForm and FormProvider
+import { zodResolver } from '@hookform/resolvers/zod'; // Import zodResolver
 import FormField from './forms/FormField'; // Import FormField
 import { Button } from './ui/button'; // Import Button for DialogFooter
 
