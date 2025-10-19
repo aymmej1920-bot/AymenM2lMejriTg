@@ -133,211 +133,211 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
           >
             <option value="">Tous les véhicules</option>
             {data.vehicles.map(vehicle => (
-              <option key={vehicle.id} value={vehicle.id}>
-                {vehicle.plate} - {vehicle.type}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="relative">
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-            placeholder="Date de début"
-          />
-          <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-        </div>
-        <div className="relative">
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-            placeholder="Date de fin"
-          />
-          <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-        </div>
-      </>
-    );
-  }, [data.vehicles, selectedVehicle, startDate, endDate]);
-
-  const customFilter = useCallback((entry: FuelEntry) => {
-    const matchesVehicle = selectedVehicle ? entry.vehicle_id === selectedVehicle : true;
-
-    const entryDate = new Date(entry.date);
-    const start = startDate ? new Date(startDate) : null;
-    const end = endDate ? new Date(endDate) : null;
-
-    const matchesDateRange = 
-      (!start || entryDate >= start) &&
-      (!end || entryDate <= end);
-
-    return matchesVehicle && matchesDateRange;
-  }, [selectedVehicle, startDate, endDate]);
-
-  const canAddForm = canAccess(userRole, 'fuel_entries', 'add');
-  const canEditForm = canAccess(userRole, 'fuel_entries', 'edit');
-
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-4xl font-bold text-gray-800">Gestion du Carburant</h2>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center">
-            <div className="p-3 bg-blue-100 rounded-full">
-              <Fuel className="w-6 h-6 text-blue-600" />
-            </div>
-            <div className="ml-4">
-              <h3 className="text-gray-500 text-sm font-medium">Total Litres</h3>
-              <p className="text-3xl font-bold text-gray-900">{totalLiters.toLocaleString()}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center">
-            <div className="p-3 bg-green-100 rounded-full">
-              <DollarSign className="w-6 h-6 text-green-600" />
-            </div>
-            <div className="ml-4">
-              <h3 className="text-gray-500 text-sm font-medium">Coût Total</h3>
-              <p className="text-3xl font-bold text-green-600">{totalCost.toFixed(2)} TND</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center">
-            <div className="p-3 bg-orange-100 rounded-full">
-              <TrendingUp className="w-6 h-6 text-orange-600" />
-            </div>
-            <div className="ml-4">
-              <h3 className="text-gray-500 text-sm font-medium">Prix Moyen/L</h3>
-              <p className="text-3xl font-bold text-orange-600">{avgPrice.toFixed(2)} TND</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <DataTable
-        title="Historique des Pleins"
-        data={data.fuel}
-        columns={columns}
-        onAdd={canAddForm ? handleAddFuel : undefined}
-        onEdit={canEditForm ? handleEditFuel : undefined}
-        onDelete={canAccess(userRole, 'fuel_entries', 'delete') ? onDelete : undefined}
-        addLabel="Ajouter Plein"
-        searchPlaceholder="Rechercher par date, véhicule, litres, prix ou kilométrage..."
-        exportFileName="carburant"
-        isLoading={false}
-        renderFilters={renderFilters}
-        customFilter={customFilter}
-        resourceType="fuel_entries" // Pass resource type
-      />
-
-      {/* Modal */}
-      <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="sm:max-w-[425px] bg-gray-50">
-          <DialogHeader>
-            <DialogTitle>{editingFuel ? 'Modifier un Plein' : 'Ajouter un Plein'}</DialogTitle>
-            <DialogDescription>
-              {editingFuel ? 'Modifiez les détails du plein.' : 'Ajoutez un nouvel enregistrement de carburant.'}
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
-            <div>
-              <label htmlFor="date" className="block text-sm font-semibold mb-2 text-gray-900">Date</label>
-              <div className="relative flex items-center">
-                <input
-                  id="date"
-                  type="date"
-                  {...register('date')}
-                  className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                  disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
-                />
-                <Calendar className="absolute right-3 w-5 h-5 text-gray-400 pointer-events-none" />
-              </div>
-              {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
-            </div>
-            <div>
-              <label htmlFor="vehicle_id" className="block text-sm font-semibold mb-2 text-gray-900">Véhicule</label>
-              <select
-                id="vehicle_id"
-                {...register('vehicle_id')}
-                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
-              >
-                <option value="">Sélectionner un véhicule</option>
-                {data.vehicles.map(vehicle => (
                   <option key={vehicle.id} value={vehicle.id}>
                     {vehicle.plate} - {vehicle.type}
                   </option>
                 ))}
               </select>
-              {errors.vehicle_id && <p className="text-red-500 text-sm mt-1">{errors.vehicle_id.message}</p>}
             </div>
-            <div>
-              <label htmlFor="liters" className="block text-sm font-semibold mb-2 text-gray-900">Litres</label>
+            <div className="relative">
               <input
-                id="liters"
-                type="number"
-                step="0.1"
-                {...register('liters', { valueAsNumber: true })}
-                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                placeholder="Date de début"
               />
-              {errors.liters && <p className="text-red-500 text-sm mt-1">{errors.liters.message}</p>}
+              <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
             </div>
-            <div>
-              <label htmlFor="price_per_liter" className="block text-sm font-semibold mb-2 text-gray-900">Prix par litre (TND)</label>
+            <div className="relative">
               <input
-                id="price_per_liter"
-                type="number"
-                step="0.01"
-                {...register('price_per_liter', { valueAsNumber: true })}
-                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                placeholder="Date de fin"
               />
-              {errors.price_per_liter && <p className="text-red-500 text-sm mt-1">{errors.price_per_liter.message}</p>}
+              <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
             </div>
-            <div>
-              <label htmlFor="mileage" className="block text-sm font-semibold mb-2 text-gray-900">Kilométrage</label>
-              <input
-                id="mileage"
-                type="number"
-                {...register('mileage', { valueAsNumber: true })}
-                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
-              />
-              {errors.mileage && <p className="text-red-500 text-sm mt-1">{errors.mileage.message}</p>}
+          </>
+        );
+      }, [data.vehicles, selectedVehicle, startDate, endDate]);
+    
+      const customFilter = useCallback((entry: FuelEntry) => {
+        const matchesVehicle = selectedVehicle ? entry.vehicle_id === selectedVehicle : true;
+    
+        const entryDate = new Date(entry.date);
+        const start = startDate ? new Date(startDate) : null;
+        const end = endDate ? new Date(endDate) : null;
+    
+        const matchesDateRange = 
+          (!start || entryDate >= start) &&
+          (!end || entryDate <= end);
+    
+        return matchesVehicle && matchesDateRange;
+      }, [selectedVehicle, startDate, endDate]);
+    
+      const canAddForm = canAccess(userRole, 'fuel_entries', 'add');
+      const canEditForm = canAccess(userRole, 'fuel_entries', 'edit');
+    
+      return (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-4xl font-bold text-gray-800">Gestion du Carburant</h2>
+          </div>
+    
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center">
+                <div className="p-3 bg-blue-100 rounded-full">
+                  <Fuel className="w-6 h-6 text-blue-600" />
+                </div>
+                <div className="ml-4">
+                  <h3 className="text-gray-500 text-sm font-medium">Total Litres</h3>
+                  <p className="text-3xl font-bold text-gray-900">{totalLiters.toLocaleString()}</p>
+                </div>
+              </div>
             </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowModal(false)}
-              >
-                Annuler
-              </Button>
-              {(canAddForm && !editingFuel) || (canEditForm && editingFuel) ? (
-                <Button
-                  type="submit"
-                >
-                  Sauvegarder
-                </Button>
-              ) : null}
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-};
-
-export default FuelManagement;
+    
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center">
+                <div className="p-3 bg-green-100 rounded-full">
+                  <DollarSign className="w-6 h-6 text-green-600" />
+                </div>
+                <div className="ml-4">
+                  <h3 className="text-gray-500 text-sm font-medium">Coût Total</h3>
+                  <p className="text-3xl font-bold text-green-600">{totalCost.toFixed(2)} TND</p>
+                </div>
+              </div>
+            </div>
+    
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center">
+                <div className="p-3 bg-orange-100 rounded-full">
+                  <TrendingUp className="w-6 h-6 text-orange-600" />
+                </div>
+                <div className="ml-4">
+                  <h3 className="text-gray-500 text-sm font-medium">Prix Moyen/L</h3>
+                  <p className="text-3xl font-bold text-orange-600">{avgPrice.toFixed(2)} TND</p>
+                </div>
+              </div>
+            </div>
+          </div>
+    
+          <DataTable
+            title="Historique des Pleins"
+            data={data.fuel}
+            columns={columns}
+            onAdd={canAddForm ? handleAddFuel : undefined}
+            onEdit={canEditForm ? handleEditFuel : undefined}
+            onDelete={canAccess(userRole, 'fuel_entries', 'delete') ? onDelete : undefined}
+            addLabel="Ajouter Plein"
+            searchPlaceholder="Rechercher par date, véhicule, litres, prix ou kilométrage..."
+            exportFileName="carburant"
+            isLoading={false}
+            renderFilters={renderFilters}
+            customFilter={customFilter}
+            resourceType="fuel_entries" // Pass resource type
+          />
+    
+          {/* Modal */}
+          <Dialog open={showModal} onOpenChange={setShowModal}>
+            <DialogContent className="sm:max-w-[425px] bg-gray-50">
+              <DialogHeader>
+                <DialogTitle>{editingFuel ? 'Modifier un Plein' : 'Ajouter un Plein'}</DialogTitle>
+                <DialogDescription>
+                  {editingFuel ? 'Modifiez les détails du plein.' : 'Ajoutez un nouvel enregistrement de carburant.'}
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
+                <div>
+                  <label htmlFor="date" className="block text-sm font-semibold mb-2 text-gray-900">Date</label>
+                  <div className="relative flex items-center">
+                    <input
+                      id="date"
+                      type="date"
+                      {...register('date')}
+                      className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
+                    />
+                    <Calendar className="absolute right-3 w-5 h-5 text-gray-400 pointer-events-none" />
+                  </div>
+                  {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
+                </div>
+                <div>
+                  <label htmlFor="vehicle_id" className="block text-sm font-semibold mb-2 text-gray-900">Véhicule</label>
+                  <select
+                    id="vehicle_id"
+                    {...register('vehicle_id')}
+                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
+                  >
+                    <option value="">Sélectionner un véhicule</option>
+                    {data.vehicles.map(vehicle => (
+                      <option key={vehicle.id} value={vehicle.id}>
+                        {vehicle.plate} - {vehicle.type}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.vehicle_id && <p className="text-red-500 text-sm mt-1">{errors.vehicle_id.message}</p>}
+                </div>
+                <div>
+                  <label htmlFor="liters" className="block text-sm font-semibold mb-2 text-gray-900">Litres</label>
+                  <input
+                    id="liters"
+                    type="number"
+                    step="0.1"
+                    {...register('liters', { valueAsNumber: true })}
+                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
+                  />
+                  {errors.liters && <p className="text-red-500 text-sm mt-1">{errors.liters.message}</p>}
+                </div>
+                <div>
+                  <label htmlFor="price_per_liter" className="block text-sm font-semibold mb-2 text-gray-900">Prix par litre (TND)</label>
+                  <input
+                    id="price_per_liter"
+                    type="number"
+                    step="0.01"
+                    {...register('price_per_liter', { valueAsNumber: true })}
+                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
+                  />
+                  {errors.price_per_liter && <p className="text-red-500 text-sm mt-1">{errors.price_per_liter.message}</p>}
+                </div>
+                <div>
+                  <label htmlFor="mileage" className="block text-sm font-semibold mb-2 text-gray-900">Kilométrage</label>
+                  <input
+                    id="mileage"
+                    type="number"
+                    {...register('mileage', { valueAsNumber: true })}
+                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
+                  />
+                  {errors.mileage && <p className="text-red-500 text-sm mt-1">{errors.mileage.message}</p>}
+                </div>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowModal(false)}
+                  >
+                    Annuler
+                  </Button>
+                  {(canAddForm && !editingFuel) || (canEditForm && editingFuel) ? (
+                    <Button
+                      type="submit"
+                    >
+                      Sauvegarder
+                    </Button>
+                  ) : null}
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      );
+    };
+    
+    export default FuelManagement;
