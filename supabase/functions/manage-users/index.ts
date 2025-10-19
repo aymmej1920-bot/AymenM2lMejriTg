@@ -4,6 +4,7 @@ import { createClient, User } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS', // Explicitly allow DELETE
 };
 
 // Define an interface for the profile data fetched from the 'profiles' table
@@ -30,6 +31,7 @@ serve(async (req: Request) => {
   // Verify the user's JWT from the request header
   const authHeader = req.headers.get('Authorization');
   if (!authHeader) {
+    console.log('Unauthorized: No Authorization header'); // Log
     return new Response(JSON.stringify({ error: 'Unauthorized: No Authorization header' }), {
       status: 401,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -87,8 +89,8 @@ serve(async (req: Request) => {
           email: user.email || 'N/A',
           first_name: profile?.first_name || user.user_metadata?.first_name || 'N/A',
           last_name: profile?.last_name || user.user_metadata?.last_name || 'N/A',
-          role: profile?.role || 'utilisateur', // Default role for invited users or those without profile
-          updated_at: profile?.updated_at || user.created_at, // Use profile updated_at if available, else auth user created_at
+          role: profile?.role || 'utilisateur',
+          updated_at: profile?.updated_at || user.created_at,
         };
       });
 
@@ -97,8 +99,12 @@ serve(async (req: Request) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } else if (req.method === 'DELETE') {
+      console.log('DELETE request received for manage-users'); // Log
       const { userId } = await req.json();
+      console.log('Attempting to delete user with ID:', userId); // Log
+
       if (!userId) {
+        console.log('Error: User ID is required for deletion.'); // Log
         return new Response(JSON.stringify({ error: 'User ID is required for deletion.' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -106,21 +112,26 @@ serve(async (req: Request) => {
       }
 
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        console.error('Error from supabaseAdmin.auth.admin.deleteUser:', deleteError.message); // Log
+        throw deleteError;
+      }
 
+      console.log('User deleted successfully:', userId); // Log
       return new Response(JSON.stringify({ message: 'User deleted successfully!' }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    console.log('Method Not Allowed:', req.method); // Log
     return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
       status: 405,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error: any) {
-    console.error('Error in manage-users edge function:', error.message);
+    console.error('Error in manage-users edge function (catch block):', error.message); // Log
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
