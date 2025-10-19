@@ -1,14 +1,15 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
-import { AuthUser } from '../types'; // Import AuthUser type
+import { AuthUser } from '../types';
 
 interface SessionContextType {
   session: Session | null;
   user: User | null;
-  currentUser: AuthUser | null; // Add currentUser to context
-  isLoading: boolean; // For initial session loading
-  isProfileLoading: boolean; // Add a loading state for profile
+  currentUser: AuthUser | null;
+  isLoading: boolean;
+  isProfileLoading: boolean;
+  refetchCurrentUser: () => Promise<void>; // Ajout de refetchCurrentUser
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -16,68 +17,67 @@ const SessionContext = createContext<SessionContextType | undefined>(undefined);
 export const SessionContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null); // State for currentUser with role
-  const [isLoading, setIsLoading] = useState(true); // For initial session loading
-  const [isProfileLoading, setIsProfileLoading] = useState(false); // For profile fetching
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
 
-  // Effect to get initial session and set up auth state change listener
+  // Fonction pour récupérer le profil utilisateur
+  const fetchUserProfile = useCallback(async (loggedInUser: User) => {
+    setIsProfileLoading(true);
+    try {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, role, avatar_url')
+        .eq('id', loggedInUser.id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      setCurrentUser({
+        id: loggedInUser.id,
+        email: loggedInUser.email || '',
+        name: `${profileData?.first_name || ''} ${profileData?.last_name || ''}`.trim() || loggedInUser.email?.split('@')[0] || 'User',
+        role: profileData?.role || 'utilisateur',
+        avatar_url: profileData?.avatar_url || null,
+      });
+    } catch (error) {
+      console.error('Error fetching user profile in SessionContextProvider:', error);
+      setCurrentUser(null);
+    } finally {
+      setIsProfileLoading(false);
+    }
+  }, []);
+
+  // Effet pour obtenir la session initiale et configurer l'écouteur de changement d'état d'authentification
   useEffect(() => {
     const getInitialSession = async () => {
       setIsLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user || null);
+      const { data: { session: initialSession } } = await supabase.auth.getSession();
+      setSession(initialSession);
+      setUser(initialSession?.user || null);
       setIsLoading(false);
+      if (initialSession?.user) {
+        fetchUserProfile(initialSession.user);
+      }
     };
 
     getInitialSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user || null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+      setSession(currentSession);
+      setUser(currentSession?.user || null);
+      if (currentSession?.user) {
+        fetchUserProfile(currentSession.user);
+      } else {
+        setCurrentUser(null);
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
-
-  // Effect to fetch user profile when session or user changes
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (user) {
-        setIsProfileLoading(true);
-        try {
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('first_name, last_name, role, avatar_url') // Include avatar_url
-            .eq('id', user.id)
-            .single();
-
-          if (profileError) throw profileError;
-
-          setCurrentUser({
-            id: user.id,
-            email: user.email || '',
-            name: profileData?.first_name || user.email?.split('@')[0] || 'User',
-            role: profileData?.role || 'utilisateur',
-            avatar_url: profileData?.avatar_url || null, // Set avatar_url
-          });
-        } catch (error) {
-          console.error('Error fetching user profile in SessionContextProvider:', error);
-          setCurrentUser(null); // Clear user if profile fetch fails
-        } finally {
-          setIsProfileLoading(false);
-        }
-      } else {
-        setCurrentUser(null);
-        setIsProfileLoading(false);
-      }
-    };
-
-    fetchUserProfile();
-  }, [user]); // Depend on 'user' from session
+  }, [fetchUserProfile]);
 
   return (
-    <SessionContext.Provider value={{ session, user, currentUser, isLoading, isProfileLoading }}>
+    <SessionContext.Provider value={{ session, user, currentUser, isLoading, isProfileLoading, refetchCurrentUser: () => user ? fetchUserProfile(user) : Promise.resolve() }}>
       {children}
     </SessionContext.Provider>
   );

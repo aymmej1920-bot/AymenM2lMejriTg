@@ -14,7 +14,7 @@ import SkeletonLoader from '../components/SkeletonLoader';
 type ProfileFormData = z.infer<typeof profileSchema>;
 
 const Profile: React.FC = () => {
-  const { currentUser, user, isProfileLoading } = useSession();
+  const { currentUser, user, isProfileLoading, refetchCurrentUser } = useSession();
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,7 +24,7 @@ const Profile: React.FC = () => {
     defaultValues: {
       first_name: currentUser?.name.split(' ')[0] || '',
       last_name: currentUser?.name.split(' ').slice(1).join(' ') || '',
-      avatar_url: currentUser?.avatar_url || null, // Assuming avatar_url is part of currentUser in SessionContext
+      avatar_url: currentUser?.avatar_url || null,
     },
   });
 
@@ -33,9 +33,12 @@ const Profile: React.FC = () => {
   // Update form defaults when currentUser changes
   useEffect(() => {
     if (currentUser) {
+      const firstNameFromProfile = currentUser.name.split(' ')[0];
+      const lastNameFromProfile = currentUser.name.split(' ').slice(1).join(' ');
+
       reset({
-        first_name: currentUser.name.split(' ')[0] || '',
-        last_name: currentUser.name.split(' ').slice(1).join(' ') || '',
+        first_name: firstNameFromProfile,
+        last_name: lastNameFromProfile,
         avatar_url: currentUser.avatar_url || null,
       });
       setAvatarPreview(currentUser.avatar_url || null);
@@ -111,8 +114,7 @@ const Profile: React.FC = () => {
 
       dismissToast(loadingToastId);
       showSuccess('Profil mis à jour avec succès !');
-      // Optionally, trigger a re-fetch of currentUser in SessionContextProvider
-      // For now, a page refresh or re-login would show the updated name/avatar
+      await refetchCurrentUser(); // Appel de la fonction de rafraîchissement
     } catch (error: any) {
       dismissToast(loadingToastId);
       showError(`Erreur lors de la mise à jour du profil: ${error.message}`);
