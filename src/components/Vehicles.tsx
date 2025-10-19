@@ -17,8 +17,7 @@ import { useForm, FormProvider } from 'react-hook-form'; // Import useForm and F
 import { zodResolver } from '@hookform/resolvers/zod'; // Import zodResolver
 import FormField from './forms/FormField'; // Import FormField
 import { Button } from './ui/button'; // Import Button for DialogFooter
-import { useSession } from './SessionContextProvider'; // Import useSession
-import { canAccess } from '../utils/permissions'; // Import canAccess
+import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
 
 type VehicleFormData = z.infer<typeof vehicleSchema>;
 
@@ -30,8 +29,7 @@ interface VehiclesProps {
 }
 
 const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) => {
-  const { currentUser } = useSession(); // Use useSession directly
-  const userRole = currentUser?.role || 'utilisateur';
+  const { canAccess } = usePermissions(); // Use usePermissions hook
 
   const [showModal, setShowModal] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
@@ -138,8 +136,8 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
     },
   ], []);
 
-  const canEditForm = canAccess(userRole, 'vehicles', 'edit');
-  const canAddForm = canAccess(userRole, 'vehicles', 'add');
+  const canEditForm = canAccess('vehicles', 'edit');
+  const canAddForm = canAccess('vehicles', 'add');
 
   return (
     <>
@@ -149,7 +147,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
         columns={columns}
         onAdd={canAddForm ? handleAddVehicle : undefined}
         onEdit={canEditForm ? handleEditVehicle : undefined}
-        onDelete={canAccess(userRole, 'vehicles', 'delete') ? onDelete : undefined}
+        onDelete={canAccess('vehicles', 'delete') ? onDelete : undefined}
         addLabel="Ajouter Véhicule"
         searchPlaceholder="Rechercher par plaque, type ou statut..."
         exportFileName="vehicules"

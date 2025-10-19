@@ -10,12 +10,13 @@ import FormField from '../components/forms/FormField';
 import { Button } from '../components/ui/button';
 import { User, Camera } from 'lucide-react';
 import SkeletonLoader from '../components/SkeletonLoader';
-import { canAccess } from '../utils/permissions'; // Import canAccess
+import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
 const Profile: React.FC = () => {
   const { currentUser, user, isProfileLoading, refetchCurrentUser } = useSession();
+  const { canAccess } = usePermissions(); // Use usePermissions hook
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -86,6 +87,11 @@ const Profile: React.FC = () => {
       showError('Utilisateur non authentifié.');
       return;
     }
+    if (!canAccess('profile', 'edit')) { // Use canAccess from hook
+      showError('Vous n\'avez pas la permission de modifier votre profil.');
+      return;
+    }
+
     setIsSubmitting(true);
     const loadingToastId = showLoading('Mise à jour du profil...');
 
@@ -124,7 +130,7 @@ const Profile: React.FC = () => {
     }
   };
 
-  const canEditProfile = currentUser ? canAccess(currentUser.role, 'profile', 'edit') : false;
+  const canEditProfile = canAccess('profile', 'edit'); // Use canAccess from hook
 
   if (isProfileLoading) {
     return (

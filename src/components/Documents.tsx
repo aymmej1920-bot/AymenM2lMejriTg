@@ -17,8 +17,7 @@ import {
   DialogDescription,
 } from './ui/dialog';
 import DataTable from './DataTable'; // Import the new DataTable component
-import { useSession } from './SessionContextProvider'; // Import useSession
-import { canAccess } from '../utils/permissions'; // Import canAccess
+import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
 
 type DocumentFormData = z.infer<typeof documentSchema>;
 
@@ -30,8 +29,7 @@ interface DocumentsProps {
 }
 
 const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }) => {
-  const { currentUser } = useSession(); // Use useSession directly
-  const userRole = currentUser?.role || 'utilisateur';
+  const { canAccess } = usePermissions(); // Use usePermissions hook
 
   const [showModal, setShowModal] = useState(false);
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
@@ -256,8 +254,8 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
     return matchesVehicle && matchesType && matchesDateRange;
   }, [selectedVehicle, selectedType, startDate, endDate]);
 
-  const canAddForm = canAccess(userRole, 'documents', 'add');
-  const canEditForm = canAccess(userRole, 'documents', 'edit');
+  const canAddForm = canAccess('documents', 'add');
+  const canEditForm = canAccess('documents', 'edit');
 
   return (
     <>
@@ -267,7 +265,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
         columns={columns}
         onAdd={canAddForm ? handleAddDocument : undefined}
         onEdit={canEditForm ? handleEditDocument : undefined}
-        onDelete={canAccess(userRole, 'documents', 'delete') ? onDelete : undefined}
+        onDelete={canAccess('documents', 'delete') ? onDelete : undefined}
         addLabel="Ajouter Document"
         searchPlaceholder="Rechercher un document par véhicule, type, numéro ou expiration..."
         exportFileName="documents"

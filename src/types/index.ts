@@ -129,3 +129,30 @@ export type ProcessedDataTableColumn<T> = DataTableColumn<T> & {
   key: string;
   defaultVisible: boolean;
 };
+
+// Types for dynamic permissions
+export type UserRole = 'admin' | 'direction' | 'utilisateur';
+export type Resource = 
+  'vehicles' | 
+  'drivers' | 
+  'tours' | 
+  'fuel_entries' | 
+  'documents' | 
+  'maintenance_entries' | 
+  'pre_departure_checklists' |
+  'users' | // For user management
+  'profile' | // For user's own profile
+  'permissions' | // New resource for managing permissions
+  'dashboard'; // Added dashboard as a resource
+
+export type Action = 'view' | 'add' | 'edit' | 'delete';
+
+export interface Permission {
+  id: string;
+  role: UserRole;
+  resource: Resource;
+  action: Action;
+  allowed: boolean;
+  created_at?: string;
+  updated_at?: string;
+}

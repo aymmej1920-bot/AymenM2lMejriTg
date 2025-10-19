@@ -17,8 +17,7 @@ import {
   DialogDescription,
 } from './ui/dialog'; // Import shadcn/ui Dialog components
 import DataTable from './DataTable'; // Import the new DataTable component
-import { useSession } from './SessionContextProvider'; // Import useSession
-import { canAccess } from '../utils/permissions'; // Import canAccess
+import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
 
 type PreDepartureChecklistFormData = z.infer<typeof preDepartureChecklistSchema>;
 
@@ -28,8 +27,7 @@ interface PreDepartureChecklistProps {
 }
 
 const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ data, onAdd }) => {
-  const { currentUser } = useSession(); // Use useSession directly
-  const userRole = currentUser?.role || 'utilisateur';
+  const { canAccess } = usePermissions(); // Use usePermissions hook
 
   const [showModal, setShowModal] = useState(false);
 
@@ -54,7 +52,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
     }
   });
 
-  const canAdd = canAccess(userRole, 'pre_departure_checklists', 'add'); // All authenticated users can add
+  const canAdd = canAccess('pre_departure_checklists', 'add'); // All authenticated users can add
 
   useEffect(() => {
     reset({

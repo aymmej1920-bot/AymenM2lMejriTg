@@ -13,6 +13,7 @@ import {
   DialogDescription,
 } from './ui/dialog';
 import { dashboardWidgetMap } from './dashboard/DashboardWidgets'; // Import the widget map
+import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
 
 interface DashboardProps {
   data: FleetData;
@@ -21,6 +22,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ data, preDepartureChecklists }) => {
+  const { canAccess } = usePermissions(); // Use usePermissions hook
   const { widgets, toggleWidgetVisibility, moveWidget, resetToDefault } = useDashboardCustomization();
   const [showCustomizeDialog, setShowCustomizeDialog] = useState(false);
 
@@ -42,14 +44,16 @@ const Dashboard: React.FC<DashboardProps> = ({ data, preDepartureChecklists }) =
           <div className="text-sm text-gray-500">
             Dernière mise à jour: {formatDate(new Date().toISOString())}
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowCustomizeDialog(true)}
-            className="text-gray-600 hover:text-blue-600"
-          >
-            <Settings className="w-5 h-5" />
-          </Button>
+          {canAccess('dashboard', 'edit') && ( // Check permission for customizing dashboard
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowCustomizeDialog(true)}
+              className="text-gray-600 hover:text-blue-600"
+            >
+              <Settings className="w-5 h-5" />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -71,60 +75,62 @@ const Dashboard: React.FC<DashboardProps> = ({ data, preDepartureChecklists }) =
         </div>
       )}
 
-      <Dialog open={showCustomizeDialog} onOpenChange={setShowCustomizeDialog}>
-        <DialogContent className="sm:max-w-[425px] bg-gray-50">
-          <DialogHeader>
-            <DialogTitle>Personnaliser le Tableau de Bord</DialogTitle>
-            <DialogDescription>
-              Choisissez les widgets à afficher et réorganisez-les.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2 py-4">
-            {widgets.map((widget: DashboardWidgetConfig, index: number) => (
-              <div key={widget.id} className="flex items-center justify-between p-2 border rounded-md bg-gray-100">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id={`widget-${widget.id}`}
-                    checked={widget.isVisible}
-                    onChange={() => toggleWidgetVisibility(widget.id)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor={`widget-${widget.id}`} className="text-sm font-medium text-gray-700">
-                    {widget.title}
-                  </label>
+      {canAccess('dashboard', 'edit') && ( // Conditionally render customize dialog
+        <Dialog open={showCustomizeDialog} onOpenChange={setShowCustomizeDialog}>
+          <DialogContent className="sm:max-w-[425px] bg-gray-50">
+            <DialogHeader>
+              <DialogTitle>Personnaliser le Tableau de Bord</DialogTitle>
+              <DialogDescription>
+                Choisissez les widgets à afficher et réorganisez-les.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2 py-4">
+              {widgets.map((widget: DashboardWidgetConfig, index: number) => (
+                <div key={widget.id} className="flex items-center justify-between p-2 border rounded-md bg-gray-100">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`widget-${widget.id}`}
+                      checked={widget.isVisible}
+                      onChange={() => toggleWidgetVisibility(widget.id)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor={`widget-${widget.id}`} className="text-sm font-medium text-gray-700">
+                      {widget.title}
+                    </label>
+                  </div>
+                  <div className="flex space-x-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => moveWidget(widget.id, 'up')}
+                      disabled={index === 0}
+                    >
+                      <ChevronUp className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => moveWidget(widget.id, 'down')}
+                      disabled={index === widgets.length - 1}
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex space-x-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => moveWidget(widget.id, 'up')}
-                    disabled={index === 0}
-                  >
-                    <ChevronUp className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => moveWidget(widget.id, 'down')}
-                    disabled={index === widgets.length - 1}
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={resetToDefault}>
-              Réinitialiser par défaut
-            </Button>
-            <Button onClick={() => setShowCustomizeDialog(false)}>
-              Fermer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              ))}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={resetToDefault}>
+                Réinitialiser par défaut
+              </Button>
+              <Button onClick={() => setShowCustomizeDialog(false)}>
+                Fermer
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

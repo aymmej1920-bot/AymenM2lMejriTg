@@ -18,8 +18,7 @@ import { useForm, FormProvider } from 'react-hook-form'; // Import useForm and F
 import { zodResolver } from '@hookform/resolvers/zod'; // Import zodResolver
 import FormField from './forms/FormField'; // Import FormField
 import { Button } from './ui/button'; // Import Button for DialogFooter
-import { useSession } from './SessionContextProvider'; // Import useSession
-import { canAccess } from '../utils/permissions'; // Import canAccess
+import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
 
 type DriverFormData = z.infer<typeof driverSchema>;
 
@@ -31,8 +30,7 @@ interface DriversProps {
 }
 
 const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) => {
-  const { currentUser } = useSession(); // Use useSession directly
-  const userRole = currentUser?.role || 'utilisateur';
+  const { canAccess } = usePermissions(); // Use usePermissions hook
 
   const [showModal, setShowModal] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
@@ -151,8 +149,8 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
     );
   }, [expiringDrivers]);
 
-  const canEditForm = canAccess(userRole, 'drivers', 'edit');
-  const canAddForm = canAccess(userRole, 'drivers', 'add');
+  const canEditForm = canAccess('drivers', 'edit');
+  const canAddForm = canAccess('drivers', 'add');
 
   return (
     <>
@@ -162,7 +160,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
         columns={columns}
         onAdd={canAddForm ? handleAddDriver : undefined}
         onEdit={canEditForm ? handleEditDriver : undefined}
-        onDelete={canAccess(userRole, 'drivers', 'delete') ? onDelete : undefined}
+        onDelete={canAccess('drivers', 'delete') ? onDelete : undefined}
         addLabel="Ajouter Conducteur"
         searchPlaceholder="Rechercher un conducteur par nom, permis, statut ou téléphone..."
         exportFileName="conducteurs"

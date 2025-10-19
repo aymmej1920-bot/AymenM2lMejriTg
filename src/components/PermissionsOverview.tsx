@@ -1,12 +1,18 @@
 import React from 'react';
-import { PERMISSION_MAP, UserRole, Resource, Action } from '../utils/permissions';
 import { CheckCircle, XCircle, Info } from 'lucide-react';
+import { usePermissions } from '../hooks/usePermissions'; // Import the new hook
+import { UserRole, Resource, Action } from '../types'; // Import types
+import { useSession } from '../components/SessionContextProvider'; // To get current user role for editing permissions
 
 const PermissionsOverview: React.FC = () => {
+  const { permissions, canAccess, updatePermission, isLoadingPermissions } = usePermissions();
+  void canAccess; // Explicitly mark as "used" for TypeScript
+  const { currentUser } = useSession(); // Get current user to check if they are admin
+
   const roles: UserRole[] = ['admin', 'direction', 'utilisateur'];
   const resources: Resource[] = [
     'vehicles', 'drivers', 'tours', 'fuel_entries', 'documents',
-    'maintenance_entries', 'pre_departure_checklists', 'users', 'profile'
+    'maintenance_entries', 'pre_departure_checklists', 'users', 'profile', 'permissions' // Add 'permissions' as a resource
   ];
   const actions: Action[] = ['view', 'add', 'edit', 'delete'];
 
@@ -31,6 +37,7 @@ const PermissionsOverview: React.FC = () => {
       case 'pre_departure_checklists': return 'Checklists Pré-départ';
       case 'users': return 'Utilisateurs';
       case 'profile': return 'Mon Profil';
+      case 'permissions': return 'Permissions'; // Label for the new resource
       default: return resource;
     }
   };
@@ -44,6 +51,23 @@ const PermissionsOverview: React.FC = () => {
     }
   };
 
+  const handleTogglePermission = async (role: UserRole, resource: Resource, action: Action, currentAllowed: boolean) => {
+    if (currentUser?.role !== 'admin') {
+      // This check is also in updatePermission, but good to have a UI-level feedback
+      alert('Seuls les administrateurs peuvent modifier les permissions.');
+      return;
+    }
+    await updatePermission(role, resource, action, !currentAllowed);
+  };
+
+  if (isLoadingPermissions) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <p className="text-gray-600">Chargement des permissions...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <h2 className="text-4xl font-bold text-gray-800">Gestion des Accès (Frontend)</h2>
@@ -52,7 +76,8 @@ const PermissionsOverview: React.FC = () => {
         Ces règles contrôlent la visibilité des boutons et des champs de formulaire.
         <br />
         <span className="font-semibold text-red-600">Important :</span> La sécurité réelle des données est gérée par les politiques RLS (Row Level Security) dans Supabase.
-        Assurez-vous que les politiques RLS de votre base de données correspondent à ces permissions.
+        **Les modifications apportées ici ne mettent PAS automatiquement à jour les politiques RLS de votre base de données.**
+        Après avoir modifié les permissions ici, un administrateur doit manuellement mettre à jour les politiques RLS correspondantes dans Supabase pour que les changements soient sécurisés et effectifs au niveau de la base de données.
       </p>
 
       <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg flex items-start space-x-3">
@@ -60,8 +85,10 @@ const PermissionsOverview: React.FC = () => {
         <div>
           <h3 className="text-blue-800 font-semibold">Comment modifier les permissions ?</h3>
           <p className="text-blue-700 text-sm">
-            Pour modifier ces permissions, éditez directement le fichier <code className="font-mono bg-blue-100 px-1 py-0.5 rounded">src/utils/permissions.ts</code>.
-            Après avoir modifié le fichier, n'oubliez pas de mettre à jour les politiques RLS correspondantes dans votre base de données Supabase pour que les changements soient effectifs et sécurisés.
+            En tant qu'administrateur, vous pouvez cliquer sur les icônes <CheckCircle className="inline w-4 h-4 text-green-500" /> ou <XCircle className="inline w-4 h-4 text-red-500" /> dans le tableau ci-dessous pour basculer une permission.
+            Les changements seront sauvegardés dans la base de données et appliqués immédiatement dans l'interface utilisateur.
+            <br />
+            <span className="font-semibold text-red-600">Rappel :</span> N'oubliez pas de synchroniser ces changements avec vos politiques RLS Supabase.
           </p>
         </div>
       </div>
@@ -98,15 +125,26 @@ const PermissionsOverview: React.FC = () => {
                 </td>
                 {roles.map(role => (
                   <React.Fragment key={`${resource}-${role}`}>
-                    {actions.map(action => (
-                      <td key={`${resource}-${role}-${action}`} className="px-4 py-4 whitespace-nowrap text-center text-sm">
-                        {PERMISSION_MAP[role]?.[resource]?.[action] ? (
-                          <CheckCircle className="w-5 h-5 text-green-500 mx-auto" />
-                        ) : (
-                          <XCircle className="w-5 h-5 text-red-500 mx-auto" />
-                        )}
-                      </td>
-                    ))}
+                    {actions.map(action => {
+                      const isAllowed = permissions.find(
+                        p => p.role === role && p.resource === resource && p.action === action
+                      )?.allowed || false;
+                      const canEditThisPermission = currentUser?.role === 'admin'; // Only admins can edit permissions in the UI
+
+                      return (
+                        <td
+                          key={`${resource}-${role}-${action}`}
+                          className={`px-4 py-4 whitespace-nowrap text-center text-sm ${canEditThisPermission ? 'cursor-pointer hover:bg-gray-100' : ''}`}
+                          onClick={canEditThisPermission ? () => handleTogglePermission(role, resource, action, isAllowed) : undefined}
+                        >
+                          {isAllowed ? (
+                            <CheckCircle className="w-5 h-5 text-green-500 mx-auto" />
+                          ) : (
+                            <XCircle className="w-5 h-5 text-red-500 mx-auto" />
+                          )}
+                        </td>
+                      );
+                    })}
                   </React.Fragment>
                 ))}
               </tr>

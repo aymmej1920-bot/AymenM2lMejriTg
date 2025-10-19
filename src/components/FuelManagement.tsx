@@ -17,8 +17,7 @@ import {
   DialogDescription,
 } from './ui/dialog';
 import DataTable from './DataTable'; // Import the new DataTable component
-import { useSession } from './SessionContextProvider'; // Import useSession
-import { canAccess } from '../utils/permissions'; // Import canAccess
+import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
 
 type FuelEntryFormData = z.infer<typeof fuelEntrySchema>;
 
@@ -30,8 +29,7 @@ interface FuelManagementProps {
 }
 
 const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, onDelete }) => {
-  const { currentUser } = useSession(); // Use useSession directly
-  const userRole = currentUser?.role || 'utilisateur';
+  const { canAccess } = usePermissions(); // Use usePermissions hook
 
   const [showModal, setShowModal] = useState(false);
   const [editingFuel, setEditingFuel] = useState<FuelEntry | null>(null);
@@ -144,7 +142,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Date de début"
               />
               <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
@@ -177,8 +175,8 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
         return matchesVehicle && matchesDateRange;
       }, [selectedVehicle, startDate, endDate]);
     
-      const canAddForm = canAccess(userRole, 'fuel_entries', 'add');
-      const canEditForm = canAccess(userRole, 'fuel_entries', 'edit');
+      const canAddForm = canAccess('fuel_entries', 'add');
+      const canEditForm = canAccess('fuel_entries', 'edit');
     
       return (
         <div className="space-y-6">
@@ -231,7 +229,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
             columns={columns}
             onAdd={canAddForm ? handleAddFuel : undefined}
             onEdit={canEditForm ? handleEditFuel : undefined}
-            onDelete={canAccess(userRole, 'fuel_entries', 'delete') ? onDelete : undefined}
+            onDelete={canAccess('fuel_entries', 'delete') ? onDelete : undefined}
             addLabel="Ajouter Plein"
             searchPlaceholder="Rechercher par date, véhicule, litres, prix ou kilométrage..."
             exportFileName="carburant"
@@ -261,7 +259,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                       className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
                     />
-                    <Calendar className="absolute right-3 w-5 h-5 text-gray-400 pointer-events-none" />
+                    <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                   </div>
                   {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
                 </div>

@@ -5,30 +5,9 @@ import ConfirmDialog from './ConfirmDialog';
 import { exportToXLSX } from '../utils/export';
 import { showSuccess, showError } from '../utils/toast';
 import SkeletonLoader from './SkeletonLoader';
-import { DataTableColumn, ProcessedDataTableColumn } from '../types'; // Import the new interface
+import { DataTableColumn, ProcessedDataTableColumn, Resource, Action } from '../types'; // Import the new interface
 import DataTableColumnCustomizer from './DataTableColumnCustomizer'; // Import the new component
-import { useSession } from './SessionContextProvider'; // Import useSession
-import { canAccess, Resource } from '../utils/permissions'; // Import canAccess and Resource
-
-interface DataTableProps<T extends { id: string }> {
-  title: string;
-  data: T[];
-  columns: DataTableColumn<T>[];
-  onAdd?: () => void;
-  onEdit?: (item: T) => void;
-  onDelete?: (id: string) => void;
-  addLabel?: string;
-  searchPlaceholder?: string;
-  exportFileName?: string;
-  isLoading?: boolean;
-  itemsPerPageOptions?: number[];
-  renderFilters?: (searchTerm: string, setSearchTerm: (term: string) => void) => React.ReactNode;
-  renderAlerts?: () => React.ReactNode;
-  // Optional custom row actions, if more than just edit/delete are needed
-  renderRowActions?: (item: T) => React.ReactNode;
-  customFilter?: (item: T) => boolean; // Added customFilter prop
-  resourceType: Resource; // New prop to specify the resource type for permissions
-}
+import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
 
 const DataTable = <T extends { id: string }>({
   title,
@@ -48,8 +27,8 @@ const DataTable = <T extends { id: string }>({
   customFilter, // Destructure customFilter
   resourceType, // Destructure resourceType
 }: React.PropsWithChildren<DataTableProps<T>>) => {
-  const { currentUser } = useSession(); // Get currentUser from session context
-  const userRole = currentUser?.role || 'utilisateur'; // Default to 'utilisateur' if not available
+  void Action; // Suppress TS6133 for Action
+  const { canAccess } = usePermissions(); // Use usePermissions hook
 
   const [searchTerm, setSearchTerm] = useState('');
   const [sortColumn, setSortColumn] = useState<keyof T | string>(initialColumns.find(col => col.sortable)?.key || '');
@@ -189,10 +168,10 @@ const DataTable = <T extends { id: string }>({
   };
 
   // Determine if the current user can perform write actions (add, edit, delete) based on resourceType
-  const canAdd = onAdd && canAccess(userRole, resourceType, 'add');
-  const canEdit = onEdit && canAccess(userRole, resourceType, 'edit');
-  const canDelete = onDelete && canAccess(userRole, resourceType, 'delete');
-  const canPerformAnyAction = canAdd || canEdit || canDelete || (renderRowActions && canAccess(userRole, resourceType, 'edit')); // Assuming renderRowActions implies some edit/delete capability
+  const canAdd = onAdd && canAccess(resourceType, 'add');
+  const canEdit = onEdit && canAccess(resourceType, 'edit');
+  const canDelete = onDelete && canAccess(resourceType, 'delete');
+  const canPerformAnyAction = canAdd || canEdit || canDelete || (renderRowActions && canAccess(resourceType, 'edit')); // Assuming renderRowActions implies some edit/delete capability
 
   if (isLoading) {
     return <SkeletonLoader count={5} height="h-12" className="w-full" />;

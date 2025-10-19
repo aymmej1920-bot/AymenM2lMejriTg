@@ -18,11 +18,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { inviteUserSchema } from '../types/formSchemas';
 import { z } from 'zod';
 import FormField from './forms/FormField';
-import { canAccess } from '../utils/permissions'; // Import canAccess
+import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
+import { UserRole } from '../types'; // Import UserRole
 
 interface UserManagementProps {
-  currentUserRole: 'admin' | 'direction' | 'utilisateur';
-  onUpdateUserRole: (userId: string, newRole: 'admin' | 'direction' | 'utilisateur') => Promise<void>;
+  currentUserRole: UserRole; // Use UserRole type
+  onUpdateUserRole: (userId: string, newRole: UserRole) => Promise<void>; // Use UserRole type
   onDeleteUser: (userId: string) => Promise<void>;
 }
 
@@ -31,7 +32,7 @@ interface Profile {
   first_name: string | null;
   last_name: string | null;
   email: string; // Added email for display
-  role: 'admin' | 'direction' | 'utilisateur';
+  role: UserRole; // Use UserRole type
   updated_at: string; // Changed from created_at to updated_at
 }
 
@@ -39,6 +40,9 @@ type InviteUserFormData = z.infer<typeof inviteUserSchema>;
 
 const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpdateUserRole, onDeleteUser }) => {
   void onDeleteUser; // Explicitly mark as "used" for TypeScript
+  void currentUserRole; // Explicitly mark as "used" for TypeScript
+  const { canAccess } = usePermissions(); // Use usePermissions hook
+
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +50,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
   const [showEditRoleModal, setShowEditRoleModal] = useState(false);
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
-  const [newRole, setNewRole] = useState<'admin' | 'direction' | 'utilisateur'>('utilisateur');
+  const [newRole, setNewRole] = useState<UserRole>('utilisateur'); // Use UserRole type
   const [showInviteUserModal, setShowInviteUserModal] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
 
@@ -101,13 +105,13 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
   };
 
   useEffect(() => {
-    if (currentUserRole === 'admin') {
+    if (canAccess('users', 'view')) { // Use canAccess from hook
       fetchUsers();
     } else {
       setError('Vous n\'avez pas les permissions pour accéder à cette page.');
       setLoading(false);
     }
-  }, [currentUserRole]);
+  }, [canAccess]); // Depend on canAccess
 
   const filteredAndSortedUsers = useMemo(() => {
     let filtered = users.filter(user => {
@@ -266,9 +270,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
     }
   };
 
-  const canInvite = canAccess(currentUserRole, 'users', 'add');
-  const canEditRole = canAccess(currentUserRole, 'users', 'edit');
-  const canDeleteUser = canAccess(currentUserRole, 'users', 'delete');
+  const canInvite = canAccess('users', 'add');
+  const canEditRole = canAccess('users', 'edit');
+  const canDeleteUser = canAccess('users', 'delete');
 
   if (loading) {
     return (
@@ -286,7 +290,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
     );
   }
 
-  if (!canAccess(currentUserRole, 'users', 'view')) {
+  if (!canAccess('users', 'view')) { // Use canAccess from hook
     return (
       <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
         <p className="text-red-700">Accès refusé. Vous n'avez pas les permissions pour accéder à cette page.</p>
@@ -480,7 +484,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
               <select
                 id="role"
                 value={newRole}
-                onChange={(e) => setNewRole(e.target.value as 'admin' | 'direction' | 'utilisateur')}
+                onChange={(e) => setNewRole(e.target.value as UserRole)} // Use UserRole type
                 className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="utilisateur">Utilisateur</option>

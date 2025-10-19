@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { FleetData, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist, DataTableColumn } from '../types';
+import { FleetData, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist, DataTableColumn, Resource } from '../types'; // Import Resource
 import { Calendar, Search } from 'lucide-react'; // Only Calendar and Search are needed for date inputs and search icon
 import { formatDate, getDaysUntilExpiration, getDaysSinceEntry } from '../utils/date'; // Import from utils/date
 import DataTable from '../components/DataTable'; // Import the new DataTable component
@@ -224,7 +224,7 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
           isLoading={false} // Adjust based on actual loading state if needed
           renderFilters={renderFilters}
           customFilter={customFilter}
-          resourceType={selectedDataSource as any} // Added resourceType prop
+          resourceType={selectedDataSource as Resource} // Added resourceType prop
         />
       ) : (
         <div className="bg-white rounded-xl shadow-lg p-6 text-center text-gray-500">

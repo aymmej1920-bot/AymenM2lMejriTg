@@ -16,15 +16,16 @@ import Profile from './pages/Profile'; // Import the new Profile page
 import UserManagement from './components/UserManagement';
 import PermissionsOverview from './components/PermissionsOverview'; // Import PermissionsOverview
 import ProtectedRoute from './components/ProtectedRoute'; // Import ProtectedRoute
-import { FleetData, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist } from './types';
+import { FleetData, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist, UserRole, Resource, Action } from './types'; // Import types
 import { useSession } from './components/SessionContextProvider';
 import { supabase } from './integrations/supabase/client';
 import { showSuccess, showError, showLoading, dismissToast } from './utils/toast';
 import SkeletonLoader from './components/SkeletonLoader';
-import { canAccess } from './utils/permissions'; // Import canAccess
+import { PermissionsProvider, usePermissions } from './hooks/usePermissions'; // Import PermissionsProvider and usePermissions
 
-function App() {
-  const { session, currentUser, isLoading, isProfileLoading } = useSession(); // Use currentUser from context
+function AppContent() { // Renamed App to AppContent
+  const { session, currentUser, isLoading, isProfileLoading } = useSession();
+  const { canAccess, isLoadingPermissions } = usePermissions(); // Use usePermissions hook
   const navigate = useNavigate();
   const location = useLocation();
   const [fleetData, setFleetData] = useState<FleetData>({
@@ -36,7 +37,7 @@ function App() {
     maintenance: [],
     pre_departure_checklists: [],
   });
-  const [dataLoading, setDataLoading] = useState(true); // Only for fleet data, not session/profile
+  const [dataLoading, setDataLoading] = useState(true);
 
   const fetchData = useCallback(async (userId: string) => {
     setDataLoading(true);
@@ -86,57 +87,60 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!isLoading && !isProfileLoading) {
+    if (!isLoading && !isProfileLoading && !isLoadingPermissions) { // Wait for permissions to load
       if (session?.user) {
         fetchData(session.user.id);
-        // Redirect to dashboard if on login page after successful authentication
         if (location.pathname === '/login' || location.pathname === '/') {
           navigate('/dashboard');
         }
       } else {
-        // If not authenticated, ensure we are on the login page
         if (location.pathname !== '/login') {
           navigate('/login');
         }
-        // Clear fleet data if user logs out
         setFleetData({
           vehicles: [], drivers: [], tours: [], fuel: [], documents: [], maintenance: [], pre_departure_checklists: [],
         });
         setDataLoading(false);
       }
     }
-  }, [session, isLoading, isProfileLoading, fetchData, navigate, location.pathname]);
+  }, [session, isLoading, isProfileLoading, isLoadingPermissions, fetchData, navigate, location.pathname]);
 
-  const handleUpdateData = async (tableName: string, newData: any, action: 'insert' | 'update' | 'delete') => {
+  const handleUpdateData = async (tableName: Resource, newData: any, action: Action) => {
     if (!currentUser?.id) return;
+    if (!canAccess(tableName, action)) { // Use canAccess from hook
+      showError(`Vous n'avez pas la permission d'effectuer cette action sur ${tableName}.`);
+      return;
+    }
 
     const loadingToastId = showLoading(`Opération en cours sur ${tableName}...`);
 
     try {
       let response;
-      if (action === 'insert') {
+      if (action === 'add') { // Changed 'insert' to 'add' to match Action type
         response = await supabase.from(tableName).insert({ ...newData, user_id: currentUser.id }).select();
-      } else if (action === 'update') {
+      } else if (action === 'edit') { // Changed 'update' to 'edit'
         response = await supabase.from(tableName).update(newData).eq('id', newData.id).eq('user_id', currentUser.id).select();
       } else if (action === 'delete') {
         response = await supabase.from(tableName).delete().eq('id', newData.id).eq('user_id', currentUser.id);
+      } else {
+        throw new Error('Action non supportée.');
       }
 
       if (response?.error) throw response.error;
       
       dismissToast(loadingToastId);
-      showSuccess(`Données ${action === 'insert' ? 'ajoutées' : action === 'update' ? 'mises à jour' : 'supprimées'} avec succès !`);
+      showSuccess(`Données ${action === 'add' ? 'ajoutées' : action === 'edit' ? 'mises à jour' : 'supprimées'} avec succès !`);
       
       fetchData(currentUser.id);
     } catch (error) {
       console.error(`Error ${action}ing data in ${tableName}:`, error);
       dismissToast(loadingToastId);
-      showError(`Erreur lors de la ${action === 'insert' ? 'création' : action === 'update' ? 'mise à jour' : 'suppression'} des données.`);
+      showError(`Erreur lors de la ${action === 'add' ? 'création' : action === 'edit' ? 'mise à jour' : 'suppression'} des données.`);
     }
   };
 
-  const handleUpdateUserRole = async (userId: string, newRole: 'admin' | 'direction' | 'utilisateur') => {
-    if (!currentUser || !canAccess(currentUser.role, 'users', 'edit')) {
+  const handleUpdateUserRole = async (userId: string, newRole: UserRole) => { // Use UserRole type
+    if (!currentUser || !canAccess('users', 'edit')) { // Use canAccess from hook
       showError('Seuls les administrateurs peuvent modifier les rôles.');
       return;
     }
@@ -150,7 +154,6 @@ function App() {
       if (error) throw error;
       dismissToast(loadingToastId);
       showSuccess('Rôle utilisateur mis à jour avec succès !');
-      // Re-fetch data to update user list and potentially current user's role if it was changed
       if (currentUser?.id) fetchData(currentUser.id);
     } catch (error: any) {
       console.error('Error updating user role:', error.message);
@@ -160,7 +163,7 @@ function App() {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!currentUser || !canAccess(currentUser.role, 'users', 'delete')) {
+    if (!currentUser || !canAccess('users', 'delete')) { // Use canAccess from hook
       showError('Seuls les administrateurs peuvent supprimer des utilisateurs.');
       return;
     }
@@ -171,7 +174,6 @@ function App() {
       if (authError) throw authError;
       dismissToast(loadingToastId);
       showSuccess('Utilisateur supprimé avec succès !');
-      // Re-fetch data to update user list
       if (currentUser?.id) fetchData(currentUser.id);
     } catch (error: any) {
       console.error('Error deleting user:', error.message);
@@ -183,13 +185,12 @@ function App() {
   const handleLogout = async () => {
     const loadingToastId = showLoading('Déconnexion...');
     await supabase.auth.signOut();
-    // SessionContextProvider will handle clearing currentUser and user states
     dismissToast(loadingToastId);
     showSuccess('Déconnexion réussie.');
-    navigate('/login'); // Redirect to login page after logout
+    navigate('/login');
   };
 
-  const userRole = currentUser?.role || 'utilisateur'; // Define userRole here for use in tabs
+  const userRole = currentUser?.role || 'utilisateur';
 
   const tabs = [
     { id: 'dashboard', name: 'Dashboard', icon: BarChart3, path: '/dashboard' },
@@ -202,14 +203,12 @@ function App() {
     { id: 'checklists', name: 'Checklists', icon: ClipboardCheck, path: '/checklists' },
     { id: 'reports', name: 'Rapports', icon: ReportIcon, path: '/reports' },
     { id: 'summary', name: 'Résumé', icon: BarChart3, path: '/summary' },
-    { id: 'profile', name: 'Mon Profil', icon: UserIcon, path: '/profile' }, // New Profile tab
-    // Only show User Management tab if the current user is an admin
-    ...(canAccess(userRole, 'users', 'view') ? [{ id: 'user-management', name: 'Gestion Utilisateurs', icon: UserCog, path: '/user-management' }] : []),
-    // Only show Permissions Overview tab if the current user is an admin
-    ...(canAccess(userRole, 'users', 'view') ? [{ id: 'permissions-overview', name: 'Gestion Accès', icon: ShieldCheck, path: '/permissions-overview' }] : []),
+    { id: 'profile', name: 'Mon Profil', icon: UserIcon, path: '/profile' },
+    ...(canAccess('users', 'view') ? [{ id: 'user-management', name: 'Gestion Utilisateurs', icon: UserCog, path: '/user-management' }] : []),
+    ...(canAccess('permissions', 'view') ? [{ id: 'permissions-overview', name: 'Gestion Accès', icon: ShieldCheck, path: '/permissions-overview' }] : []), // Use 'permissions' resource
   ];
 
-  if (isLoading || isProfileLoading || dataLoading) {
+  if (isLoading || isProfileLoading || dataLoading || isLoadingPermissions) { // Wait for permissions to load
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <header className="bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg">
@@ -245,7 +244,6 @@ function App() {
     );
   }
 
-  // If not authenticated, only render the Login route. ProtectedRoute will handle redirection for others.
   if (!session) {
     return (
       <Routes>
@@ -311,44 +309,49 @@ function App() {
 
         <main className="flex-1 px-6 py-8 min-w-0 overflow-x-auto w-full">
           <Routes>
-            {/* Public route for login */}
             <Route path="/login" element={<Login />} />
-
-            {/* Protected routes */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard key="dashboard-view" data={fleetData} userRole={userRole} preDepartureChecklists={fleetData.pre_departure_checklists} /></ProtectedRoute>} />
-            <Route path="/vehicles" element={<ProtectedRoute><Vehicles key="vehicles-view" data={fleetData} onUpdate={(newData: Vehicle) => handleUpdateData('vehicles', newData, 'update')} onDelete={(id: string) => handleUpdateData('vehicles', { id }, 'delete')} onAdd={(newData: Omit<Vehicle, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('vehicles', newData, 'insert')} /></ProtectedRoute>} />
-            <Route path="/drivers" element={<ProtectedRoute><Drivers key="drivers-view" data={fleetData} onUpdate={(newData: Driver) => handleUpdateData('drivers', newData, 'update')} onDelete={(id: string) => handleUpdateData('drivers', { id }, 'delete')} onAdd={(newData: Omit<Driver, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('drivers', newData, 'insert')} /></ProtectedRoute>} />
-            <Route path="/tours" element={<ProtectedRoute><Tours key="tours-view" data={fleetData} onUpdate={(newData: Tour) => handleUpdateData('tours', newData, 'update')} onDelete={(id: string) => handleUpdateData('tours', { id }, 'delete')} onAdd={(newData: Omit<Tour, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('tours', newData, 'insert')} /></ProtectedRoute>} />
-            <Route path="/fuel" element={<ProtectedRoute><FuelManagement key="fuel-view" data={fleetData} onUpdate={(newData: FuelEntry) => handleUpdateData('fuel_entries', newData, 'update')} onDelete={(id: string) => handleUpdateData('fuel_entries', { id }, 'delete')} onAdd={(newData: Omit<FuelEntry, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('fuel_entries', newData, 'insert')} /></ProtectedRoute>} />
-            <Route path="/documents" element={<ProtectedRoute><Documents key="documents-view" data={fleetData} onUpdate={(newData: Document) => handleUpdateData('documents', newData, 'update')} onDelete={(id: string) => handleUpdateData('documents', { id }, 'delete')} onAdd={(newData: Omit<Document, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('documents', newData, 'insert')} /></ProtectedRoute>} />
+            <Route path="/vehicles" element={<ProtectedRoute><Vehicles key="vehicles-view" data={fleetData} onUpdate={(newData: Vehicle) => handleUpdateData('vehicles', newData, 'edit')} onDelete={(id: string) => handleUpdateData('vehicles', { id }, 'delete')} onAdd={(newData: Omit<Vehicle, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('vehicles', newData, 'add')} /></ProtectedRoute>} />
+            <Route path="/drivers" element={<ProtectedRoute><Drivers key="drivers-view" data={fleetData} onUpdate={(newData: Driver) => handleUpdateData('drivers', newData, 'edit')} onDelete={(id: string) => handleUpdateData('drivers', { id }, 'delete')} onAdd={(newData: Omit<Driver, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('drivers', newData, 'add')} /></ProtectedRoute>} />
+            <Route path="/tours" element={<ProtectedRoute><Tours key="tours-view" data={fleetData} onUpdate={(newData: Tour) => handleUpdateData('tours', newData, 'edit')} onDelete={(id: string) => handleUpdateData('tours', { id }, 'delete')} onAdd={(newData: Omit<Tour, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('tours', newData, 'add')} /></ProtectedRoute>} />
+            <Route path="/fuel" element={<ProtectedRoute><FuelManagement key="fuel-view" data={fleetData} onUpdate={(newData: FuelEntry) => handleUpdateData('fuel_entries', newData, 'edit')} onDelete={(id: string) => handleUpdateData('fuel_entries', { id }, 'delete')} onAdd={(newData: Omit<FuelEntry, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('fuel_entries', newData, 'add')} /></ProtectedRoute>} />
+            <Route path="/documents" element={<ProtectedRoute><Documents key="documents-view" data={fleetData} onUpdate={(newData: Document) => handleUpdateData('documents', newData, 'edit')} onDelete={(id: string) => handleUpdateData('documents', { id }, 'delete')} onAdd={(newData: Omit<Document, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('documents', newData, 'add')} /></ProtectedRoute>} />
             <Route path="/maintenance" element={<ProtectedRoute><Maintenance 
               key="maintenance-view"
               data={fleetData} 
-              onUpdate={(newData) => handleUpdateData('vehicles', newData, 'update')} 
-              onAdd={(newData) => handleUpdateData('maintenance_entries', newData, 'insert')} 
+              onUpdate={(newData) => handleUpdateData('vehicles', newData, 'edit')} 
+              onAdd={(newData) => handleUpdateData('maintenance_entries', newData, 'add')} 
               onDelete={(id: string) => handleUpdateData('maintenance_entries', { id }, 'delete')}
               preDepartureChecklists={fleetData.pre_departure_checklists}
             /></ProtectedRoute>} />
             <Route path="/checklists" element={<ProtectedRoute><PreDepartureChecklistComponent 
               key="checklists-view" 
               data={fleetData} 
-              onAdd={(newData: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('pre_departure_checklists', newData, 'insert')} 
+              onAdd={(newData: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('pre_departure_checklists', newData, 'add')} 
             /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute><Reports key="reports-view" data={fleetData} userRole={userRole} /></ProtectedRoute>} />
             <Route path="/summary" element={<ProtectedRoute><Summary key="summary-view" data={fleetData} /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><Profile key="profile-view" /></ProtectedRoute>} /> {/* New Profile Route */}
+            <Route path="/profile" element={<ProtectedRoute><Profile key="profile-view" /></ProtectedRoute>} />
             <Route path="/user-management" element={<ProtectedRoute allowedRoles={['admin']}><UserManagement 
                 key="user-management-view" 
                 currentUserRole={userRole} 
                 onUpdateUserRole={handleUpdateUserRole}
                 onDeleteUser={handleDeleteUser}
               /></ProtectedRoute>} />
-            <Route path="/permissions-overview" element={<ProtectedRoute allowedRoles={['admin']}><PermissionsOverview key="permissions-overview-view" /></ProtectedRoute>} /> {/* New Permissions Overview Route */}
+            <Route path="/permissions-overview" element={<ProtectedRoute allowedRoles={['admin']}><PermissionsOverview key="permissions-overview-view" /></ProtectedRoute>} />
             <Route path="*" element={<ProtectedRoute><Dashboard key="default-dashboard-view" data={fleetData} userRole={userRole} preDepartureChecklists={fleetData.pre_departure_checklists} /></ProtectedRoute>} />
           </Routes>
         </main>
       </div>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <PermissionsProvider>
+      <AppContent />
+    </PermissionsProvider>
   );
 }
 

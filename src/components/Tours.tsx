@@ -17,8 +17,7 @@ import {
   DialogDescription,
 } from './ui/dialog';
 import DataTable from './DataTable'; // Import the new DataTable component
-import { useSession } from './SessionContextProvider'; // Import useSession
-import { canAccess } from '../utils/permissions'; // Import canAccess
+import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
 
 type TourFormData = z.infer<typeof tourSchema>;
 
@@ -30,8 +29,7 @@ interface ToursProps {
 }
 
 const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
-  const { currentUser } = useSession(); // Use useSession directly
-  const userRole = currentUser?.role || 'utilisateur';
+  const { canAccess } = usePermissions(); // Use usePermissions hook
 
   const [showModal, setShowModal] = useState(false);
   const [editingTour, setEditingTour] = useState<Tour | null>(null);
@@ -244,8 +242,8 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
     return matchesVehicle && matchesDriver && matchesStatus && matchesDateRange;
   }, [selectedVehicle, selectedDriver, selectedStatus, startDate, endDate]);
 
-  const canAddForm = canAccess(userRole, 'tours', 'add');
-  const canEditForm = canAccess(userRole, 'tours', 'edit');
+  const canAddForm = canAccess('tours', 'add');
+  const canEditForm = canAccess('tours', 'edit');
 
   return (
     <>
@@ -255,7 +253,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
         columns={columns}
         onAdd={canAddForm ? handleAddTour : undefined}
         onEdit={canEditForm ? handleEditTour : undefined}
-        onDelete={canAccess(userRole, 'tours', 'delete') ? onDelete : undefined}
+        onDelete={canAccess('tours', 'delete') ? onDelete : undefined}
         addLabel="Nouvelle Tournée"
         searchPlaceholder="Rechercher par date, véhicule, conducteur ou statut..."
         exportFileName="tournees"

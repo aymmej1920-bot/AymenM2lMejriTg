@@ -17,8 +17,7 @@ import {
   DialogDescription,
 } from './ui/dialog'; // Import shadcn/ui Dialog components
 import DataTable from './DataTable'; // Import the new DataTable component
-import { useSession } from './SessionContextProvider'; // Import useSession
-import { canAccess } from '../utils/permissions'; // Import canAccess
+import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
 
 type MaintenanceEntryFormData = z.infer<typeof maintenanceEntrySchema>;
 
@@ -31,8 +30,7 @@ interface MaintenanceProps {
 }
 
 const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDelete, preDepartureChecklists }) => {
-  const { currentUser } = useSession(); // Use useSession directly
-  const userRole = currentUser?.role || 'utilisateur';
+  const { canAccess } = usePermissions(); // Use usePermissions hook
 
   const [showModal, setShowModal] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
@@ -304,9 +302,9 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
     );
   }, [upcomingMaintenanceCount, urgentMaintenanceCount, checklistsWithIssues]);
 
-  const canAddMaintenance = canAccess(userRole, 'maintenance_entries', 'add');
-  const canEditMaintenance = canAccess(userRole, 'maintenance_entries', 'edit');
-  const canDeleteMaintenance = canAccess(userRole, 'maintenance_entries', 'delete');
+  const canAddMaintenance = canAccess('maintenance_entries', 'add');
+  const canEditMaintenance = canAccess('maintenance_entries', 'edit');
+  const canDeleteMaintenance = canAccess('maintenance_entries', 'delete');
 
   return (
     <div className="space-y-6">
