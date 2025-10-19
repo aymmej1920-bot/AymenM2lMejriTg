@@ -38,6 +38,7 @@ interface Profile {
 type InviteUserFormData = z.infer<typeof inviteUserSchema>;
 
 const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpdateUserRole, onDeleteUser }) => {
+  void onDeleteUser; // Explicitly mark as "used" for TypeScript
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

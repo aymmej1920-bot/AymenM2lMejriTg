@@ -136,7 +136,7 @@ function App() {
   };
 
   const handleUpdateUserRole = async (userId: string, newRole: 'admin' | 'direction' | 'utilisateur') => {
-    if (currentUser?.role !== 'admin') {
+    if (!currentUser || !canAccess(currentUser.role, 'users', 'edit')) {
       showError('Seuls les administrateurs peuvent modifier les rôles.');
       return;
     }
@@ -160,7 +160,7 @@ function App() {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (currentUser?.role !== 'admin') {
+    if (!currentUser || !canAccess(currentUser.role, 'users', 'delete')) {
       showError('Seuls les administrateurs peuvent supprimer des utilisateurs.');
       return;
     }
@@ -189,6 +189,8 @@ function App() {
     navigate('/login'); // Redirect to login page after logout
   };
 
+  const userRole = currentUser?.role || 'utilisateur'; // Define userRole here for use in tabs
+
   const tabs = [
     { id: 'dashboard', name: 'Dashboard', icon: BarChart3, path: '/dashboard' },
     { id: 'vehicles', name: 'Véhicules', icon: Truck, path: '/vehicles' },
@@ -202,9 +204,9 @@ function App() {
     { id: 'summary', name: 'Résumé', icon: BarChart3, path: '/summary' },
     { id: 'profile', name: 'Mon Profil', icon: UserIcon, path: '/profile' }, // New Profile tab
     // Only show User Management tab if the current user is an admin
-    ...(currentUser?.role === 'admin' ? [{ id: 'user-management', name: 'Gestion Utilisateurs', icon: UserCog, path: '/user-management' }] : []),
+    ...(canAccess(userRole, 'users', 'view') ? [{ id: 'user-management', name: 'Gestion Utilisateurs', icon: UserCog, path: '/user-management' }] : []),
     // Only show Permissions Overview tab if the current user is an admin
-    ...(currentUser?.role === 'admin' ? [{ id: 'permissions-overview', name: 'Gestion Accès', icon: ShieldCheck, path: '/permissions-overview' }] : []),
+    ...(canAccess(userRole, 'users', 'view') ? [{ id: 'permissions-overview', name: 'Gestion Accès', icon: ShieldCheck, path: '/permissions-overview' }] : []),
   ];
 
   if (isLoading || isProfileLoading || dataLoading) {
@@ -252,8 +254,6 @@ function App() {
       </Routes>
     );
   }
-
-  const userRole = currentUser?.role || 'utilisateur';
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
