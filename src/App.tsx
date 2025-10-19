@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Truck, Users, Route, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck, FileText as ReportIcon } from 'lucide-react';
+import { Truck, Users, Route, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck, FileText as ReportIcon, UserCog } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Vehicles from './components/Vehicles';
 import Drivers from './components/Drivers';
@@ -11,6 +11,7 @@ import Summary from './components/Summary';
 import PreDepartureChecklistComponent from './components/PreDepartureChecklist';
 import Reports from './pages/Reports';
 import Login from './pages/Login';
+import UserManagement from './components/UserManagement'; // Import the new component
 import { FleetData, AuthUser, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist } from './types';
 import { useSession } from './components/SessionContextProvider';
 import { supabase } from './integrations/supabase/client';
@@ -140,6 +141,49 @@ function App() {
     }
   };
 
+  const handleUpdateUserRole = async (userId: string, newRole: 'admin' | 'direction' | 'utilisateur') => {
+    if (currentUser?.role !== 'admin') {
+      showError('Seuls les administrateurs peuvent modifier les rôles.');
+      return;
+    }
+    const loadingToastId = showLoading(`Mise à jour du rôle de l'utilisateur ${userId}...`);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: newRole })
+        .eq('id', userId);
+
+      if (error) throw error;
+      dismissToast(loadingToastId);
+      showSuccess('Rôle utilisateur mis à jour avec succès !');
+    } catch (error: any) {
+      console.error('Error updating user role:', error.message);
+      dismissToast(loadingToastId);
+      showError(`Erreur lors de la mise à jour du rôle : ${error.message}`);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (currentUser?.role !== 'admin') {
+      showError('Seuls les administrateurs peuvent supprimer des utilisateurs.');
+      return;
+    }
+    const loadingToastId = showLoading(`Suppression de l'utilisateur ${userId}...`);
+    try {
+      // Supabase auth.admin.deleteUser will delete the user from auth.users
+      // and due to CASCADE DELETE on profiles.id, it will also delete the profile.
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+
+      if (authError) throw authError;
+      dismissToast(loadingToastId);
+      showSuccess('Utilisateur supprimé avec succès !');
+    } catch (error: any) {
+      console.error('Error deleting user:', error.message);
+      dismissToast(loadingToastId);
+      showError(`Erreur lors de la suppression de l'utilisateur : ${error.message}`);
+    }
+  };
+
   const handleLogout = async () => {
     const loadingToastId = showLoading('Déconnexion...');
     await supabase.auth.signOut();
@@ -167,7 +211,9 @@ function App() {
     { id: 'maintenance', name: 'Maintenance', icon: Wrench },
     { id: 'checklists', name: 'Checklists', icon: ClipboardCheck },
     { id: 'reports', name: 'Rapports', icon: ReportIcon },
-    { id: 'summary', name: 'Résumé', icon: BarChart3 }
+    { id: 'summary', name: 'Résumé', icon: BarChart3 },
+    // Only show User Management tab if the current user is an admin
+    ...(currentUser?.role === 'admin' ? [{ id: 'user-management', name: 'Gestion Utilisateurs', icon: UserCog }] : []),
   ];
 
   if (isLoading || dataLoading) {
@@ -183,21 +229,20 @@ function App() {
                 <div>
                   <h1 className="text-3xl font-bold">Fleet Manager Pro</h1>
                   <p className="text-purple-100 text-sm">Système de Gestion de Flotte Avancé</p>
-                  <p className="text-purple-100 text-xs mt-1">M2L&TG</p> {/* Added this line */}
+                  <p className="text-purple-100 text-xs mt-1">M2L&TG</p>
                 </div>
               </div>
               <SkeletonLoader height="h-10" className="w-32" />
             </div>
           </div>
         </header>
-        {/* New sidebar structure for skeleton loader */}
         <div className="flex flex-1">
           <aside className="w-64 bg-white shadow-md p-4">
             <div className="flex flex-col space-y-2">
               <SkeletonLoader count={tabs.length} height="h-12" className="w-full" />
             </div>
           </aside>
-          <main className="flex-1 px-6 py-8 min-w-0 overflow-x-auto w-full"> {/* Added w-full */}
+          <main className="flex-1 px-6 py-8 min-w-0 overflow-x-auto w-full">
             <SkeletonLoader count={5} height="h-16" className="w-full mb-4" />
             <SkeletonLoader count={3} height="h-24" className="w-full mb-4" />
             <SkeletonLoader count={2} height="h-64" className="w-full mb-4" />
@@ -247,6 +292,13 @@ function App() {
         return <Reports key="reports-view" data={fleetData} userRole={userRole} />;
       case 'summary':
         return <Summary key="summary-view" data={fleetData} />;
+      case 'user-management':
+        return <UserManagement 
+          key="user-management-view" 
+          currentUserRole={userRole} 
+          onUpdateUserRole={handleUpdateUserRole}
+          onDeleteUser={handleDeleteUser}
+        />;
       default:
         return <Dashboard key="default-dashboard-view" data={fleetData} userRole={userRole} />;
     }
@@ -264,7 +316,7 @@ function App() {
               <div>
                 <h1 className="text-3xl font-bold">Fleet Manager Pro</h1>
                 <p className="text-purple-100 text-sm">Système de Gestion de Flotte Avancé</p>
-                <p className="text-purple-100 text-xs mt-1">M2L&TG</p> {/* Added this line */}
+                <p className="text-purple-100 text-xs mt-1">M2L&TG</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -281,17 +333,17 @@ function App() {
         </div>
       </header>
 
-      <div className="flex flex-1"> {/* New flex container for sidebar and main content */}
-        <aside className="w-64 bg-white shadow-md sticky top-0 h-screen overflow-y-auto z-40"> {/* Sidebar */}
+      <div className="flex flex-1">
+        <aside className="w-64 bg-white shadow-md sticky top-0 h-screen overflow-y-auto z-40">
           <nav className="p-4">
-            <div className="flex flex-col space-y-2"> {/* Vertical stacking for tabs */}
+            <div className="flex flex-col space-y-2">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setCurrentTab(tab.id)}
-                    className={`w-full px-4 py-3 rounded-lg transition-all duration-300 flex items-center space-x-3 justify-start ${ // Adjusted styling
+                    className={`w-full px-4 py-3 rounded-lg transition-all duration-300 flex items-center space-x-3 justify-start ${
                       currentTab === tab.id
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-100 hover:bg-indigo-200 text-gray-700'
@@ -306,7 +358,7 @@ function App() {
           </nav>
         </aside>
 
-        <main className="flex-1 px-6 py-8 min-w-0 overflow-x-auto w-full"> {/* Main content - Added w-full */}
+        <main className="flex-1 px-6 py-8 min-w-0 overflow-x-auto w-full">
           {renderContent()}
         </main>
       </div>
