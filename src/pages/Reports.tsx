@@ -229,8 +229,8 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
 
   // Load column preferences from localStorage or set defaults
   useEffect(() => {
-    const savedVisibility = localStorage.getItem(`reportColumnsVisibility_${selectedDataSource}`);
-    const savedOrder = localStorage.getItem(`reportColumnsOrder_${selectedDataSource}`);
+    const savedVisibilityRaw = localStorage.getItem(`reportColumnsVisibility_${selectedDataSource}`);
+    const savedOrderRaw = localStorage.getItem(`reportColumnsOrder_${selectedDataSource}`);
 
     const defaultVisibility = allPossibleColumns.reduce((acc, col) => {
       acc[col.key] = col.defaultVisible;
@@ -239,14 +239,45 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
 
     const defaultOrder = allPossibleColumns.map(col => col.key);
 
-    setColumnVisibility(savedVisibility ? JSON.parse(savedVisibility) : defaultVisibility);
-    setColumnOrder(savedOrder ? JSON.parse(savedOrder) : defaultOrder);
+    let initialColumnVisibility = defaultVisibility;
+    if (savedVisibilityRaw) {
+      try {
+        const parsed = JSON.parse(savedVisibilityRaw);
+        if (typeof parsed === 'object' && parsed !== null) {
+          // Merge saved visibility with default to handle new/removed columns
+          initialColumnVisibility = { ...defaultVisibility, ...parsed };
+        }
+      } catch (e) {
+        console.error("Error parsing saved column visibility from localStorage", e);
+      }
+    }
+
+    let initialColumnOrder = defaultOrder;
+    if (savedOrderRaw) {
+      try {
+        const parsed = JSON.parse(savedOrderRaw);
+        if (Array.isArray(parsed)) {
+          // Filter out any keys from savedOrder that are no longer in allPossibleColumns
+          const validParsedOrder = parsed.filter(key => allPossibleColumns.some(col => col.key === key));
+          // Add any new keys from allPossibleColumns that are not in savedOrder (at the end)
+          const newKeys = allPossibleColumns.map(col => col.key).filter(key => !validParsedOrder.includes(key));
+          initialColumnOrder = [...validParsedOrder, ...newKeys];
+        }
+      } catch (e) {
+        console.error("Error parsing saved column order from localStorage", e);
+      }
+    }
+
+    setColumnVisibility(initialColumnVisibility);
+    setColumnOrder(initialColumnOrder);
   }, [selectedDataSource, allPossibleColumns]);
 
   // Save column preferences to localStorage
   useEffect(() => {
-    localStorage.setItem(`reportColumnsVisibility_${selectedDataSource}`, JSON.stringify(columnVisibility));
-    localStorage.setItem(`reportColumnsOrder_${selectedDataSource}`, JSON.stringify(columnOrder));
+    if (columnOrder.length > 0) { // Only save if there are actual columns
+      localStorage.setItem(`reportColumnsVisibility_${selectedDataSource}`, JSON.stringify(columnVisibility));
+      localStorage.setItem(`reportColumnsOrder_${selectedDataSource}`, JSON.stringify(columnOrder));
+    }
   }, [columnVisibility, columnOrder, selectedDataSource]);
 
   const currentData = useMemo(() => {
