@@ -64,8 +64,9 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Use the hardcoded live URL for redirection
-    const redirectToUrl = `https://aymenm2lmejritg.vercel.app/login`; 
+    // Get the origin from the request headers to use as the redirect URL
+    const origin = req.headers.get('Origin') || Deno.env.get('SUPABASE_URL'); // Fallback to SUPABASE_URL if origin is not available
+    const redirectToUrl = `${origin}/login`; // Redirect to the login page of the app
 
     const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
       data: { first_name, last_name }, // Pass first_name and last_name to user_metadata
