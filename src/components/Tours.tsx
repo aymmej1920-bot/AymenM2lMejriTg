@@ -17,6 +17,8 @@ import {
   DialogDescription,
 } from './ui/dialog';
 import DataTable from './DataTable'; // Import the new DataTable component
+import { useSession } from './SessionContextProvider'; // Import useSession
+import { canAccess } from '../utils/permissions'; // Import canAccess
 
 type TourFormData = z.infer<typeof tourSchema>;
 
@@ -28,7 +30,7 @@ interface ToursProps {
   onDelete: (id: string) => void;
 }
 
-const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
+const Tours: React.FC<ToursProps> = ({ data, userRole, onAdd, onUpdate, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingTour, setEditingTour] = useState<Tour | null>(null);
 
@@ -240,6 +242,8 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
     return matchesVehicle && matchesDriver && matchesStatus && matchesDateRange;
   }, [selectedVehicle, selectedDriver, selectedStatus, startDate, endDate]);
 
+  const canAddForm = canAccess(userRole, 'tours', 'add');
+  const canEditForm = canAccess(userRole, 'tours', 'edit');
 
   return (
     <>
@@ -247,15 +251,16 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
         title="Suivi des Tournées"
         data={data.tours} // Pass all data, DataTable will handle filtering
         columns={columns}
-        onAdd={handleAddTour}
-        onEdit={handleEditTour}
-        onDelete={onDelete}
+        onAdd={canAddForm ? handleAddTour : undefined}
+        onEdit={canEditForm ? handleEditTour : undefined}
+        onDelete={canAccess(userRole, 'tours', 'delete') ? onDelete : undefined}
         addLabel="Nouvelle Tournée"
         searchPlaceholder="Rechercher par date, véhicule, conducteur ou statut..."
         exportFileName="tournees"
         isLoading={false}
         renderFilters={renderFilters}
         customFilter={filterData} // Pass the custom filter function
+        resourceType="tours" // Pass resource type
       />
 
       {/* Modal */}
@@ -277,6 +282,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                     type="date"
                     {...register('date')}
                     className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    disabled={!canEditForm && editingTour || !canAddForm && !editingTour}
                   />
                   <Calendar className="absolute right-3 w-5 h-5 text-gray-400 pointer-events-none" />
                 </div>
@@ -288,6 +294,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                   id="status"
                   {...register('status')}
                   className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  disabled={!canEditForm && editingTour || !canAddForm && !editingTour}
                 >
                   <option value="Planifié">Planifié</option>
                   <option value="En cours">En cours</option>
@@ -305,6 +312,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                   id="vehicle_id"
                   {...register('vehicle_id')}
                   className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  disabled={!canEditForm && editingTour || !canAddForm && !editingTour}
                 >
                   <option value="">Sélectionner un véhicule</option>
                   {data.vehicles.map(vehicle => (
@@ -321,6 +329,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                   id="driver_id"
                   {...register('driver_id')}
                   className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  disabled={!canEditForm && editingTour || !canAddForm && !editingTour}
                 >
                   <option value="">Sélectionner un conducteur</option>
                   {data.drivers.map(driver => (
@@ -343,7 +352,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                   max="100"
                   {...register('fuel_start', { valueAsNumber: true })}
                   className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                  disabled={status !== 'En cours' && status !== 'Terminé'}
+                  disabled={(!canEditForm && editingTour || !canAddForm && !editingTour) || (status !== 'En cours' && status !== 'Terminé')}
                 />
                 {errors.fuel_start && <p className="text-red-500 text-sm mt-1">{errors.fuel_start.message}</p>}
               </div>
@@ -354,7 +363,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                   type="number"
                   {...register('km_start', { valueAsNumber: true })}
                   className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                  disabled={status !== 'En cours' && status !== 'Terminé'}
+                  disabled={(!canEditForm && editingTour || !canAddForm && !editingTour) || (status !== 'En cours' && status !== 'Terminé')}
                 />
                 {errors.km_start && <p className="text-red-500 text-sm mt-1">{errors.km_start.message}</p>}
               </div>
@@ -370,7 +379,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                   max="100"
                   {...register('fuel_end', { valueAsNumber: true })}
                   className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                  disabled={status !== 'Terminé'}
+                  disabled={(!canEditForm && editingTour || !canAddForm && !editingTour) || (status !== 'Terminé')}
                 />
                 {errors.fuel_end && <p className="text-red-500 text-sm mt-1">{errors.fuel_end.message}</p>}
               </div>
@@ -381,7 +390,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                   type="number"
                   {...register('km_end', { valueAsNumber: true })}
                   className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                  disabled={status !== 'Terminé'}
+                  disabled={(!canEditForm && editingTour || !canAddForm && !editingTour) || (status !== 'Terminé')}
                 />
                 {errors.km_end && <p className="text-red-500 text-sm mt-1">{errors.km_end.message}</p>}
               </div>
@@ -394,7 +403,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                 type="number"
                 {...register('distance', { valueAsNumber: true })}
                 className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                disabled={status !== 'Terminé'}
+                disabled={(!canEditForm && editingTour || !canAddForm && !editingTour) || (status !== 'Terminé')}
               />
               {errors.distance && <p className="text-red-500 text-sm mt-1">{errors.distance.message}</p>}
             </div>
@@ -411,11 +420,13 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
               >
                 Annuler
               </Button>
-              <Button
-                type="submit"
-              >
-                Sauvegarder
-              </Button>
+              {(canAddForm && !editingTour) || (canEditForm && editingTour) ? (
+                <Button
+                  type="submit"
+                >
+                  Sauvegarder
+                </Button>
+              ) : null}
             </DialogFooter>
           </form>
         </DialogContent>

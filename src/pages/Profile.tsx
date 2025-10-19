@@ -10,6 +10,7 @@ import FormField from '../components/forms/FormField';
 import { Button } from '../components/ui/button';
 import { User, Camera } from 'lucide-react';
 import SkeletonLoader from '../components/SkeletonLoader';
+import { canAccess } from '../utils/permissions'; // Import canAccess
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
@@ -123,6 +124,8 @@ const Profile: React.FC = () => {
     }
   };
 
+  const canEditProfile = currentUser ? canAccess(currentUser.role, 'profile', 'edit') : false;
+
   if (isProfileLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -152,31 +155,35 @@ const Profile: React.FC = () => {
               ) : (
                 <User className="w-16 h-16 text-gray-500" />
               )}
-              <label htmlFor="avatar-upload" className="absolute bottom-0 right-0 bg-blue-600 p-2 rounded-full cursor-pointer hover:bg-blue-700 transition-colors">
-                <Camera className="w-5 h-5 text-white" />
-                <input
-                  id="avatar-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarChange}
-                  className="hidden"
-                  disabled={isSubmitting}
-                />
-              </label>
+              {canEditProfile && (
+                <label htmlFor="avatar-upload" className="absolute bottom-0 right-0 bg-blue-600 p-2 rounded-full cursor-pointer hover:bg-blue-700 transition-colors">
+                  <Camera className="w-5 h-5 text-white" />
+                  <input
+                    id="avatar-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarChange}
+                    className="hidden"
+                    disabled={isSubmitting}
+                  />
+                </label>
+              )}
             </div>
             <p className="text-lg font-medium text-gray-700">{currentUser.email}</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField name="first_name" label="Prénom" type="text" placeholder="Votre prénom" disabled={isSubmitting} />
-            <FormField name="last_name" label="Nom" type="text" placeholder="Votre nom" disabled={isSubmitting} />
+            <FormField name="first_name" label="Prénom" type="text" placeholder="Votre prénom" disabled={isSubmitting || !canEditProfile} />
+            <FormField name="last_name" label="Nom" type="text" placeholder="Votre nom" disabled={isSubmitting || !canEditProfile} />
           </div>
 
-          <div className="flex justify-end">
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Sauvegarde en cours...' : 'Sauvegarder les modifications'}
-            </Button>
-          </div>
+          {canEditProfile && (
+            <div className="flex justify-end">
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Sauvegarde en cours...' : 'Sauvegarder les modifications'}
+              </Button>
+            </div>
+          )}
         </form>
       </FormProvider>
     </div>

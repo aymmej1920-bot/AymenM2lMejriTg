@@ -17,6 +17,8 @@ import {
   DialogDescription,
 } from './ui/dialog'; // Import shadcn/ui Dialog components
 import DataTable from './DataTable'; // Import the new DataTable component
+import { useSession } from './SessionContextProvider'; // Import useSession
+import { canAccess } from '../utils/permissions'; // Import canAccess
 
 type PreDepartureChecklistFormData = z.infer<typeof preDepartureChecklistSchema>;
 
@@ -26,7 +28,7 @@ interface PreDepartureChecklistProps {
   onAdd: (checklist: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>) => void;
 }
 
-const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ data, onAdd }) => {
+const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ data, userRole, onAdd }) => {
   const [showModal, setShowModal] = useState(false);
 
   const { register, handleSubmit, reset, formState: { errors = {} } } = useForm<PreDepartureChecklistFormData>({
@@ -50,7 +52,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
     }
   });
 
-  const canAdd = true; // All authenticated users can add
+  const canAdd = canAccess(userRole, 'pre_departure_checklists', 'add'); // All authenticated users can add
 
   useEffect(() => {
     reset({
@@ -282,13 +284,14 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
         title="Checklists Avant Départ"
         data={filteredChecklists}
         columns={columns}
-        onAdd={handleAddChecklist}
+        onAdd={canAdd ? handleAddChecklist : undefined}
         addLabel="Nouvelle Checklist"
         searchPlaceholder="Rechercher une checklist par date, véhicule, conducteur, observations ou problèmes..."
         exportFileName="checklists_avant_depart"
         isLoading={false}
         renderFilters={renderFilters}
         renderAlerts={renderAlerts}
+        resourceType="pre_departure_checklists" // Pass resource type
       />
 
       {/* Modal */}

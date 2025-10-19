@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Truck, Users, Route as RouteIcon, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck, FileText as ReportIcon, UserCog, User as UserIcon } from 'lucide-react';
+import { Truck, Users, Route as RouteIcon, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck, FileText as ReportIcon, UserCog, User as UserIcon, ShieldCheck } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Vehicles from './components/Vehicles';
 import Drivers from './components/Drivers';
@@ -14,12 +14,14 @@ import Reports from './pages/Reports';
 import Login from './pages/Login';
 import Profile from './pages/Profile'; // Import the new Profile page
 import UserManagement from './components/UserManagement';
+import PermissionsOverview from './components/PermissionsOverview'; // Import PermissionsOverview
 import ProtectedRoute from './components/ProtectedRoute'; // Import ProtectedRoute
 import { FleetData, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist } from './types';
 import { useSession } from './components/SessionContextProvider';
 import { supabase } from './integrations/supabase/client';
 import { showSuccess, showError, showLoading, dismissToast } from './utils/toast';
 import SkeletonLoader from './components/SkeletonLoader';
+import { canAccess } from './utils/permissions'; // Import canAccess
 
 function App() {
   const { session, currentUser, isLoading, isProfileLoading } = useSession(); // Use currentUser from context
@@ -201,6 +203,8 @@ function App() {
     { id: 'profile', name: 'Mon Profil', icon: UserIcon, path: '/profile' }, // New Profile tab
     // Only show User Management tab if the current user is an admin
     ...(currentUser?.role === 'admin' ? [{ id: 'user-management', name: 'Gestion Utilisateurs', icon: UserCog, path: '/user-management' }] : []),
+    // Only show Permissions Overview tab if the current user is an admin
+    ...(currentUser?.role === 'admin' ? [{ id: 'permissions-overview', name: 'Gestion Accès', icon: ShieldCheck, path: '/permissions-overview' }] : []),
   ];
 
   if (isLoading || isProfileLoading || dataLoading) {
@@ -341,6 +345,7 @@ function App() {
                 onUpdateUserRole={handleUpdateUserRole}
                 onDeleteUser={handleDeleteUser}
               /></ProtectedRoute>} />
+            <Route path="/permissions-overview" element={<ProtectedRoute allowedRoles={['admin']}><PermissionsOverview key="permissions-overview-view" /></ProtectedRoute>} /> {/* New Permissions Overview Route */}
             <Route path="*" element={<ProtectedRoute><Dashboard key="default-dashboard-view" data={fleetData} userRole={userRole} preDepartureChecklists={fleetData.pre_departure_checklists} /></ProtectedRoute>} />
           </Routes>
         </main>

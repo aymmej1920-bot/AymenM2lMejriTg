@@ -17,6 +17,8 @@ import { useForm, FormProvider } from 'react-hook-form'; // Import useForm and F
 import { zodResolver } from '@hookform/resolvers/zod'; // Import zodResolver
 import FormField from './forms/FormField'; // Import FormField
 import { Button } from './ui/button'; // Import Button for DialogFooter
+import { useSession } from './SessionContextProvider'; // Import useSession
+import { canAccess } from '../utils/permissions'; // Import canAccess
 
 type VehicleFormData = z.infer<typeof vehicleSchema>;
 
@@ -28,7 +30,7 @@ interface VehiclesProps {
   onDelete: (id: string) => void;
 }
 
-const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) => {
+const Vehicles: React.FC<VehiclesProps> = ({ data, userRole, onAdd, onUpdate, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
 
@@ -134,19 +136,23 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
     },
   ], []);
 
+  const canEditForm = canAccess(userRole, 'vehicles', 'edit');
+  const canAddForm = canAccess(userRole, 'vehicles', 'add');
+
   return (
     <>
       <DataTable
         title="Gestion des Véhicules"
         data={data.vehicles}
         columns={columns}
-        onAdd={handleAddVehicle}
-        onEdit={handleEditVehicle}
-        onDelete={onDelete}
+        onAdd={canAddForm ? handleAddVehicle : undefined}
+        onEdit={canEditForm ? handleEditVehicle : undefined}
+        onDelete={canAccess(userRole, 'vehicles', 'delete') ? onDelete : undefined}
         addLabel="Ajouter Véhicule"
         searchPlaceholder="Rechercher par plaque, type ou statut..."
         exportFileName="vehicules"
         isLoading={false}
+        resourceType="vehicles" // Pass resource type
       />
 
       {/* Modal for Add/Edit Vehicle */}
@@ -160,28 +166,30 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
           </DialogHeader>
           <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
-              <FormField name="plate" label="Plaque d'immatriculation" type="text" placeholder="Ex: 123TU456" />
+              <FormField name="plate" label="Plaque d'immatriculation" type="text" placeholder="Ex: 123TU456" disabled={!canEditForm && editingVehicle || !canAddForm && !editingVehicle} />
               <FormField name="type" label="Type de véhicule" type="select" options={[
                 { value: 'Camionnette', label: 'Camionnette' },
                 { value: 'Camion', label: 'Camion' },
                 { value: 'Fourgon', label: 'Fourgon' },
                 { value: 'Utilitaire', label: 'Utilitaire' },
-              ]} />
+              ]} disabled={!canEditForm && editingVehicle || !canAddForm && !editingVehicle} />
               <FormField name="status" label="Statut" type="select" options={[
                 { value: 'Disponible', label: 'Disponible' },
                 { value: 'En mission', label: 'En mission' },
                 { value: 'Maintenance', label: 'Maintenance' },
-              ]} />
-              <FormField name="mileage" label="Kilométrage actuel" type="number" min={0} />
-              <FormField name="last_service_date" label="Date dernière vidange" type="date" />
-              <FormField name="last_service_mileage" label="Kilométrage dernière vidange" type="number" min={0} />
+              ]} disabled={!canEditForm && editingVehicle || !canAddForm && !editingVehicle} />
+              <FormField name="mileage" label="Kilométrage actuel" type="number" min={0} disabled={!canEditForm && editingVehicle || !canAddForm && !editingVehicle} />
+              <FormField name="last_service_date" label="Date dernière vidange" type="date" disabled={!canEditForm && editingVehicle || !canAddForm && !editingVehicle} />
+              <FormField name="last_service_mileage" label="Kilométrage dernière vidange" type="number" min={0} disabled={!canEditForm && editingVehicle || !canAddForm && !editingVehicle} />
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setShowModal(false)}>
                   Annuler
                 </Button>
-                <Button type="submit">
-                  Sauvegarder
-                </Button>
+                {(canAddForm && !editingVehicle) || (canEditForm && editingVehicle) ? (
+                  <Button type="submit">
+                    Sauvegarder
+                  </Button>
+                ) : null}
               </DialogFooter>
             </form>
           </FormProvider>

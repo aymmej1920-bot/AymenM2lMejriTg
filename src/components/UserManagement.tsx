@@ -18,6 +18,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { inviteUserSchema } from '../types/formSchemas';
 import { z } from 'zod';
 import FormField from './forms/FormField';
+import { canAccess } from '../utils/permissions'; // Import canAccess
 
 interface UserManagementProps {
   currentUserRole: 'admin' | 'direction' | 'utilisateur';
@@ -36,7 +37,7 @@ interface Profile {
 
 type InviteUserFormData = z.infer<typeof inviteUserSchema>;
 
-const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpdateUserRole }) => {
+const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpdateUserRole, onDeleteUser }) => {
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -264,6 +265,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
     }
   };
 
+  const canInvite = canAccess(currentUserRole, 'users', 'add');
+  const canEditRole = canAccess(currentUserRole, 'users', 'edit');
+  const canDeleteUser = canAccess(currentUserRole, 'users', 'delete');
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -280,10 +285,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
     );
   }
 
-  if (currentUserRole !== 'admin') {
+  if (!canAccess(currentUserRole, 'users', 'view')) {
     return (
       <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
-        <p className="text-red-700">Accès refusé. Seuls les administrateurs peuvent gérer les utilisateurs.</p>
+        <p className="text-red-700">Accès refusé. Vous n'avez pas les permissions pour accéder à cette page.</p>
       </div>
     );
   }
@@ -300,13 +305,15 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
             <Download className="w-5 h-5" />
             <span>Exporter XLSX</span>
           </Button>
-          <Button
-            onClick={() => setShowInviteUserModal(true)}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
-          >
-            <UserPlus className="w-5 h-5" />
-            <span>Inviter Utilisateur</span>
-          </Button>
+          {canInvite && (
+            <Button
+              onClick={() => setShowInviteUserModal(true)}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+            >
+              <UserPlus className="w-5 h-5" />
+              <span>Inviter Utilisateur</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -362,7 +369,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
                   Rôle {renderSortIcon('role')}
                 </div>
               </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+              {(canEditRole || canDeleteUser) && (
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+              )}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -388,26 +397,32 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
                       {user.role}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm">
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEditRole(user)}
-                        className="text-blue-600 hover:text-blue-900 transition-colors"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => confirmDeleteUser(user.id)}
-                        className="text-red-600 hover:text-red-900 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </td>
+                  {(canEditRole || canDeleteUser) && (
+                    <td className="px-6 py-4 text-sm">
+                      <div className="flex space-x-2">
+                        {canEditRole && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditRole(user)}
+                            className="text-blue-600 hover:text-blue-900 transition-colors"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {canDeleteUser && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => confirmDeleteUser(user.id)}
+                            className="text-red-600 hover:text-red-900 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))
             )}

@@ -17,6 +17,8 @@ import {
   DialogDescription,
 } from './ui/dialog'; // Import shadcn/ui Dialog components
 import DataTable from './DataTable'; // Import the new DataTable component
+import { useSession } from './SessionContextProvider'; // Import useSession
+import { canAccess } from '../utils/permissions'; // Import canAccess
 
 type MaintenanceEntryFormData = z.infer<typeof maintenanceEntrySchema>;
 
@@ -29,7 +31,7 @@ interface MaintenanceProps {
   preDepartureChecklists: PreDepartureChecklist[];
 }
 
-const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDelete, preDepartureChecklists }) => {
+const Maintenance: React.FC<MaintenanceProps> = ({ data, userRole, onAdd, onUpdate, onDelete, preDepartureChecklists }) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
 
@@ -300,18 +302,24 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
     );
   }, [upcomingMaintenanceCount, urgentMaintenanceCount, checklistsWithIssues]);
 
+  const canAddMaintenance = canAccess(userRole, 'maintenance_entries', 'add');
+  const canEditMaintenance = canAccess(userRole, 'maintenance_entries', 'edit');
+  const canDeleteMaintenance = canAccess(userRole, 'maintenance_entries', 'delete');
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Suivi Maintenance & Vidanges</h2>
-        <Button
-          key="add-maintenance-button"
-          onClick={() => handleAddMaintenance()}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Ajouter Maintenance</span>
-        </Button>
+        {canAddMaintenance && (
+          <Button
+            key="add-maintenance-button"
+            onClick={() => handleAddMaintenance()}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Ajouter Maintenance</span>
+          </Button>
+        )}
       </div>
 
       {/* Alerts for Maintenance and Checklists */}
@@ -363,23 +371,26 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
         title="Suivi Maintenance & Vidanges des Véhicules"
         data={data.vehicles}
         columns={vehicleMaintenanceColumns}
-        onAdd={() => handleAddMaintenance()} // Re-use existing add handler
+        onAdd={canAddMaintenance ? () => handleAddMaintenance() : undefined} // Re-use existing add handler
         addLabel="Ajouter Maintenance"
         searchPlaceholder="Rechercher un véhicule par plaque, type ou statut..."
         exportFileName="suivi_maintenance_vehicules"
         isLoading={false}
         renderRowActions={(item) => (
-          <Button
-            key={item.id + "-maintenance-action"}
-            onClick={() => handleAddMaintenance(item.id)}
-            className="text-blue-600 hover:text-blue-900 transition-colors flex items-center space-x-1"
-            variant="ghost"
-            size="icon"
-          >
-            <Wrench className="w-4 h-4" />
-            <span>Maintenance</span>
-          </Button>
+          canAddMaintenance ? (
+            <Button
+              key={item.id + "-maintenance-action"}
+              onClick={() => handleAddMaintenance(item.id)}
+              className="text-blue-600 hover:text-blue-900 transition-colors flex items-center space-x-1"
+              variant="ghost"
+              size="icon"
+            >
+              <Wrench className="w-4 h-4" />
+              <span>Maintenance</span>
+            </Button>
+          ) : null
         )}
+        resourceType="vehicles" // Pass resource type
       />
 
       {/* Historique des maintenances - Now using DataTable */}
@@ -388,15 +399,16 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
           title="Historique des Maintenances"
           data={data.maintenance}
           columns={maintenanceHistoryColumns}
-          onAdd={() => handleAddMaintenance()} // Re-use existing add handler
-          onEdit={handleEditMaintenance} // Placeholder for future edit functionality
-          onDelete={handleDeleteMaintenance} // Now correctly wired to the prop
+          onAdd={canAddMaintenance ? () => handleAddMaintenance() : undefined} // Re-use existing add handler
+          onEdit={canEditMaintenance ? handleEditMaintenance : undefined} // Placeholder for future edit functionality
+          onDelete={canDeleteMaintenance ? handleDeleteMaintenance : undefined} // Now correctly wired to the prop
           addLabel="Ajouter Maintenance"
           searchPlaceholder="Rechercher dans l'historique par véhicule, type, date ou coût..."
           exportFileName="historique_maintenance"
           isLoading={false}
           renderFilters={renderMaintenanceHistoryFilters}
           customFilter={customMaintenanceHistoryFilter}
+          resourceType="maintenance_entries" // Pass resource type
         />
       )}
 
@@ -416,6 +428,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
                 id="vehicle_id"
                 {...register('vehicle_id')}
                 className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                disabled={!canAddMaintenance}
               >
                 <option value="">Sélectionner un véhicule</option>
                 {data.vehicles.map(vehicle => (
@@ -432,6 +445,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
                 id="type"
                 {...register('type')}
                 className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                disabled={!canAddMaintenance}
               >
                 <option value="Vidange">Vidange</option>
                 <option value="Révision">Révision</option>
@@ -448,6 +462,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
                   type="date"
                   {...register('date')}
                   className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  disabled={!canAddMaintenance}
                 />
                 <Calendar className="absolute right-3 w-5 h-5 text-gray-400 pointer-events-none" />
               </div>
@@ -460,6 +475,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
                 type="number"
                 {...register('mileage', { valueAsNumber: true })}
                 className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                disabled={!canAddMaintenance}
               />
               {errors.mileage && <p className="text-red-500 text-sm mt-1">{errors.mileage.message}</p>}
             </div>
@@ -471,6 +487,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
                 step="0.01"
                 {...register('cost', { valueAsNumber: true })}
                 className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                disabled={!canAddMaintenance}
               />
               {errors.cost && <p className="text-red-500 text-sm mt-1">{errors.cost.message}</p>}
             </div>
@@ -482,11 +499,13 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
               >
                 Annuler
               </Button>
-              <Button
-                type="submit"
-              >
-                Sauvegarder
-              </Button>
+              {canAddMaintenance && (
+                <Button
+                  type="submit"
+                >
+                  Sauvegarder
+                </Button>
+              )}
             </DialogFooter>
           </form>
         </DialogContent>

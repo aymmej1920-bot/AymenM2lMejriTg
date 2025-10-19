@@ -17,6 +17,8 @@ import {
   DialogDescription,
 } from './ui/dialog';
 import DataTable from './DataTable'; // Import the new DataTable component
+import { useSession } from './SessionContextProvider'; // Import useSession
+import { canAccess } from '../utils/permissions'; // Import canAccess
 
 type DocumentFormData = z.infer<typeof documentSchema>;
 
@@ -28,7 +30,7 @@ interface DocumentsProps {
   onDelete: (id: string) => void;
 }
 
-const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }) => {
+const Documents: React.FC<DocumentsProps> = ({ data, userRole, onAdd, onUpdate, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
 
@@ -252,15 +254,18 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
     return matchesVehicle && matchesType && matchesDateRange;
   }, [selectedVehicle, selectedType, startDate, endDate]);
 
+  const canAddForm = canAccess(userRole, 'documents', 'add');
+  const canEditForm = canAccess(userRole, 'documents', 'edit');
+
   return (
     <>
       <DataTable
         title="Suivi des Documents"
         data={data.documents}
         columns={columns}
-        onAdd={handleAddDocument}
-        onEdit={handleEditDocument}
-        onDelete={onDelete}
+        onAdd={canAddForm ? handleAddDocument : undefined}
+        onEdit={canEditForm ? handleEditDocument : undefined}
+        onDelete={canAccess(userRole, 'documents', 'delete') ? onDelete : undefined}
         addLabel="Ajouter Document"
         searchPlaceholder="Rechercher un document par véhicule, type, numéro ou expiration..."
         exportFileName="documents"
@@ -268,6 +273,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
         renderFilters={renderFilters}
         renderAlerts={renderAlerts}
         customFilter={customFilter}
+        resourceType="documents" // Pass resource type
       />
 
       {/* Modal */}
@@ -286,6 +292,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
                 id="vehicle_id"
                 {...register('vehicle_id')}
                 className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                disabled={!canEditForm && editingDocument || !canAddForm && !editingDocument}
               >
                 <option value="">Sélectionner un véhicule</option>
                 {data.vehicles.map(vehicle => (
@@ -302,6 +309,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
                 id="type"
                 {...register('type')}
                 className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                disabled={!canEditForm && editingDocument || !canAddForm && !editingDocument}
               >
                 <option value="">Sélectionner un type</option>
                 <option value="Assurance">Assurance</option>
@@ -319,6 +327,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
                 type="text"
                 {...register('number')}
                 className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                disabled={!canEditForm && editingDocument || !canAddForm && !editingDocument}
               />
               {errors.number && <p className="text-red-500 text-sm mt-1">{errors.number.message}</p>}
             </div>
@@ -330,6 +339,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
                   type="date"
                   {...register('expiration')}
                   className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  disabled={!canEditForm && editingDocument || !canAddForm && !editingDocument}
                 />
                 <Calendar className="absolute right-3 w-5 h-5 text-gray-400 pointer-events-none" />
               </div>
@@ -343,11 +353,13 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
               >
                 Annuler
               </Button>
-              <Button
-                type="submit"
-              >
-                Sauvegarder
-              </Button>
+              {(canAddForm && !editingDocument) || (canEditForm && editingDocument) ? (
+                <Button
+                  type="submit"
+                >
+                  Sauvegarder
+                </Button>
+              ) : null}
             </DialogFooter>
           </form>
         </DialogContent>

@@ -18,6 +18,8 @@ import { useForm, FormProvider } from 'react-hook-form'; // Import useForm and F
 import { zodResolver } from '@hookform/resolvers/zod'; // Import zodResolver
 import FormField from './forms/FormField'; // Import FormField
 import { Button } from './ui/button'; // Import Button for DialogFooter
+import { useSession } from './SessionContextProvider'; // Import useSession
+import { canAccess } from '../utils/permissions'; // Import canAccess
 
 type DriverFormData = z.infer<typeof driverSchema>;
 
@@ -29,7 +31,7 @@ interface DriversProps {
   onDelete: (id: string) => void;
 }
 
-const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) => {
+const Drivers: React.FC<DriversProps> = ({ data, userRole, onAdd, onUpdate, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
 
@@ -147,20 +149,24 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
     );
   }, [expiringDrivers]);
 
+  const canEditForm = canAccess(userRole, 'drivers', 'edit');
+  const canAddForm = canAccess(userRole, 'drivers', 'add');
+
   return (
     <>
       <DataTable
         title="Gestion des Conducteurs"
         data={data.drivers}
         columns={columns}
-        onAdd={handleAddDriver}
-        onEdit={handleEditDriver}
-        onDelete={onDelete}
+        onAdd={canAddForm ? handleAddDriver : undefined}
+        onEdit={canEditForm ? handleEditDriver : undefined}
+        onDelete={canAccess(userRole, 'drivers', 'delete') ? onDelete : undefined}
         addLabel="Ajouter Conducteur"
         searchPlaceholder="Rechercher un conducteur par nom, permis, statut ou téléphone..."
         exportFileName="conducteurs"
         isLoading={false}
         renderAlerts={renderAlerts}
+        resourceType="drivers" // Pass resource type
       />
 
       {/* Modal */}
@@ -174,23 +180,25 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
           </DialogHeader>
           <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
-              <FormField name="name" label="Nom complet" type="text" placeholder="Ex: John Doe" />
-              <FormField name="license" label="Numéro de permis" type="text" placeholder="Ex: 123456789" />
-              <FormField name="expiration" label="Date d'expiration" type="date" />
+              <FormField name="name" label="Nom complet" type="text" placeholder="Ex: John Doe" disabled={!canEditForm && editingDriver || !canAddForm && !editingDriver} />
+              <FormField name="license" label="Numéro de permis" type="text" placeholder="Ex: 123456789" disabled={!canEditForm && editingDriver || !canAddForm && !editingDriver} />
+              <FormField name="expiration" label="Date d'expiration" type="date" disabled={!canEditForm && editingDriver || !canAddForm && !editingDriver} />
               <FormField name="status" label="Statut" type="select" options={[
                 { value: 'Disponible', label: 'Disponible' },
                 { value: 'En mission', label: 'En mission' },
                 { value: 'Repos', label: 'Repos' },
                 { value: 'Congé', label: 'Congé' },
-              ]} />
-              <FormField name="phone" label="Téléphone" type="tel" placeholder="Ex: +216 22 123 456" />
+              ]} disabled={!canEditForm && editingDriver || !canAddForm && !editingDriver} />
+              <FormField name="phone" label="Téléphone" type="tel" placeholder="Ex: +216 22 123 456" disabled={!canEditForm && editingDriver || !canAddForm && !editingDriver} />
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setShowModal(false)}>
                   Annuler
                 </Button>
-                <Button type="submit">
-                  Sauvegarder
-                </Button>
+                {(canAddForm && !editingDriver) || (canEditForm && editingDriver) ? (
+                  <Button type="submit">
+                    Sauvegarder
+                  </Button>
+                ) : null}
               </DialogFooter>
             </form>
           </FormProvider>

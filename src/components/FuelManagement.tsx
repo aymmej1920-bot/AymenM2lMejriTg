@@ -17,6 +17,8 @@ import {
   DialogDescription,
 } from './ui/dialog';
 import DataTable from './DataTable'; // Import the new DataTable component
+import { useSession } from './SessionContextProvider'; // Import useSession
+import { canAccess } from '../utils/permissions'; // Import canAccess
 
 type FuelEntryFormData = z.infer<typeof fuelEntrySchema>;
 
@@ -28,7 +30,7 @@ interface FuelManagementProps {
   onDelete: (id: string) => void;
 }
 
-const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, onDelete }) => {
+const FuelManagement: React.FC<FuelManagementProps> = ({ data, userRole, onAdd, onUpdate, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingFuel, setEditingFuel] = useState<FuelEntry | null>(null);
 
@@ -173,6 +175,9 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
     return matchesVehicle && matchesDateRange;
   }, [selectedVehicle, startDate, endDate]);
 
+  const canAddForm = canAccess(userRole, 'fuel_entries', 'add');
+  const canEditForm = canAccess(userRole, 'fuel_entries', 'edit');
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -222,15 +227,16 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
         title="Historique des Pleins"
         data={data.fuel}
         columns={columns}
-        onAdd={handleAddFuel}
-        onEdit={handleEditFuel}
-        onDelete={onDelete}
+        onAdd={canAddForm ? handleAddFuel : undefined}
+        onEdit={canEditForm ? handleEditFuel : undefined}
+        onDelete={canAccess(userRole, 'fuel_entries', 'delete') ? onDelete : undefined}
         addLabel="Ajouter Plein"
         searchPlaceholder="Rechercher par date, véhicule, litres, prix ou kilométrage..."
         exportFileName="carburant"
         isLoading={false}
         renderFilters={renderFilters}
         customFilter={customFilter}
+        resourceType="fuel_entries" // Pass resource type
       />
 
       {/* Modal */}
@@ -251,6 +257,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                   type="date"
                   {...register('date')}
                   className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  disabled={!canEditForm && editingFuel || !canAddForm && !editingFuel}
                 />
                 <Calendar className="absolute right-3 w-5 h-5 text-gray-400 pointer-events-none" />
               </div>
@@ -262,6 +269,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                 id="vehicle_id"
                 {...register('vehicle_id')}
                 className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                disabled={!canEditForm && editingFuel || !canAddForm && !editingFuel}
               >
                 <option value="">Sélectionner un véhicule</option>
                 {data.vehicles.map(vehicle => (
@@ -280,6 +288,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                 step="0.1"
                 {...register('liters', { valueAsNumber: true })}
                 className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                disabled={!canEditForm && editingFuel || !canAddForm && !editingFuel}
               />
               {errors.liters && <p className="text-red-500 text-sm mt-1">{errors.liters.message}</p>}
             </div>
@@ -291,6 +300,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                 step="0.01"
                 {...register('price_per_liter', { valueAsNumber: true })}
                 className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                disabled={!canEditForm && editingFuel || !canAddForm && !editingFuel}
               />
               {errors.price_per_liter && <p className="text-red-500 text-sm mt-1">{errors.price_per_liter.message}</p>}
             </div>
@@ -301,6 +311,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                 type="number"
                 {...register('mileage', { valueAsNumber: true })}
                 className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                disabled={!canEditForm && editingFuel || !canAddForm && !editingFuel}
               />
               {errors.mileage && <p className="text-red-500 text-sm mt-1">{errors.mileage.message}</p>}
             </div>
@@ -312,11 +323,13 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
               >
                 Annuler
               </Button>
-              <Button
-                type="submit"
-              >
-                Sauvegarder
-              </Button>
+              {(canAddForm && !editingFuel) || (canEditForm && editingFuel) ? (
+                <Button
+                  type="submit"
+                >
+                  Sauvegarder
+                </Button>
+              ) : null}
             </DialogFooter>
           </form>
         </DialogContent>
