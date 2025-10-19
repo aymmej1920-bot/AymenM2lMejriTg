@@ -17,7 +17,7 @@ import {
   DialogDescription,
 } from './ui/dialog';
 import DataTable from './DataTable'; // Import the new DataTable component
-import { useSession } from './SessionContextProvider'; // Import useSession
+import { useSession } => from './SessionContextProvider'; // Import useSession
 import { canAccess } from '../utils/permissions'; // Import canAccess
 
 type DocumentFormData = z.infer<typeof documentSchema>;

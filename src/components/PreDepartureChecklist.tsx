@@ -24,11 +24,13 @@ type PreDepartureChecklistFormData = z.infer<typeof preDepartureChecklistSchema>
 
 interface PreDepartureChecklistProps {
   data: FleetData;
-  userRole: 'admin' | 'direction' | 'utilisateur';
   onAdd: (checklist: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>) => void;
 }
 
-const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ data, userRole, onAdd }) => {
+const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ data, onAdd }) => {
+  const { currentUser } = useSession(); // Use useSession directly
+  const userRole = currentUser?.role || 'utilisateur';
+
   const [showModal, setShowModal] = useState(false);
 
   const { register, handleSubmit, reset, formState: { errors = {} } } = useForm<PreDepartureChecklistFormData>({

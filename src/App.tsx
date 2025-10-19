@@ -316,15 +316,14 @@ function App() {
 
             {/* Protected routes */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard key="dashboard-view" data={fleetData} userRole={userRole} preDepartureChecklists={fleetData.pre_departure_checklists} /></ProtectedRoute>} />
-            <Route path="/vehicles" element={<ProtectedRoute><Vehicles key="vehicles-view" data={fleetData} userRole={userRole} onUpdate={(newData: Vehicle) => handleUpdateData('vehicles', newData, 'update')} onDelete={(id: string) => handleUpdateData('vehicles', { id }, 'delete')} onAdd={(newData: Omit<Vehicle, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('vehicles', newData, 'insert')} /></ProtectedRoute>} />
-            <Route path="/drivers" element={<ProtectedRoute><Drivers key="drivers-view" data={fleetData} userRole={userRole} onUpdate={(newData: Driver) => handleUpdateData('drivers', newData, 'update')} onDelete={(id: string) => handleUpdateData('drivers', { id }, 'delete')} onAdd={(newData: Omit<Driver, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('drivers', newData, 'insert')} /></ProtectedRoute>} />
-            <Route path="/tours" element={<ProtectedRoute><Tours key="tours-view" data={fleetData} userRole={userRole} onUpdate={(newData: Tour) => handleUpdateData('tours', newData, 'update')} onDelete={(id: string) => handleUpdateData('tours', { id }, 'delete')} onAdd={(newData: Omit<Tour, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('tours', newData, 'insert')} /></ProtectedRoute>} />
-            <Route path="/fuel" element={<ProtectedRoute><FuelManagement key="fuel-view" data={fleetData} userRole={userRole} onUpdate={(newData: FuelEntry) => handleUpdateData('fuel_entries', newData, 'update')} onDelete={(id: string) => handleUpdateData('fuel_entries', { id }, 'delete')} onAdd={(newData: Omit<FuelEntry, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('fuel_entries', newData, 'insert')} /></ProtectedRoute>} />
-            <Route path="/documents" element={<ProtectedRoute><Documents key="documents-view" data={fleetData} userRole={userRole} onUpdate={(newData: Document) => handleUpdateData('documents', newData, 'update')} onDelete={(id: string) => handleUpdateData('documents', { id }, 'delete')} onAdd={(newData: Omit<Document, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('documents', newData, 'insert')} /></ProtectedRoute>} />
+            <Route path="/vehicles" element={<ProtectedRoute><Vehicles key="vehicles-view" data={fleetData} onUpdate={(newData: Vehicle) => handleUpdateData('vehicles', newData, 'update')} onDelete={(id: string) => handleUpdateData('vehicles', { id }, 'delete')} onAdd={(newData: Omit<Vehicle, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('vehicles', newData, 'insert')} /></ProtectedRoute>} />
+            <Route path="/drivers" element={<ProtectedRoute><Drivers key="drivers-view" data={fleetData} onUpdate={(newData: Driver) => handleUpdateData('drivers', newData, 'update')} onDelete={(id: string) => handleUpdateData('drivers', { id }, 'delete')} onAdd={(newData: Omit<Driver, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('drivers', newData, 'insert')} /></ProtectedRoute>} />
+            <Route path="/tours" element={<ProtectedRoute><Tours key="tours-view" data={fleetData} onUpdate={(newData: Tour) => handleUpdateData('tours', newData, 'update')} onDelete={(id: string) => handleUpdateData('tours', { id }, 'delete')} onAdd={(newData: Omit<Tour, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('tours', newData, 'insert')} /></ProtectedRoute>} />
+            <Route path="/fuel" element={<ProtectedRoute><FuelManagement key="fuel-view" data={fleetData} onUpdate={(newData: FuelEntry) => handleUpdateData('fuel_entries', newData, 'update')} onDelete={(id: string) => handleUpdateData('fuel_entries', { id }, 'delete')} onAdd={(newData: Omit<FuelEntry, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('fuel_entries', newData, 'insert')} /></ProtectedRoute>} />
+            <Route path="/documents" element={<ProtectedRoute><Documents key="documents-view" data={fleetData} onUpdate={(newData: Document) => handleUpdateData('documents', newData, 'update')} onDelete={(id: string) => handleUpdateData('documents', { id }, 'delete')} onAdd={(newData: Omit<Document, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('documents', newData, 'insert')} /></ProtectedRoute>} />
             <Route path="/maintenance" element={<ProtectedRoute><Maintenance 
               key="maintenance-view"
               data={fleetData} 
-              userRole={userRole} 
               onUpdate={(newData) => handleUpdateData('vehicles', newData, 'update')} 
               onAdd={(newData) => handleUpdateData('maintenance_entries', newData, 'insert')} 
               onDelete={(id: string) => handleUpdateData('maintenance_entries', { id }, 'delete')}
@@ -333,7 +332,6 @@ function App() {
             <Route path="/checklists" element={<ProtectedRoute><PreDepartureChecklistComponent 
               key="checklists-view" 
               data={fleetData} 
-              userRole={userRole} 
               onAdd={(newData: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('pre_departure_checklists', newData, 'insert')} 
             /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute><Reports key="reports-view" data={fleetData} userRole={userRole} /></ProtectedRoute>} />

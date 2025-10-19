@@ -224,6 +224,7 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
           isLoading={false} // Adjust based on actual loading state if needed
           renderFilters={renderFilters}
           customFilter={customFilter}
+          resourceType={selectedDataSource as any} // Added resourceType prop
         />
       ) : (
         <div className="bg-white rounded-xl shadow-lg p-6 text-center text-gray-500">
