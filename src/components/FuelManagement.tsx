@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Fuel, DollarSign, TrendingUp, Calendar } from 'lucide-react';
+import { Fuel, DollarSign, TrendingUp, Calendar, Search } from 'lucide-react';
 import { FleetData, FuelEntry, DataTableColumn } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date';
@@ -87,22 +87,6 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
     setShowModal(false);
   };
 
-  const filteredFuelEntries = useMemo(() => {
-    return data.fuel.filter(entry => {
-      const matchesVehicle = selectedVehicle ? entry.vehicle_id === selectedVehicle : true;
-
-      const entryDate = new Date(entry.date);
-      const start = startDate ? new Date(startDate) : null;
-      const end = endDate ? new Date(endDate) : null;
-
-      const matchesDateRange = 
-        (!start || entryDate >= start) &&
-        (!end || entryDate <= end);
-
-      return matchesVehicle && matchesDateRange;
-    });
-  }, [data.fuel, selectedVehicle, startDate, endDate]);
-
   const columns: DataTableColumn<FuelEntry>[] = useMemo(() => [
     { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item) => formatDate(item.date) },
     {
@@ -124,9 +108,19 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
     { key: 'mileage', label: 'Kilométrage', sortable: true, defaultVisible: true, render: (item) => `${item.mileage.toLocaleString()} km` },
   ], [data.vehicles]);
 
-  const renderFilters = useCallback((_searchTerm: string, _setSearchTerm: (term: string) => void) => {
+  const renderFilters = useCallback((searchTerm: string, setSearchTerm: (term: string) => void) => {
     return (
       <>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Rechercher par date, véhicule, litres, prix ou kilométrage..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          />
+        </div>
         <div>
           <select
             value={selectedVehicle}
@@ -164,6 +158,20 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
       </>
     );
   }, [data.vehicles, selectedVehicle, startDate, endDate]);
+
+  const customFilter = useCallback((entry: FuelEntry) => {
+    const matchesVehicle = selectedVehicle ? entry.vehicle_id === selectedVehicle : true;
+
+    const entryDate = new Date(entry.date);
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
+
+    const matchesDateRange = 
+      (!start || entryDate >= start) &&
+      (!end || entryDate <= end);
+
+    return matchesVehicle && matchesDateRange;
+  }, [selectedVehicle, startDate, endDate]);
 
   return (
     <div className="space-y-6">
@@ -212,7 +220,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
 
       <DataTable
         title="Historique des Pleins"
-        data={filteredFuelEntries}
+        data={data.fuel}
         columns={columns}
         onAdd={handleAddFuel}
         onEdit={handleEditFuel}
@@ -222,6 +230,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
         exportFileName="carburant"
         isLoading={false}
         renderFilters={renderFilters}
+        customFilter={customFilter}
       />
 
       {/* Modal */}
