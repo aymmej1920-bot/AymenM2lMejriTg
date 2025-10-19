@@ -370,7 +370,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
 
       {/* Modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="sm:max-w-2xl bg-gray-50">
           <DialogHeader>
             <DialogTitle>Nouvelle Checklist Avant Départ</DialogTitle>
             <DialogDescription>
