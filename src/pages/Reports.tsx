@@ -1,248 +1,136 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { FleetData, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist } from '../types';
-import { Button } from '../components/ui/button';
-import { Download, Search, Settings, ChevronUp, ChevronDown, Calendar } from 'lucide-react';
-import { exportToXLSX } from '../utils/export';
-import { showSuccess, showError } from '../utils/toast';
+import React, { useState, useMemo, useCallback } from 'react';
+import { FleetData, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist, DataTableColumn } from '../types';
+import { Calendar } from 'lucide-react'; // Only Calendar is needed for date inputs
 import { formatDate } from '../utils/date';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogFooter,
-  DialogTitle,
-  DialogDescription,
-} from '../components/ui/dialog';
+import DataTable from '../components/DataTable'; // Import the new DataTable component
 
 interface ReportsProps {
   data: FleetData;
   userRole: 'admin' | 'direction' | 'utilisateur';
 }
 
-interface ColumnConfig {
-  key: string;
-  label: string;
-  defaultVisible: boolean;
-}
+// Helper function to get days until expiration (reused from Documents)
+const getDaysUntilExpiration = (expirationDate: string) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const expiry = new Date(expirationDate);
+  expiry.setHours(0, 0, 0, 0);
+  const timeDiff = expiry.getTime() - today.getTime();
+  return Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+};
 
-const getColumnConfigs = (dataSource: keyof FleetData): ColumnConfig[] => {
+// Helper function to get days since entry (reused from Maintenance)
+const getDaysSinceEntry = (dateString: string): number => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const entryDate = new Date(dateString);
+  entryDate.setHours(0, 0, 0, 0);
+  const timeDiff = today.getTime() - entryDate.getTime();
+  return Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+};
+
+const getColumnConfigs = (dataSource: keyof FleetData, allVehicles: Vehicle[], allDrivers: Driver[]): DataTableColumn<any>[] => {
   switch (dataSource) {
     case 'vehicles':
       return [
-        { key: 'plate', label: 'Plaque', defaultVisible: true },
-        { key: 'type', label: 'Type', defaultVisible: true },
-        { key: 'status', label: 'Statut', defaultVisible: true },
-        { key: 'mileage', label: 'Kilométrage', defaultVisible: true },
-        { key: 'last_service_date', label: 'Dernière Vidange', defaultVisible: true },
-        { key: 'last_service_mileage', label: 'Km Dernière Vidange', defaultVisible: true },
+        { key: 'plate', label: 'Plaque', sortable: true, defaultVisible: true },
+        { key: 'type', label: 'Type', sortable: true, defaultVisible: true },
+        { key: 'status', label: 'Statut', sortable: true, defaultVisible: true },
+        { key: 'mileage', label: 'Kilométrage', sortable: true, defaultVisible: true, render: (item: Vehicle) => `${item.mileage.toLocaleString()} km` },
+        { key: 'last_service_date', label: 'Dernière Vidange', sortable: true, defaultVisible: true, render: (item: Vehicle) => formatDate(item.last_service_date) },
+        { key: 'last_service_mileage', label: 'Km Dernière Vidange', sortable: true, defaultVisible: true, render: (item: Vehicle) => `${item.last_service_mileage.toLocaleString()} km` },
       ];
     case 'drivers':
       return [
-        { key: 'name', label: 'Nom', defaultVisible: true },
-        { key: 'license', label: 'Permis', defaultVisible: true },
-        { key: 'expiration', label: 'Expiration', defaultVisible: true },
-        { key: 'status', label: 'Statut', defaultVisible: true },
-        { key: 'phone', label: 'Téléphone', defaultVisible: true },
+        { key: 'name', label: 'Nom', sortable: true, defaultVisible: true },
+        { key: 'license', label: 'Permis', sortable: true, defaultVisible: true },
+        { key: 'expiration', label: 'Expiration', sortable: true, defaultVisible: true, render: (item: Driver) => formatDate(item.expiration) },
+        { key: 'status', label: 'Statut', sortable: true, defaultVisible: true },
+        { key: 'phone', label: 'Téléphone', sortable: true, defaultVisible: true },
       ];
     case 'tours':
       return [
-        { key: 'date', label: 'Date', defaultVisible: true },
-        { key: 'vehicle_plate', label: 'Véhicule', defaultVisible: true },
-        { key: 'driver_name', label: 'Conducteur', defaultVisible: true },
-        { key: 'status', label: 'Statut', defaultVisible: true },
-        { key: 'fuel_start', label: 'Fuel Début (%)', defaultVisible: true },
-        { key: 'km_start', label: 'Km Début', defaultVisible: true },
-        { key: 'fuel_end', label: 'Fuel Fin (%)', defaultVisible: true },
-        { key: 'km_end', label: 'Km Fin', defaultVisible: true },
-        { key: 'distance', label: 'Distance', defaultVisible: true },
-        { key: 'consumption_per_100km', label: 'L/100km', defaultVisible: true },
+        { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item: Tour) => formatDate(item.date) },
+        { key: 'vehicle_id', label: 'Véhicule', sortable: true, defaultVisible: true, render: (item: Tour) => allVehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A' },
+        { key: 'driver_id', label: 'Conducteur', sortable: true, defaultVisible: true, render: (item: Tour) => allDrivers.find(d => d.id === item.driver_id)?.name || 'N/A' },
+        { key: 'status', label: 'Statut', sortable: true, defaultVisible: true },
+        { key: 'fuel_start', label: 'Fuel Début (%)', sortable: true, defaultVisible: true, render: (item: Tour) => item.fuel_start != null ? `${item.fuel_start}%` : '-' },
+        { key: 'km_start', label: 'Km Début', sortable: true, defaultVisible: true, render: (item: Tour) => item.km_start != null ? item.km_start.toLocaleString() : '-' },
+        { key: 'fuel_end', label: 'Fuel Fin (%)', sortable: true, defaultVisible: true, render: (item: Tour) => item.fuel_end != null ? `${item.fuel_end}%` : '-' },
+        { key: 'km_end', label: 'Km Fin', sortable: true, defaultVisible: true, render: (item: Tour) => item.km_end != null ? item.km_end.toLocaleString() : '-' },
+        { key: 'distance', label: 'Distance', sortable: true, defaultVisible: true, render: (item: Tour) => item.distance != null ? `${item.distance.toLocaleString()} km` : '-' },
+        {
+          key: 'consumption_per_100km',
+          label: 'L/100km',
+          sortable: false,
+          defaultVisible: true,
+          render: (item: Tour) => {
+            if (item.distance != null && item.distance > 0 && item.fuel_start != null && item.fuel_end != null) {
+              const fuelConsumed = item.fuel_start - item.fuel_end;
+              if (fuelConsumed > 0) {
+                return ((fuelConsumed / item.distance) * 100).toFixed(1);
+              }
+            }
+            return '-';
+          },
+        },
       ];
     case 'fuel':
       return [
-        { key: 'date', label: 'Date', defaultVisible: true },
-        { key: 'vehicle_plate', label: 'Véhicule', defaultVisible: true },
-        { key: 'liters', label: 'Litres', defaultVisible: true },
-        { key: 'price_per_liter', label: 'Prix/L', defaultVisible: true },
-        { key: 'total_cost', label: 'Coût Total', defaultVisible: true },
-        { key: 'mileage', label: 'Kilométrage', defaultVisible: true },
+        { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item: FuelEntry) => formatDate(item.date) },
+        { key: 'vehicle_id', label: 'Véhicule', sortable: true, defaultVisible: true, render: (item: FuelEntry) => allVehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A' },
+        { key: 'liters', label: 'Litres', sortable: true, defaultVisible: true, render: (item: FuelEntry) => `${item.liters} L` },
+        { key: 'price_per_liter', label: 'Prix/L', sortable: true, defaultVisible: true, render: (item: FuelEntry) => `${item.price_per_liter.toFixed(2)} TND` },
+        { key: 'total_cost', label: 'Coût Total', sortable: true, defaultVisible: true, render: (item: FuelEntry) => `${(item.liters * item.price_per_liter).toFixed(2)} TND` },
+        { key: 'mileage', label: 'Kilométrage', sortable: true, defaultVisible: true, render: (item: FuelEntry) => `${item.mileage.toLocaleString()} km` },
       ];
     case 'documents':
       return [
-        { key: 'vehicle_plate', label: 'Véhicule', defaultVisible: true },
-        { key: 'type', label: 'Type', defaultVisible: true },
-        { key: 'number', label: 'Numéro', defaultVisible: true },
-        { key: 'expiration', label: 'Expiration', defaultVisible: true },
+        { key: 'vehicle_id', label: 'Véhicule', sortable: true, defaultVisible: true, render: (item: Document) => allVehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A' },
+        { key: 'type', label: 'Type Document', sortable: true, defaultVisible: true },
+        { key: 'number', label: 'N° Document', sortable: true, defaultVisible: true },
+        { key: 'expiration', label: 'Expiration', sortable: true, defaultVisible: true, render: (item: Document) => formatDate(item.expiration) },
+        { key: 'days_left', label: 'Jours Restants', sortable: false, defaultVisible: true, render: (item: Document) => {
+          const daysLeft = getDaysUntilExpiration(item.expiration);
+          return daysLeft < 0 ? 'Expiré' : `${daysLeft} jours`;
+        }},
       ];
     case 'maintenance':
       return [
-        { key: 'vehicle_plate', label: 'Véhicule', defaultVisible: true },
-        { key: 'type', label: 'Type', defaultVisible: true },
-        { key: 'date', label: 'Date', defaultVisible: true },
-        { key: 'mileage', label: 'Kilométrage', defaultVisible: true },
-        { key: 'cost', label: 'Coût', defaultVisible: true },
-        { key: 'days_since_entry', label: 'Jours depuis l\'entrée', defaultVisible: true },
+        { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item: MaintenanceEntry) => formatDate(item.date) },
+        { key: 'vehicle_id', label: 'Véhicule', sortable: true, defaultVisible: true, render: (item: MaintenanceEntry) => allVehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A' },
+        { key: 'type', label: 'Type', sortable: true, defaultVisible: true },
+        { key: 'mileage', label: 'Kilométrage', sortable: true, defaultVisible: true, render: (item: MaintenanceEntry) => `${item.mileage.toLocaleString()} km` },
+        { key: 'cost', label: 'Coût', sortable: true, defaultVisible: true, render: (item: MaintenanceEntry) => `${item.cost.toFixed(2)} TND` },
+        { key: 'days_since_entry', label: 'Jours depuis l\'entrée', sortable: true, defaultVisible: true, render: (item: MaintenanceEntry) => getDaysSinceEntry(item.date) },
       ];
     case 'pre_departure_checklists':
       return [
-        { key: 'date', label: 'Date', defaultVisible: true },
-        { key: 'vehicle_plate', label: 'Véhicule', defaultVisible: true },
-        { key: 'driver_name', label: 'Conducteur', defaultVisible: true },
-        { key: 'tire_pressure_ok', label: 'Pneus OK', defaultVisible: true },
-        { key: 'lights_ok', label: 'Feux OK', defaultVisible: true },
-        { key: 'oil_level_ok', label: 'Huile OK', defaultVisible: true },
-        { key: 'fluid_levels_ok', label: 'Fluides OK', defaultVisible: true },
-        { key: 'brakes_ok', label: 'Freins OK', defaultVisible: true },
-        { key: 'wipers_ok', label: 'Essuie-glaces OK', defaultVisible: true },
-        { key: 'horn_ok', label: 'Klaxon OK', defaultVisible: true },
-        { key: 'mirrors_ok', label: 'Rétroviseurs OK', defaultVisible: true },
-        { key: 'ac_working_ok', label: 'AC OK', defaultVisible: true },
-        { key: 'windows_working_ok', label: 'Vitres OK', defaultVisible: true },
-        { key: 'observations', label: 'Observations', defaultVisible: true },
-        { key: 'issues_to_address', label: 'Problèmes', defaultVisible: true },
+        { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => formatDate(item.date) },
+        { key: 'vehicle_id', label: 'Véhicule', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => allVehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A' },
+        { key: 'driver_id', label: 'Conducteur', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => allDrivers.find(d => d.id === item.driver_id)?.name || 'N/A' },
+        { key: 'tire_pressure_ok', label: 'Pneus OK', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => item.tire_pressure_ok ? 'Oui' : 'Non' },
+        { key: 'lights_ok', label: 'Feux OK', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => item.lights_ok ? 'Oui' : 'Non' },
+        { key: 'oil_level_ok', label: 'Huile OK', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => item.oil_level_ok ? 'Oui' : 'Non' },
+        { key: 'fluid_levels_ok', label: 'Fluides OK', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => item.fluid_levels_ok ? 'Oui' : 'Non' },
+        { key: 'brakes_ok', label: 'Freins OK', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => item.brakes_ok ? 'Oui' : 'Non' },
+        { key: 'wipers_ok', label: 'Essuie-glaces OK', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => item.wipers_ok ? 'Oui' : 'Non' },
+        { key: 'horn_ok', label: 'Klaxon OK', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => item.horn_ok ? 'Oui' : 'Non' },
+        { key: 'mirrors_ok', label: 'Rétroviseurs OK', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => item.mirrors_ok ? 'Oui' : 'Non' },
+        { key: 'ac_working_ok', label: 'AC OK', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => item.ac_working_ok ? 'Oui' : 'Non' },
+        { key: 'windows_working_ok', label: 'Vitres OK', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => item.windows_working_ok ? 'Oui' : 'Non' },
+        { key: 'observations', label: 'Observations', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => item.observations || '-' },
+        { key: 'issues_to_address', label: 'Problèmes', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => item.issues_to_address || '-' },
       ];
     default:
       return [];
   }
 };
 
-const getRowData = (item: any, dataSource: keyof FleetData, allVehicles: Vehicle[], allDrivers: Driver[]) => {
-  const commonData = {
-    id: item.id,
-    created_at: item.created_at,
-    user_id: item.user_id,
-  };
-
-  switch (dataSource) {
-    case 'vehicles':
-      const vehicle = item as Vehicle;
-      return {
-        ...commonData,
-        plate: vehicle.plate,
-        type: vehicle.type,
-        status: vehicle.status,
-        mileage: vehicle.mileage,
-        last_service_date: formatDate(vehicle.last_service_date),
-        last_service_mileage: vehicle.last_service_mileage,
-      };
-    case 'drivers':
-      const driver = item as Driver;
-      return {
-        ...commonData,
-        name: driver.name,
-        license: driver.license,
-        expiration: formatDate(driver.expiration),
-        status: driver.status,
-        phone: driver.phone,
-      };
-    case 'tours':
-      const tour = item as Tour;
-      const tourVehicle = allVehicles.find(v => v.id === tour.vehicle_id);
-      const tourDriver = allDrivers.find(d => d.id === tour.driver_id);
-
-      const calculateConsumption = (t: Tour): string => {
-        if (t.distance != null && t.distance > 0 && t.fuel_start != null && t.fuel_end != null) {
-          const fuelConsumed = t.fuel_start - t.fuel_end;
-          if (fuelConsumed > 0) {
-            return ((fuelConsumed / t.distance) * 100).toFixed(1);
-          }
-        }
-        return '-';
-      };
-
-      return {
-        ...commonData,
-        date: formatDate(tour.date),
-        vehicle_plate: tourVehicle?.plate || 'N/A',
-        driver_name: tourDriver?.name || 'N/A',
-        status: tour.status,
-        fuel_start: tour.fuel_start ?? '-',
-        km_start: tour.km_start ?? '-',
-        fuel_end: tour.fuel_end ?? '-',
-        km_end: tour.km_end ?? '-',
-        distance: tour.distance ?? '-',
-        consumption_per_100km: calculateConsumption(tour),
-      };
-    case 'fuel':
-      const fuelEntry = item as FuelEntry;
-      const fuelVehicle = allVehicles.find(v => v.id === fuelEntry.vehicle_id);
-      return {
-        ...commonData,
-        date: formatDate(fuelEntry.date),
-        vehicle_plate: fuelVehicle?.plate || 'N/A',
-        liters: fuelEntry.liters,
-        price_per_liter: fuelEntry.price_per_liter,
-        total_cost: (fuelEntry.liters * fuelEntry.price_per_liter).toFixed(2),
-        mileage: fuelEntry.mileage,
-      };
-    case 'documents':
-      const document = item as Document;
-      const docVehicle = allVehicles.find(v => v.id === document.vehicle_id);
-      return {
-        ...commonData,
-        vehicle_plate: docVehicle?.plate || 'N/A',
-        type: document.type,
-        number: document.number,
-        expiration: formatDate(document.expiration),
-      };
-    case 'maintenance':
-      const maintenanceEntry = item as MaintenanceEntry;
-      const maintVehicle = allVehicles.find(v => v.id === maintenanceEntry.vehicle_id);
-
-      const getDaysSinceEntry = (dateString: string): number => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const entryDate = new Date(dateString);
-        entryDate.setHours(0, 0, 0, 0);
-        const timeDiff = today.getTime() - entryDate.getTime();
-        return Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-      };
-
-      return {
-        ...commonData,
-        vehicle_plate: maintVehicle?.plate || 'N/A',
-        type: maintenanceEntry.type,
-        date: formatDate(maintenanceEntry.date),
-        mileage: maintenanceEntry.mileage,
-        cost: maintenanceEntry.cost,
-        days_since_entry: getDaysSinceEntry(maintenanceEntry.date),
-      };
-    case 'pre_departure_checklists':
-      const checklist = item as PreDepartureChecklist;
-      const checklistVehicle = allVehicles.find(v => v.id === checklist.vehicle_id);
-      const checklistDriver = allDrivers.find(d => d.id === checklist.driver_id);
-      return {
-        ...commonData,
-        date: formatDate(checklist.date),
-        vehicle_plate: checklistVehicle?.plate || 'N/A',
-        driver_name: checklistDriver?.name || 'N/A',
-        tire_pressure_ok: checklist.tire_pressure_ok ? 'Oui' : 'Non',
-        lights_ok: checklist.lights_ok ? 'Oui' : 'Non',
-        oil_level_ok: checklist.oil_level_ok ? 'Oui' : 'Non',
-        fluid_levels_ok: checklist.fluid_levels_ok ? 'Oui' : 'Non',
-        brakes_ok: checklist.brakes_ok ? 'Oui' : 'Non',
-        wipers_ok: checklist.wipers_ok ? 'Oui' : 'Non',
-        horn_ok: checklist.horn_ok ? 'Oui' : 'Non',
-        mirrors_ok: checklist.mirrors_ok ? 'Oui' : 'Non',
-        ac_working_ok: checklist.ac_working_ok ? 'Oui' : 'Non',
-        windows_working_ok: checklist.windows_working_ok ? 'Oui' : 'Non',
-        observations: checklist.observations || '-',
-        issues_to_address: checklist.issues_to_address || '-',
-      };
-    default:
-      return item;
-  }
-};
-
 const Reports: React.FC<ReportsProps> = ({ data }) => {
-  const [selectedDataSource, setSelectedDataSource] = useState<keyof FleetData | ''>(''); // Changed default to empty string
-  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDataSource, setSelectedDataSource] = useState<keyof FleetData | ''>('');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
-  const [sortColumn, setSortColumn] = useState<string>('date');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [showColumnCustomizeDialog, setShowColumnCustomizeDialog] = useState(false);
-  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
-  const [columnOrder, setColumnOrder] = useState<string[]>([]);
 
   const dataSources = [
     { id: 'vehicles', name: 'Véhicules' },
@@ -254,274 +142,47 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
     { id: 'pre_departure_checklists', name: 'Checklists Pré-départ' },
   ];
 
-  const allPossibleColumns = useMemo(() => {
-    if (!selectedDataSource) return []; // Return empty if no data source is selected
-    return getColumnConfigs(selectedDataSource);
-  }, [selectedDataSource]);
-
-  // Load column preferences from localStorage or set defaults
-  useEffect(() => {
-    if (!selectedDataSource) {
-      setColumnVisibility({});
-      setColumnOrder([]);
-      setSortColumn('date'); // Reset sort column when no data source is selected
-      return;
-    }
-
-    const savedVisibilityRaw = localStorage.getItem(`reportColumnsVisibility_${selectedDataSource}`);
-    const savedOrderRaw = localStorage.getItem(`reportColumnsOrder_${selectedDataSource}`);
-
-    const defaultVisibility = allPossibleColumns.reduce((acc, col) => {
-      acc[col.key] = col.defaultVisible;
-      return acc;
-    }, {} as Record<string, boolean>);
-
-    const defaultOrder = allPossibleColumns.map(col => col.key);
-
-    let initialColumnVisibility = defaultVisibility;
-    if (savedVisibilityRaw) {
-      try {
-        const parsed = JSON.parse(savedVisibilityRaw);
-        if (typeof parsed === 'object' && parsed !== null) {
-          // Merge saved visibility with default to handle new/removed columns
-          initialColumnVisibility = { ...defaultVisibility, ...parsed };
-        }
-      } catch (e) {
-        console.error("Error parsing saved column visibility from localStorage", e);
-      }
-    }
-
-    let initialColumnOrder = defaultOrder;
-    if (savedOrderRaw) {
-      try {
-        const parsed = JSON.parse(savedOrderRaw);
-        if (Array.isArray(parsed)) {
-          // Filter out any keys from savedOrder that are no longer in allPossibleColumns
-          const validParsedOrder = parsed.filter(key => allPossibleColumns.some(col => col.key === key));
-          // Add any new keys from allPossibleColumns that are not in savedOrder (at the end)
-          const newKeys = allPossibleColumns.map(col => col.key).filter(key => !validParsedOrder.includes(key));
-          initialColumnOrder = [...validParsedOrder, ...newKeys];
-        }
-      } catch (e) {
-        console.error("Error parsing saved column order from localStorage", e);
-      }
-    }
-
-    setColumnVisibility(initialColumnVisibility);
-    setColumnOrder(initialColumnOrder);
-    // Reset sort column to a default for the new data source if the current one isn't valid
-    if (!allPossibleColumns.some(col => col.key === sortColumn)) {
-      setSortColumn(defaultOrder[0] || 'id');
-    }
-  }, [selectedDataSource, allPossibleColumns]);
-
-  // Save column preferences to localStorage
-  useEffect(() => {
-    if (selectedDataSource && columnOrder.length > 0) {
-      localStorage.setItem(`reportColumnsVisibility_${selectedDataSource}`, JSON.stringify(columnVisibility));
-      localStorage.setItem(`reportColumnsOrder_${selectedDataSource}`, JSON.stringify(columnOrder));
-    }
-  }, [columnVisibility, columnOrder, selectedDataSource]);
-
   const currentData = useMemo(() => {
     if (!selectedDataSource) return [];
     return data[selectedDataSource] || [];
   }, [data, selectedDataSource]);
 
-  const filteredAndSortedData = useMemo(() => {
+  const filteredData = useMemo(() => {
     if (!selectedDataSource) return [];
 
-    const currentSelectedDataSource = selectedDataSource as keyof FleetData;
-
-    let filtered = currentData.filter(item => {
-      const row = getRowData(item, currentSelectedDataSource, data.vehicles, data.drivers);
-      const lowerCaseSearchTerm = searchTerm.toLowerCase();
-
-      const matchesSearch = Object.values(row).some(value =>
-        (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') && String(value).toLowerCase().includes(lowerCaseSearchTerm)
-      );
-
+    return currentData.filter(item => {
       let matchesDateRange = true;
-      if (startDate || endDate) {
-        const itemDateString = row.date || row.expiration || row.created_at;
-        if (itemDateString) {
-          const itemDate = new Date(itemDateString);
-          const start = startDate ? new Date(startDate) : null;
-          const end = endDate ? new Date(endDate) : null;
+      const itemDateString = (item as any).date || (item as any).expiration || (item as any).created_at; // Common date fields
+      
+      if (itemDateString) {
+        const itemDate = new Date(itemDateString);
+        const start = startDate ? new Date(startDate) : null;
+        const end = endDate ? new Date(endDate) : null;
 
-          matchesDateRange = 
-            (!start || itemDate >= start) &&
-            (!end || itemDate <= end);
-        }
+        matchesDateRange = 
+          (!start || itemDate >= start) &&
+          (!end || itemDate <= end);
       }
-      return matchesSearch && matchesDateRange;
+      return matchesDateRange;
     });
+  }, [currentData, startDate, endDate, selectedDataSource]);
 
-    // Apply sorting
-    filtered.sort((a, b) => {
-      const aRow = getRowData(a, currentSelectedDataSource, data.vehicles, data.drivers);
-      const bRow = getRowData(b, currentSelectedDataSource, data.vehicles, data.drivers);
+  const columns = useMemo(() => {
+    if (!selectedDataSource) return [];
+    return getColumnConfigs(selectedDataSource, data.vehicles, data.drivers);
+  }, [selectedDataSource, data.vehicles, data.drivers]);
 
-      const aValue = aRow[sortColumn];
-      const bValue = bRow[sortColumn];
-
-      // Handle null/undefined values
-      if (aValue == null && bValue == null) return 0;
-      if (aValue == null) return sortDirection === 'asc' ? -1 : 1;
-      if (bValue == null) return sortDirection === 'asc' ? 1 : -1;
-
-      // Numeric comparison
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
-        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
-      }
-      // Date string comparison (assuming YYYY-MM-DD format or similar for direct string comparison)
-      if (
-        (sortColumn === 'date' || sortColumn === 'expiration' || sortColumn === 'created_at') &&
-        typeof aValue === 'string' && typeof bValue === 'string'
-      ) {
-        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-      }
-      // String comparison (default)
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-      }
-      // Boolean comparison (false before true for asc)
-      if (typeof aValue === 'boolean' && typeof bValue === 'boolean') {
-        return sortDirection === 'asc' ? (aValue === bValue ? 0 : aValue ? 1 : -1) : (aValue === bValue ? 0 : aValue ? -1 : 1);
-      }
-
-      return 0; // Fallback
-    });
-
-    return filtered;
-  }, [currentData, searchTerm, startDate, endDate, selectedDataSource, data.vehicles, data.drivers, sortColumn, sortDirection]);
-
-  const visibleColumns = useMemo(() => {
-    return columnOrder
-      .map(key => allPossibleColumns.find(col => col.key === key))
-      .filter((col): col is ColumnConfig => col !== undefined && columnVisibility[col.key]);
-  }, [columnVisibility, columnOrder, allPossibleColumns]);
-
-  const handleToggleColumn = (key: string) => {
-    setColumnVisibility(prev => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-  };
-
-  const handleMoveColumn = useCallback((key: string, direction: 'up' | 'down') => {
-    setColumnOrder(prevOrder => {
-      const index = prevOrder.indexOf(key);
-      if (index === -1) return prevOrder;
-
-      const newOrder = [...prevOrder];
-      const [movedColumn] = newOrder.splice(index, 1);
-
-      if (direction === 'up' && index > 0) {
-        newOrder.splice(index - 1, 0, movedColumn);
-      } else if (direction === 'down' && index < newOrder.length) {
-        newOrder.splice(index + 1, 0, movedColumn);
-      }
-      return newOrder;
-    });
-  }, []);
-
-  const handleResetColumns = () => {
-    const defaultVisibility = allPossibleColumns.reduce((acc, col) => {
-      acc[col.key] = col.defaultVisible;
-      return acc;
-    }, {} as Record<string, boolean>);
-    setColumnVisibility(defaultVisibility);
-    setColumnOrder(allPossibleColumns.map(col => col.key));
-  };
-
-  const handleSort = (columnKey: string) => {
-    if (sortColumn === columnKey) {
-      setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortColumn(columnKey);
-      setSortDirection('asc');
-    }
-  };
-
-  const renderSortIcon = (columnKey: string) => {
-    if (sortColumn === columnKey) {
-      return sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />;
-    }
-    return null;
-  };
-
-  const handleExport = () => {
-    if (!selectedDataSource) {
-      showError('Veuillez sélectionner une source de données avant d\'exporter.');
-      return;
-    }
-    const headers = visibleColumns.map(col => col.label);
-    const dataToExport = filteredAndSortedData.map(item => {
-      const row = getRowData(item, selectedDataSource as keyof FleetData, data.vehicles, data.drivers);
-      const exportedRow: { [key: string]: any } = {};
-      visibleColumns.forEach(col => {
-        exportedRow[col.label] = row[col.key];
-      });
-      return exportedRow;
-    });
-
-    exportToXLSX(dataToExport, { 
-      fileName: `rapport_${selectedDataSource}`, 
-      sheetName: dataSources.find(ds => ds.id === selectedDataSource)?.name || 'Rapport',
-      headers: headers
-    });
-    showSuccess('Rapport exporté avec succès au format XLSX !');
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-4xl font-bold text-gray-800">Rapports Personnalisables</h2>
-        <div className="flex space-x-4">
-          <Button
-            onClick={() => setShowColumnCustomizeDialog(true)}
-            className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
-            disabled={!selectedDataSource} // Disable if no data source is selected
-          >
-            <Settings className="w-5 h-5" />
-            <span>Personnaliser Colonnes</span>
-          </Button>
-          <Button
-            onClick={handleExport}
-            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
-            disabled={!selectedDataSource || filteredAndSortedData.length === 0} // Disable if no data source or no data
-          >
-            <Download className="w-5 h-5" />
-            <span>Exporter XLSX</span>
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div>
-          {/* Removed label, added placeholder option */}
-          <select
-            id="dataSource"
-            value={selectedDataSource}
-            onChange={(e) => setSelectedDataSource(e.target.value as keyof FleetData)}
-            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="" disabled>Sélectionner la source de données</option>
-            {dataSources.map(source => (
-              <option key={source.id} value={source.id}>{source.name}</option>
-            ))}
-          </select>
-        </div>
+  const renderFilters = useCallback((searchTerm: string, setSearchTerm: (term: string) => void) => {
+    return (
+      <>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
             placeholder="Rechercher dans le rapport..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-            disabled={!selectedDataSource} // Disable if no data source is selected
+            className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            disabled={!selectedDataSource}
           />
         </div>
         <div className="relative">
@@ -531,7 +192,7 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
             onChange={(e) => setStartDate(e.target.value)}
             className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             placeholder="Date de début"
-            disabled={!selectedDataSource} // Disable if no data source is selected
+            disabled={!selectedDataSource}
           />
           <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
         </div>
@@ -542,114 +203,55 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
             onChange={(e) => setEndDate(e.target.value)}
             className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             placeholder="Date de fin"
-            disabled={!selectedDataSource} // Disable if no data source is selected
+            disabled={!selectedDataSource}
           />
           <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
         </div>
+      </>
+    );
+  }, [selectedDataSource, startDate, endDate]);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-4xl font-bold text-gray-800">Rapports Personnalisables</h2>
       </div>
 
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                {visibleColumns.map((col) => (
-                  <th 
-                    key={col.key} 
-                    className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer"
-                    onClick={() => handleSort(col.key)}
-                  >
-                    <div className="flex items-center">
-                      {col.label} {renderSortIcon(col.key)}
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredAndSortedData.length === 0 ? (
-                <tr>
-                  <td colSpan={visibleColumns.length || 1} className="px-6 py-4 text-center text-gray-500">
-                    {selectedDataSource ? 'Aucune donnée trouvée pour ce rapport avec les filtres actuels.' : 'Veuillez sélectionner une source de données pour afficher le rapport.'}
-                  </td>
-                </tr>
-              ) : (
-                filteredAndSortedData.map((item, rowIndex) => {
-                  const rowData = getRowData(item, selectedDataSource as keyof FleetData, data.vehicles, data.drivers);
-                  return (
-                    <tr key={item.id || rowIndex} className="hover:bg-gray-50">
-                      {visibleColumns.map((col, cellIndex) => (
-                        <td key={cellIndex} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {rowData[col.key]}
-                        </td>
-                      ))}
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div>
+          <select
+            id="dataSource"
+            value={selectedDataSource}
+            onChange={(e) => {
+              setSelectedDataSource(e.target.value as keyof FleetData);
+              setStartDate(''); // Reset date filters on data source change
+              setEndDate('');
+            }}
+            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="" disabled>Sélectionner la source de données</option>
+            {dataSources.map(source => (
+              <option key={source.id} value={source.id}>{source.name}</option>
+            ))}
+          </select>
         </div>
+        {/* The search and date filters are now rendered by DataTable's renderFilters prop */}
       </div>
 
-      <Dialog open={showColumnCustomizeDialog} onOpenChange={setShowColumnCustomizeDialog}>
-        <DialogContent className="sm:max-w-[425px] bg-gray-50">
-          <DialogHeader>
-            <DialogTitle>Personnaliser les Colonnes</DialogTitle>
-            <DialogDescription>
-              Choisissez les colonnes à afficher et réorganisez-les.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2 py-4">
-            {columnOrder.map((key, index) => {
-              const col = allPossibleColumns.find(c => c.key === key);
-              if (!col) return null;
-              return (
-                <div key={col.key} className="flex items-center justify-between p-2 border rounded-md bg-gray-100">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id={`col-${col.key}`}
-                      checked={columnVisibility[col.key]}
-                      onChange={() => handleToggleColumn(col.key)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor={`col-${col.key}`} className="text-sm font-medium text-gray-700">
-                      {col.label}
-                    </label>
-                  </div>
-                  <div className="flex space-x-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleMoveColumn(col.key, 'up')}
-                      disabled={index === 0}
-                    >
-                      <ChevronUp className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleMoveColumn(col.key, 'down')}
-                      disabled={index === columnOrder.length - 1}
-                    >
-                      <ChevronDown className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleResetColumns}>
-              Réinitialiser par défaut
-            </Button>
-            <Button onClick={() => setShowColumnCustomizeDialog(false)}>
-              Fermer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {selectedDataSource ? (
+        <DataTable
+          title={`Rapport: ${dataSources.find(ds => ds.id === selectedDataSource)?.name || ''}`}
+          data={filteredData}
+          columns={columns}
+          exportFileName={`rapport_${selectedDataSource}`}
+          isLoading={false} // Adjust based on actual loading state if needed
+          renderFilters={renderFilters}
+        />
+      ) : (
+        <div className="bg-white rounded-xl shadow-lg p-6 text-center text-gray-500">
+          Veuillez sélectionner une source de données pour afficher le rapport.
+        </div>
+      )}
     </div>
   );
 };

@@ -81,8 +81,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
   // Filtered data for DataTable
   const filteredChecklists = useMemo(() => {
     return data.pre_departure_checklists.filter(checklist => {
-      const vehicle = data.vehicles.find(v => v.id === checklist.vehicle_id);
-      const driver = data.drivers.find(d => d.id === checklist.driver_id);
+      // const vehicle = data.vehicles.find(v => v.id === checklist.vehicle_id); // Removed unused variable
+      // const driver = data.drivers.find(d => d.id === checklist.driver_id); // Removed unused variable
       
       // DataTable's internal search will handle the main search term.
       // This filter focuses on the specific dropdowns and date range.
@@ -197,13 +197,22 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
             </p>
           </div>
         </div>
-      </div> // <-- Added missing closing div tag here
+      </div>
     );
   }, [vehiclesMissingChecklist]);
 
-  const renderFilters = useCallback((_searchTerm: string, _setSearchTerm: (term: string) => void) => {
+  const renderFilters = useCallback((searchTerm: string, setSearchTerm: (term: string) => void) => {
     return (
       <>
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Rechercher une checklist..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          />
+        </div>
         <div>
           <select
             value={selectedVehicle}
