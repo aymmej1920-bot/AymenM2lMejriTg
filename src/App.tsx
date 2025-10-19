@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Routes, Route, Link, useNavigate } from 'react-router-dom'; // Import Routes, Route, Link, useNavigate
+import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom'; // Import useLocation
 import { Truck, Users, Route as RouteIcon, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck, FileText as ReportIcon, UserCog } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Vehicles from './components/Vehicles';
@@ -22,6 +22,7 @@ import SkeletonLoader from './components/SkeletonLoader';
 function App() {
   const { session, isLoading } = useSession();
   const navigate = useNavigate(); // Initialize useNavigate
+  const location = useLocation(); // Initialize useLocation
   const [fleetData, setFleetData] = useState<FleetData>({
     vehicles: [],
     drivers: [],
@@ -97,10 +98,20 @@ function App() {
   }, [session]);
 
   useEffect(() => {
+    if (isLoading) {
+      // Still loading session, do nothing yet
+      return;
+    }
+
     if (session?.user) {
+      // User is authenticated
       fetchData(session.user.id);
-      navigate('/dashboard'); // Redirect to dashboard on successful login
+      // Only redirect to dashboard if currently on login or root
+      if (location.pathname === '/login' || location.pathname === '/') {
+        navigate('/dashboard');
+      }
     } else {
+      // User is NOT authenticated
       setCurrentUser(null);
       setFleetData({
         vehicles: [],
@@ -112,9 +123,12 @@ function App() {
         pre_departure_checklists: [],
       });
       setDataLoading(false);
-      navigate('/login'); // Redirect to login if no session
+      // Only redirect to login if not already on login
+      if (location.pathname !== '/login') {
+        navigate('/login');
+      }
     }
-  }, [session, fetchData, navigate]);
+  }, [session, isLoading, fetchData, navigate, location.pathname]); // Add location.pathname to dependencies
 
   const handleUpdateData = async (tableName: string, newData: any, action: 'insert' | 'update' | 'delete') => {
     if (!currentUser?.id) return;
