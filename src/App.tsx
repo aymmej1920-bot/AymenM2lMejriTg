@@ -321,7 +321,7 @@ function App() {
 
         <main className="flex-1 px-6 py-8 min-w-0 overflow-x-auto w-full">
           <Routes>
-            <Route path="/dashboard" element={<Dashboard key="dashboard-view" data={fleetData} userRole={userRole} />} />
+            <Route path="/dashboard" element={<Dashboard key="dashboard-view" data={fleetData} userRole={userRole} preDepartureChecklists={fleetData.pre_departure_checklists} />} />
             <Route path="/vehicles" element={<Vehicles key="vehicles-view" data={fleetData} userRole={userRole} onUpdate={(newData: Vehicle) => handleUpdateData('vehicles', newData, 'update')} onDelete={(id: string) => handleUpdateData('vehicles', { id }, 'delete')} onAdd={(newData: Omit<Vehicle, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('vehicles', newData, 'insert')} />} />
             <Route path="/drivers" element={<Drivers key="drivers-view" data={fleetData} userRole={userRole} onUpdate={(newData: Driver) => handleUpdateData('drivers', newData, 'update')} onDelete={(id: string) => handleUpdateData('drivers', { id }, 'delete')} onAdd={(newData: Omit<Driver, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('drivers', newData, 'insert')} />} />
             <Route path="/tours" element={<Tours key="tours-view" data={fleetData} userRole={userRole} onUpdate={(newData: Tour) => handleUpdateData('tours', newData, 'update')} onDelete={(id: string) => handleUpdateData('tours', { id }, 'delete')} onAdd={(newData: Omit<Tour, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('tours', newData, 'insert')} />} />
@@ -351,7 +351,7 @@ function App() {
                 onDeleteUser={handleDeleteUser}
               />} />
             )}
-            <Route path="*" element={<Dashboard key="default-dashboard-view" data={fleetData} userRole={userRole} />} /> {/* Default route */}
+            <Route path="*" element={<Dashboard key="default-dashboard-view" data={fleetData} userRole={userRole} preDepartureChecklists={fleetData.pre_departure_checklists} />} /> {/* Default route */}
           </Routes>
         </main>
       </div>
