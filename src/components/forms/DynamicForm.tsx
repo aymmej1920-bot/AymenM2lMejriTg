@@ -21,9 +21,9 @@ export interface DynamicFormFieldConfig<TFieldValues extends FieldValues> {
 }
 
 interface DynamicFormProps<TFieldValues extends FieldValues> {
-  schema: z.ZodSchema<TFieldValues>; // Simplified schema type
+  schema: z.ZodType<TFieldValues>; // Simplified schema type to z.ZodType<TFieldValues>
   defaultValues: DefaultValues<TFieldValues>;
-  onSubmit: SubmitHandler<TFieldValues>;
+  onSubmit: SubmitHandler<TFieldValues>; // Use SubmitHandler here
   fields: DynamicFormFieldConfig<TFieldValues>[];
   submitLabel?: string;
   cancelLabel?: string;
@@ -44,7 +44,7 @@ const DynamicForm = <TFieldValues extends FieldValues>({
   gridCols = 'grid-cols-1',
 }: DynamicFormProps<TFieldValues>) => {
   const methods = useForm<TFieldValues>({
-    resolver: zodResolver(schema), // Should now correctly infer types
+    resolver: zodResolver(schema), // This should now correctly infer types
     defaultValues,
   });
 
