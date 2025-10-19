@@ -36,7 +36,7 @@ interface Profile {
 
 type InviteUserFormData = z.infer<typeof inviteUserSchema>;
 
-const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpdateUserRole, onDeleteUser }) => {
+const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpdateUserRole }) => {
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,32 +67,31 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
     setLoading(true);
     setError(null);
     try {
-      // Fetch profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, role, created_at');
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
 
-      if (profilesError) throw profilesError;
+      if (!token) {
+        throw new Error('No session token found. Please log in.');
+      }
 
-      // Fetch auth.users to get emails
-      const { data: authUsers, error: authUsersError } = await supabase.auth.admin.listUsers();
-
-      if (authUsersError) throw authUsersError;
-
-      const usersWithEmails: Profile[] = profiles.map(profile => {
-        const authUser = authUsers.users.find(au => au.id === profile.id);
-        return {
-          ...profile,
-          email: authUser?.email || 'N/A',
-          first_name: profile.first_name || authUser?.user_metadata?.first_name || 'N/A',
-          last_name: profile.last_name || authUser?.user_metadata?.last_name || 'N/A',
-        };
+      const response = await fetch('https://iqaymjchscdvlofvuacn.supabase.co/functions/v1/manage-users', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
       });
 
-      setUsers(usersWithEmails);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to fetch users.');
+      }
+
+      setUsers(result as Profile[]);
     } catch (err: any) {
       console.error('Error fetching users:', err.message);
-      setError('Erreur lors du chargement des utilisateurs.');
+      setError('Erreur lors du chargement des utilisateurs: ' + err.message);
       showError('Erreur lors du chargement des utilisateurs.');
     } finally {
       setLoading(false);
@@ -162,11 +161,40 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
   };
 
   const executeDeleteUser = async () => {
-    if (userToDelete) {
-      await onDeleteUser(userToDelete);
+    if (!userToDelete) return;
+
+    const loadingToastId = showLoading(`Suppression de l'utilisateur ${userToDelete}...`);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+
+      if (!token) {
+        throw new Error('No session token found. Please log in.');
+      }
+
+      const response = await fetch('https://iqaymjchscdvlofvuacn.supabase.co/functions/v1/manage-users', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ userId: userToDelete }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to delete user.');
+      }
+
+      dismissToast(loadingToastId);
       showSuccess('Utilisateur supprimé avec succès !');
       setUserToDelete(null);
       fetchUsers(); // Re-fetch to update the list
+    } catch (error: any) {
+      console.error('Error deleting user:', error.message);
+      dismissToast(loadingToastId);
+      showError(`Erreur lors de la suppression de l'utilisateur : ${error.message}`);
     }
   };
 
