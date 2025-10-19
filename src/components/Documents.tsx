@@ -24,7 +24,6 @@ type DocumentFormData = z.infer<typeof documentSchema>;
 
 interface DocumentsProps {
   data: FleetData;
-  // userRole: 'admin' | 'direction' | 'utilisateur'; // Removed prop
   onAdd: (document: Omit<Document, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (document: Document) => void;
   onDelete: (id: string) => void;

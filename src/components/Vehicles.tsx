@@ -24,7 +24,6 @@ type VehicleFormData = z.infer<typeof vehicleSchema>;
 
 interface VehiclesProps {
   data: FleetData;
-  // userRole: 'admin' | 'direction' | 'utilisateur'; // Removed prop
   onAdd: (vehicle: Omit<Vehicle, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (vehicle: Vehicle) => void;
   onDelete: (id: string) => void;

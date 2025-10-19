@@ -24,7 +24,6 @@ type TourFormData = z.infer<typeof tourSchema>;
 
 interface ToursProps {
   data: FleetData;
-  // userRole: 'admin' | 'direction' | 'utilisateur'; // Removed prop
   onAdd: (tour: Omit<Tour, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (tour: Tour) => void;
   onDelete: (id: string) => void;
@@ -274,7 +273,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
             <DialogDescription>
               {editingTour ? 'Modifiez les détails de la tournée.' : 'Ajoutez une nouvelle tournée.'}
             </DialogDescription>
-          </DialogDescription>
+          </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div>

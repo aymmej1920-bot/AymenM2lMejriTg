@@ -24,7 +24,6 @@ type FuelEntryFormData = z.infer<typeof fuelEntrySchema>;
 
 interface FuelManagementProps {
   data: FleetData;
-  // userRole: 'admin' | 'direction' | 'utilisateur'; // Removed prop
   onAdd: (fuelEntry: Omit<FuelEntry, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (fuelEntry: FuelEntry) => void;
   onDelete: (id: string) => void;

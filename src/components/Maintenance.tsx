@@ -24,7 +24,6 @@ type MaintenanceEntryFormData = z.infer<typeof maintenanceEntrySchema>;
 
 interface MaintenanceProps {
   data: FleetData;
-  // userRole: 'admin' | 'direction' | 'utilisateur'; // Removed prop
   onAdd: (maintenanceEntry: Omit<MaintenanceEntry, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (vehicle: { id: string; last_service_date: string; last_service_mileage: number; mileage: number }) => void;
   onDelete: (id: string) => void; // Added onDelete prop

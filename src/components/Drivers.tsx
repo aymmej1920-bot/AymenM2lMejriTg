@@ -25,7 +25,6 @@ type DriverFormData = z.infer<typeof driverSchema>;
 
 interface DriversProps {
   data: FleetData;
-  // userRole: 'admin' | 'direction' | 'utilisateur'; // Removed prop
   onAdd: (driver: Omit<Driver, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (driver: Driver) => void;
   onDelete: (id: string) => void;
