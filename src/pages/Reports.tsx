@@ -442,7 +442,7 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
       </div>
 
       <Dialog open={showColumnCustomizeDialog} onOpenChange={setShowColumnCustomizeDialog}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] bg-gray-50">
           <DialogHeader>
             <DialogTitle>Personnaliser les Colonnes</DialogTitle>
             <DialogDescription>
@@ -454,7 +454,7 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
               const col = allPossibleColumns.find(c => c.key === key);
               if (!col) return null;
               return (
-                <div key={col.key} className="flex items-center justify-between p-2 border rounded-md bg-gray-50">
+                <div key={col.key} className="flex items-center justify-between p-2 border rounded-md bg-gray-100">
                   <div className="flex items-center space-x-2">
                     <input
                       type="checkbox"

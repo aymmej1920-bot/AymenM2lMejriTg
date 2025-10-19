@@ -279,7 +279,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
       )}
 
       <Dialog open={showCustomizeDialog} onOpenChange={setShowCustomizeDialog}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] bg-gray-50">
           <DialogHeader>
             <DialogTitle>Personnaliser le Tableau de Bord</DialogTitle>
             <DialogDescription>
@@ -288,7 +288,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
           </DialogHeader>
           <div className="space-y-2 py-4">
             {widgets.map((widget: DashboardWidgetConfig, index: number) => (
-              <div key={widget.id} className="flex items-center justify-between p-2 border rounded-md bg-gray-50">
+              <div key={widget.id} className="flex items-center justify-between p-2 border rounded-md bg-gray-100">
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
