@@ -26,3 +26,26 @@
 body {
   @apply bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 min-h-screen;
 }
+
+/* Custom styles for Supabase Auth UI inputs and buttons */
+.supabase-auth-glass-theme .sbui-input {
+  background: rgba(255, 255, 255, 0.25) !important; /* Use !important to override ThemeSupa */
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37) !important;
+  border-radius: 0.5rem !important; /* rounded-lg */
+  color: #333 !important; /* Ensure text is visible */
+}
+
+.supabase-auth-glass-theme .sbui-button {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important; /* bg-gradient-brand */
+  color: #fff !important;
+  border: none !important;
+  border-radius: 0.5rem !important;
+  transition: transform 0.2s ease-out !important;
+}
+
+.supabase-auth-glass-theme .sbui-button:hover {
+  transform: translateY(-2px) !important;
+}

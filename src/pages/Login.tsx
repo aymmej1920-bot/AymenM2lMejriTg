@@ -15,23 +15,25 @@ const Login: React.FC = () => {
           <h2 className="text-3xl font-bold text-gray-800">Fleet Manager Pro</h2>
           <p className="text-gray-600 mt-2">Connectez-vous ou créez un compte</p>
         </div>
-        <Auth
-          supabaseClient={supabase}
-          providers={[]}
-          appearance={{
-            theme: ThemeSupa,
-            variables: {
-              default: {
-                colors: {
-                  brand: 'hsl(262 83% 58%)', // Un violet vibrant, similaire à purple-600
-                  brandAccent: 'hsl(221 83% 53%)', // Un bleu vibrant, similaire à blue-600
+        <div className="supabase-auth-glass-theme"> {/* Apply the class to a wrapper div */}
+          <Auth
+            supabaseClient={supabase}
+            providers={[]}
+            appearance={{
+              theme: ThemeSupa,
+              variables: {
+                default: {
+                  colors: {
+                    brand: 'hsl(262 83% 58%)', // Un violet vibrant, similaire à purple-600
+                    brandAccent: 'hsl(221 83% 53%)', // Un bleu vibrant, similaire à blue-600
+                  },
                 },
               },
-            },
-          }}
-          theme="light"
-          redirectTo={window.location.origin} // Redirige vers la racine de l'application après l'authentification
-        />
+            }}
+            theme="light"
+            redirectTo={window.location.origin} // Redirige vers la racine de l'application après l'authentification
+          />
+        </div>
       </div>
     </div>
   );
