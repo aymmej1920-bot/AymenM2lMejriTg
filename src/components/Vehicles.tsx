@@ -63,18 +63,37 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
 
   // State for filtering, sorting, and pagination
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState<string>(''); // New state for status filter
+  const [selectedType, setSelectedType] = useState<string>(''); // New state for type filter
   const [sortColumn, setSortColumn] = useState<keyof Vehicle>('plate');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10; // You can adjust this value
 
+  // Get unique statuses and types for filter options
+  const uniqueStatuses = useMemo(() => {
+    const statuses = new Set(data.vehicles.map(v => v.status));
+    return Array.from(statuses);
+  }, [data.vehicles]);
+
+  const uniqueTypes = useMemo(() => {
+    const types = new Set(data.vehicles.map(v => v.type));
+    return Array.from(types);
+  }, [data.vehicles]);
+
   // Filtered and sorted data
   const filteredAndSortedVehicles = useMemo(() => {
-    let filtered = data.vehicles.filter(vehicle =>
-      vehicle.plate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      vehicle.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      vehicle.status.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    let filtered = data.vehicles.filter(vehicle => {
+      const matchesSearch = 
+        vehicle.plate.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        vehicle.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        vehicle.status.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = selectedStatus ? vehicle.status === selectedStatus : true;
+      const matchesType = selectedType ? vehicle.type === selectedType : true;
+
+      return matchesSearch && matchesStatus && matchesType;
+    });
 
     filtered.sort((a, b) => {
       const aValue = a[sortColumn];
@@ -90,7 +109,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
       return 0;
     });
     return filtered;
-  }, [data.vehicles, searchTerm, sortColumn, sortDirection]);
+  }, [data.vehicles, searchTerm, selectedStatus, selectedType, sortColumn, sortDirection]);
 
   // Paginated data
   const totalPages = Math.ceil(filteredAndSortedVehicles.length / itemsPerPage);
@@ -185,19 +204,53 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
           </Button>
       </div>
 
-      {/* Search Input */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Rechercher un véhicule par plaque, type ou statut..."
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setCurrentPage(1); // Reset to first page on new search
-          }}
-          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-        />
+      {/* Search and Filter Inputs */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Rechercher par plaque, type ou statut..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1); // Reset to first page on new search
+            }}
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          />
+        </div>
+
+        <div>
+          <select
+            value={selectedStatus}
+            onChange={(e) => {
+              setSelectedStatus(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">Tous les statuts</option>
+            {uniqueStatuses.map(status => (
+              <option key={status} value={status}>{status}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <select
+            value={selectedType}
+            onChange={(e) => {
+              setSelectedType(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">Tous les types</option>
+            {uniqueTypes.map(type => (
+              <option key={type} value={type}>{type}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
