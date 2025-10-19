@@ -7,6 +7,7 @@ import { showSuccess, showError } from '../utils/toast';
 import SkeletonLoader from './SkeletonLoader';
 import { DataTableColumn, ProcessedDataTableColumn } from '../types'; // Import the new interface
 import DataTableColumnCustomizer from './DataTableColumnCustomizer'; // Import the new component
+import { useSession } from './SessionContextProvider'; // Import useSession
 
 interface DataTableProps<T extends { id: string }> {
   title: string;
@@ -44,6 +45,9 @@ const DataTable = <T extends { id: string }>({
   renderRowActions,
   customFilter, // Destructure customFilter
 }: React.PropsWithChildren<DataTableProps<T>>) => {
+  const { currentUser } = useSession(); // Get currentUser from session context
+  const userRole = currentUser?.role || 'utilisateur'; // Default to 'utilisateur' if not available
+
   const [searchTerm, setSearchTerm] = useState('');
   const [sortColumn, setSortColumn] = useState<keyof T | string>(initialColumns.find(col => col.sortable)?.key || '');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -181,6 +185,9 @@ const DataTable = <T extends { id: string }>({
     }
   };
 
+  // Determine if the current user can perform write actions (add, edit, delete)
+  const canWrite = userRole === 'admin' || userRole === 'utilisateur'; // 'utilisateur' can write their own data
+
   if (isLoading) {
     return <SkeletonLoader count={5} height="h-12" className="w-full" />;
   }
@@ -205,7 +212,7 @@ const DataTable = <T extends { id: string }>({
             <Settings className="w-5 h-5" />
             <span>Personnaliser Colonnes</span>
           </Button>
-          {onAdd && (
+          {onAdd && canWrite && ( // Conditionally render Add button
             <Button
               onClick={onAdd}
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
@@ -255,7 +262,7 @@ const DataTable = <T extends { id: string }>({
                     </div>
                   </th>
                 ))}
-                {(onEdit || onDelete || renderRowActions) && (
+                {(onEdit || onDelete || renderRowActions) && canWrite && ( // Conditionally render Actions header
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                 )}
               </tr>
@@ -263,7 +270,7 @@ const DataTable = <T extends { id: string }>({
             <tbody className="bg-white divide-y divide-gray-200">
               {currentItems.length === 0 ? (
                 <tr>
-                  <td colSpan={visibleColumns.length + (onEdit || onDelete || renderRowActions ? 1 : 0)} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={visibleColumns.length + ((onEdit || onDelete || renderRowActions) && canWrite ? 1 : 0)} className="px-6 py-4 text-center text-gray-500">
                     Aucune donnée trouvée.
                   </td>
                 </tr>
@@ -275,7 +282,7 @@ const DataTable = <T extends { id: string }>({
                         {col.render ? col.render(item) : (item as any)[col.key]}
                       </td>
                     ))}
-                    {(onEdit || onDelete || renderRowActions) && (
+                    {(onEdit || onDelete || renderRowActions) && canWrite && ( // Conditionally render action buttons
                       <td className="px-6 py-4 text-sm">
                         <div className="flex space-x-2">
                           {onEdit && (
