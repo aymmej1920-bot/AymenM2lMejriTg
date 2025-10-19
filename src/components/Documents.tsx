@@ -59,21 +59,45 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
 
   // State for filtering, sorting, and pagination
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedVehicle, setSelectedVehicle] = useState<string>(''); // New state for vehicle filter
+  const [selectedType, setSelectedType] = useState<string>(''); // New state for type filter
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [sortColumn, setSortColumn] = useState<keyof Document>('expiration');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10; // You can adjust this value
 
+  // Get unique types for filter options
+  const uniqueTypes = useMemo(() => {
+    const types = new Set(data.documents.map(d => d.type));
+    return Array.from(types);
+  }, [data.documents]);
+
   // Filtered and sorted data
   const filteredAndSortedDocuments = useMemo(() => {
     let filtered = data.documents.filter(doc => {
       const vehicle = data.vehicles.find(v => v.id === doc.vehicle_id);
-      return (
+      
+      const matchesSearch = (
         (vehicle?.plate || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         doc.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
         doc.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
         doc.expiration.toLowerCase().includes(searchTerm.toLowerCase())
       );
+
+      const matchesVehicle = selectedVehicle ? doc.vehicle_id === selectedVehicle : true;
+      const matchesType = selectedType ? doc.type === selectedType : true;
+
+      const docExpirationDate = new Date(doc.expiration);
+      const start = startDate ? new Date(startDate) : null;
+      const end = endDate ? new Date(endDate) : null;
+
+      const matchesDateRange = 
+        (!start || docExpirationDate >= start) &&
+        (!end || docExpirationDate <= end);
+
+      return matchesSearch && matchesVehicle && matchesType && matchesDateRange;
     });
 
     filtered.sort((a, b) => {
@@ -111,7 +135,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
       return 0;
     });
     return filtered;
-  }, [data.documents, data.vehicles, searchTerm, sortColumn, sortDirection]);
+  }, [data.documents, data.vehicles, searchTerm, selectedVehicle, selectedType, startDate, endDate, sortColumn, sortDirection]);
 
   // Paginated data
   const totalPages = Math.ceil(filteredAndSortedDocuments.length / itemsPerPage);
@@ -207,19 +231,83 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
           </Button>
       </div>
 
-      {/* Search Input */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Rechercher un document par véhicule, type, numéro ou expiration..."
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setCurrentPage(1); // Reset to first page on new search
-          }}
-          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-        />
+      {/* Search and Filter Inputs */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Rechercher un document par véhicule, type, numéro ou expiration..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1); // Reset to first page on new search
+            }}
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          />
+        </div>
+
+        <div>
+          <select
+            value={selectedVehicle}
+            onChange={(e) => {
+              setSelectedVehicle(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">Tous les véhicules</option>
+            {data.vehicles.map(vehicle => (
+              <option key={vehicle.id} value={vehicle.id}>
+                {vehicle.plate} - {vehicle.type}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <select
+            value={selectedType}
+            onChange={(e) => {
+              setSelectedType(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">Tous les types</option>
+            {uniqueTypes.map(type => (
+              <option key={type} value={type}>{type}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="relative">
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => {
+              setStartDate(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            placeholder="Date de début"
+          />
+          <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+        </div>
+
+        <div className="relative">
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => {
+              setEndDate(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            placeholder="Date de fin"
+          />
+          <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+        </div>
       </div>
 
       {/* Alerts */}

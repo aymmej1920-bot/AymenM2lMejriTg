@@ -74,6 +74,10 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
 
   // State for filtering, sorting, and pagination
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedVehicle, setSelectedVehicle] = useState<string>('');
+  const [selectedDriver, setSelectedDriver] = useState<string>('');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [sortColumn, setSortColumn] = useState<keyof PreDepartureChecklist>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
@@ -85,13 +89,26 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
       const vehicle = data.vehicles.find(v => v.id === checklist.vehicle_id);
       const driver = data.drivers.find(d => d.id === checklist.driver_id);
       
-      return (
+      const matchesSearch = (
         checklist.date.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (vehicle?.plate || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (driver?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (checklist.observations || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (checklist.issues_to_address || '').toLowerCase().includes(searchTerm.toLowerCase())
       );
+
+      const matchesVehicle = selectedVehicle ? checklist.vehicle_id === selectedVehicle : true;
+      const matchesDriver = selectedDriver ? checklist.driver_id === selectedDriver : true;
+
+      const checklistDate = new Date(checklist.date);
+      const start = startDate ? new Date(startDate) : null;
+      const end = endDate ? new Date(endDate) : null;
+
+      const matchesDateRange = 
+        (!start || checklistDate >= start) &&
+        (!end || checklistDate <= end);
+
+      return matchesSearch && matchesVehicle && matchesDriver && matchesDateRange;
     });
 
     filtered.sort((a, b) => {
@@ -138,7 +155,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
       return 0;
     });
     return filtered;
-  }, [data.pre_departure_checklists, data.vehicles, data.drivers, searchTerm, sortColumn, sortDirection]);
+  }, [data.pre_departure_checklists, data.vehicles, data.drivers, searchTerm, selectedVehicle, selectedDriver, startDate, endDate, sortColumn, sortDirection]);
 
   // Paginated data
   const totalPages = Math.ceil(filteredAndSortedChecklists.length / itemsPerPage);
@@ -248,19 +265,85 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
         </div>
       )}
 
-      {/* Search Input */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Rechercher une checklist par date, véhicule, conducteur, observations ou problèmes..."
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setCurrentPage(1); // Reset to first page on new search
-          }}
-          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-        />
+      {/* Search and Filter Inputs */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Rechercher une checklist par date, véhicule, conducteur, observations ou problèmes..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1); // Reset to first page on new search
+            }}
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          />
+        </div>
+
+        <div>
+          <select
+            value={selectedVehicle}
+            onChange={(e) => {
+              setSelectedVehicle(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">Tous les véhicules</option>
+            {data.vehicles.map(vehicle => (
+              <option key={vehicle.id} value={vehicle.id}>
+                {vehicle.plate} - {vehicle.type}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <select
+            value={selectedDriver}
+            onChange={(e) => {
+              setSelectedDriver(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">Tous les conducteurs</option>
+            {data.drivers.map(driver => (
+              <option key={driver.id} value={driver.id}>
+                {driver.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="relative">
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => {
+              setStartDate(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            placeholder="Date de début"
+          />
+          <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+        </div>
+
+        <div className="relative">
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => {
+              setEndDate(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            placeholder="Date de fin"
+          />
+          <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">

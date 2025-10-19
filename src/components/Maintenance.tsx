@@ -64,22 +64,46 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
 
   // State for filtering, sorting, and pagination
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedVehicleFilter, setSelectedVehicleFilter] = useState<string>(''); // New state for vehicle filter
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>(''); // New state for type filter
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [sortColumn, setSortColumn] = useState<keyof MaintenanceEntry>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10; // You can adjust this value
 
+  // Get unique types for filter options
+  const uniqueMaintenanceTypes = useMemo(() => {
+    const types = new Set(data.maintenance.map(m => m.type));
+    return Array.from(types);
+  }, [data.maintenance]);
+
   // Filtered and sorted data for Maintenance History
   const filteredAndSortedMaintenanceEntries = useMemo(() => {
     let filtered = data.maintenance.filter(entry => {
       const vehicle = data.vehicles.find(v => v.id === entry.vehicle_id);
-      return (
+      
+      const matchesSearch = (
         entry.date.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (vehicle?.plate || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         entry.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
         entry.mileage.toString().includes(searchTerm) ||
         entry.cost.toString().includes(searchTerm)
       );
+
+      const matchesVehicle = selectedVehicleFilter ? entry.vehicle_id === selectedVehicleFilter : true;
+      const matchesType = selectedTypeFilter ? entry.type === selectedTypeFilter : true;
+
+      const entryDate = new Date(entry.date);
+      const start = startDate ? new Date(startDate) : null;
+      const end = endDate ? new Date(endDate) : null;
+
+      const matchesDateRange = 
+        (!start || entryDate >= start) &&
+        (!end || entryDate <= end);
+
+      return matchesSearch && matchesVehicle && matchesType && matchesDateRange;
     });
 
     filtered.sort((a, b) => {
@@ -122,7 +146,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
       return 0;
     });
     return filtered;
-  }, [data.maintenance, data.vehicles, searchTerm, sortColumn, sortDirection]);
+  }, [data.maintenance, data.vehicles, searchTerm, selectedVehicleFilter, selectedTypeFilter, startDate, endDate, sortColumn, sortDirection]);
 
   // Paginated data for Maintenance History
   const totalPages = Math.ceil(filteredAndSortedMaintenanceEntries.length / itemsPerPage);
@@ -353,19 +377,83 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
             <h3 className="text-lg font-semibold text-gray-800">Historique des Maintenances</h3>
           </div>
 
-          {/* Search Input for History */}
-          <div className="relative px-6 py-4">
-            <Search className="absolute left-9 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Rechercher dans l'historique par véhicule, type, date ou coût..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1); // Reset to first page on new search
-              }}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-            />
+          {/* Search and Filter Inputs for History */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 px-6 py-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Rechercher dans l'historique par véhicule, type, date ou coût..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1); // Reset to first page on new search
+                }}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              />
+            </div>
+
+            <div>
+              <select
+                value={selectedVehicleFilter}
+                onChange={(e) => {
+                  setSelectedVehicleFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Tous les véhicules</option>
+                {data.vehicles.map(vehicle => (
+                  <option key={vehicle.id} value={vehicle.id}>
+                    {vehicle.plate} - {vehicle.type}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <select
+                value={selectedTypeFilter}
+                onChange={(e) => {
+                  setSelectedTypeFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Tous les types</option>
+                {uniqueMaintenanceTypes.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="relative">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                placeholder="Date de début"
+              />
+              <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+            </div>
+
+            <div className="relative">
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => {
+                  setEndDate(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                placeholder="Date de fin"
+              />
+              <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+            </div>
           </div>
 
           <div className="overflow-x-auto">

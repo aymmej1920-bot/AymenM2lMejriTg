@@ -61,19 +61,31 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
 
   // State for filtering, sorting, and pagination
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState<string>(''); // New state for status filter
   const [sortColumn, setSortColumn] = useState<keyof Driver>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10; // You can adjust this value
 
+  // Get unique statuses for filter options
+  const uniqueStatuses = useMemo(() => {
+    const statuses = new Set(data.drivers.map(d => d.status));
+    return Array.from(statuses);
+  }, [data.drivers]);
+
   // Filtered and sorted data
   const filteredAndSortedDrivers = useMemo(() => {
-    let filtered = data.drivers.filter(driver =>
-      driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      driver.license.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      driver.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      driver.phone.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    let filtered = data.drivers.filter(driver => {
+      const matchesSearch = 
+        driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        driver.license.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        driver.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        driver.phone.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = selectedStatus ? driver.status === selectedStatus : true;
+
+      return matchesSearch && matchesStatus;
+    });
 
     filtered.sort((a, b) => {
       const aValue = a[sortColumn];
@@ -90,7 +102,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
       return 0;
     });
     return filtered;
-  }, [data.drivers, searchTerm, sortColumn, sortDirection]);
+  }, [data.drivers, searchTerm, selectedStatus, sortColumn, sortDirection]);
 
   // Paginated data
   const totalPages = Math.ceil(filteredAndSortedDrivers.length / itemsPerPage);
@@ -184,19 +196,37 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
           </Button>
       </div>
 
-      {/* Search Input */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Rechercher un conducteur par nom, permis, statut ou téléphone..."
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setCurrentPage(1); // Reset to first page on new search
-          }}
-          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-        />
+      {/* Search and Filter Inputs */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Rechercher un conducteur par nom, permis, statut ou téléphone..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1); // Reset to first page on new search
+            }}
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          />
+        </div>
+
+        <div>
+          <select
+            value={selectedStatus}
+            onChange={(e) => {
+              setSelectedStatus(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">Tous les statuts</option>
+            {uniqueStatuses.map(status => (
+              <option key={status} value={status}>{status}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">

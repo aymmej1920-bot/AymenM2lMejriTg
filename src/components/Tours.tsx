@@ -78,10 +78,21 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
 
   // State for filtering, sorting, and pagination
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedVehicle, setSelectedVehicle] = useState<string>('');
+  const [selectedDriver, setSelectedDriver] = useState<string>('');
+  const [selectedStatus, setSelectedStatus] = useState<string>('');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [sortColumn, setSortColumn] = useState<keyof Tour>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10; // You can adjust this value
+
+  // Get unique statuses for filter options
+  const uniqueStatuses = useMemo(() => {
+    const statuses = new Set(data.tours.map(t => t.status));
+    return Array.from(statuses);
+  }, [data.tours]);
 
   // Filtered and sorted data
   const filteredAndSortedTours = useMemo(() => {
@@ -89,12 +100,25 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
       const vehicle = data.vehicles.find(v => v.id === tour.vehicle_id);
       const driver = data.drivers.find(d => d.id === tour.driver_id);
       
-      return (
+      const matchesSearch = 
         tour.date.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (vehicle?.plate || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (driver?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        tour.status.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+        tour.status.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesVehicle = selectedVehicle ? tour.vehicle_id === selectedVehicle : true;
+      const matchesDriver = selectedDriver ? tour.driver_id === selectedDriver : true;
+      const matchesStatus = selectedStatus ? tour.status === selectedStatus : true;
+
+      const tourDate = new Date(tour.date);
+      const start = startDate ? new Date(startDate) : null;
+      const end = endDate ? new Date(endDate) : null;
+
+      const matchesDateRange = 
+        (!start || tourDate >= start) &&
+        (!end || tourDate <= end);
+      
+      return matchesSearch && matchesVehicle && matchesDriver && matchesStatus && matchesDateRange;
     });
 
     filtered.sort((a, b) => {
@@ -120,7 +144,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
       return 0;
     });
     return filtered;
-  }, [data.tours, data.vehicles, data.drivers, searchTerm, sortColumn, sortDirection]);
+  }, [data.tours, data.vehicles, data.drivers, searchTerm, selectedVehicle, selectedDriver, selectedStatus, startDate, endDate, sortColumn, sortDirection]);
 
   // Paginated data
   const totalPages = Math.ceil(filteredAndSortedTours.length / itemsPerPage);
@@ -215,19 +239,101 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
           </Button>
       </div>
 
-      {/* Search Input */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Rechercher une tournée par date, véhicule, conducteur ou statut..."
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setCurrentPage(1); // Reset to first page on new search
-          }}
-          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-        />
+      {/* Search and Filter Inputs */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Rechercher par date, véhicule, conducteur ou statut..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1); // Reset to first page on new search
+            }}
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          />
+        </div>
+
+        <div>
+          <select
+            value={selectedVehicle}
+            onChange={(e) => {
+              setSelectedVehicle(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">Tous les véhicules</option>
+            {data.vehicles.map(vehicle => (
+              <option key={vehicle.id} value={vehicle.id}>
+                {vehicle.plate} - {vehicle.type}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <select
+            value={selectedDriver}
+            onChange={(e) => {
+              setSelectedDriver(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">Tous les conducteurs</option>
+            {data.drivers.map(driver => (
+              <option key={driver.id} value={driver.id}>
+                {driver.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <select
+            value={selectedStatus}
+            onChange={(e) => {
+              setSelectedStatus(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">Tous les statuts</option>
+            {uniqueStatuses.map(status => (
+              <option key={status} value={status}>{status}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="relative">
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => {
+              setStartDate(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            placeholder="Date de début"
+          />
+          <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+        </div>
+
+        <div className="relative">
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => {
+              setEndDate(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            placeholder="Date de fin"
+          />
+          <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
