@@ -104,6 +104,7 @@ export interface AuthUser {
   email: string;
   name: string;
   role: 'admin' | 'direction' | 'utilisateur'; // Added role property
+  avatar_url?: string | null; // Added avatar_url
 }
 
 export interface DashboardWidgetConfig {

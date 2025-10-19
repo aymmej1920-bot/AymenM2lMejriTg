@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Edit2, Trash2, ChevronUp, ChevronDown, Search, Download } from 'lucide-react';
-import { showSuccess, showError } from '../utils/toast';
+import { Edit2, Trash2, ChevronUp, ChevronDown, Search, Download, UserPlus } from 'lucide-react';
+import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast';
 import ConfirmDialog from './ConfirmDialog';
 import { Button } from './ui/button';
 import {
@@ -13,6 +13,11 @@ import {
 } from './ui/dialog';
 import { supabase } from '../integrations/supabase/client';
 import { exportToXLSX } from '../utils/export';
+import { useForm, FormProvider } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { inviteUserSchema } from '../types/formSchemas';
+import { z } from 'zod';
+import FormField from './forms/FormField';
 
 interface UserManagementProps {
   currentUserRole: 'admin' | 'direction' | 'utilisateur';
@@ -29,6 +34,8 @@ interface Profile {
   created_at: string;
 }
 
+type InviteUserFormData = z.infer<typeof inviteUserSchema>;
+
 const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpdateUserRole, onDeleteUser }) => {
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +45,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
   const [showEditRoleModal, setShowEditRoleModal] = useState(false);
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
   const [newRole, setNewRole] = useState<'admin' | 'direction' | 'utilisateur'>('utilisateur');
+  const [showInviteUserModal, setShowInviteUserModal] = useState(false);
+  const [isInviting, setIsInviting] = useState(false);
 
   // State for filtering, sorting, and pagination
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,6 +55,13 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  const inviteMethods = useForm<InviteUserFormData>({
+    resolver: zodResolver(inviteUserSchema),
+    defaultValues: {
+      email: '',
+    },
+  });
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -184,6 +200,42 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
     showSuccess('Liste des utilisateurs exportée avec succès au format XLSX !');
   };
 
+  const handleInviteUser = async (formData: InviteUserFormData) => {
+    setIsInviting(true);
+    const loadingToastId = showLoading(`Envoi de l'invitation à ${formData.email}...`);
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      if (!token) throw new Error('No session token found.');
+
+      const response = await fetch('https://iqaymjchscdvlofvuacn.supabase.co/functions/v1/invite-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ email: formData.email }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to send invitation.');
+      }
+
+      dismissToast(loadingToastId);
+      showSuccess(`Invitation envoyée à ${formData.email} avec succès !`);
+      setShowInviteUserModal(false);
+      inviteMethods.reset(); // Clear form
+      fetchUsers(); // Re-fetch users to potentially see the new user (though they won't have a profile until they sign up)
+    } catch (error: any) {
+      console.error('Error inviting user:', error.message);
+      dismissToast(loadingToastId);
+      showError(`Erreur lors de l'invitation : ${error.message}`);
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -220,8 +272,13 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
             <Download className="w-5 h-5" />
             <span>Exporter XLSX</span>
           </Button>
-          {/* Add User button could be here, but requires Supabase admin.inviteUserByEmail which needs service role key */}
-          {/* For now, users sign up via Login page, then admin assigns role */}
+          <Button
+            onClick={() => setShowInviteUserModal(true)}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+          >
+            <UserPlus className="w-5 h-5" />
+            <span>Inviter Utilisateur</span>
+          </Button>
         </div>
       </div>
 
@@ -403,6 +460,42 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
               Sauvegarder
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Invite User Modal */}
+      <Dialog open={showInviteUserModal} onOpenChange={setShowInviteUserModal}>
+        <DialogContent className="sm:max-w-[425px] bg-gray-50">
+          <DialogHeader>
+            <DialogTitle>Inviter un Nouvel Utilisateur</DialogTitle>
+            <DialogDescription>
+              Entrez l'adresse e-mail de l'utilisateur à inviter. Un e-mail d'invitation lui sera envoyé.
+            </DialogDescription>
+          </DialogHeader>
+          <FormProvider {...inviteMethods}>
+            <form onSubmit={inviteMethods.handleSubmit(handleInviteUser)} className="space-y-4 py-4">
+              <FormField name="email" label="Adresse E-mail" type="email" placeholder="email@example.com" disabled={isInviting} />
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowInviteUserModal(false);
+                    inviteMethods.reset();
+                  }}
+                  disabled={isInviting}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isInviting}
+                >
+                  {isInviting ? 'Envoi en cours...' : 'Envoyer l\'invitation'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </FormProvider>
         </DialogContent>
       </Dialog>
 

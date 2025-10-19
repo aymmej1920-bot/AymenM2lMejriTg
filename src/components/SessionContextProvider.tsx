@@ -48,7 +48,7 @@ export const SessionContextProvider: React.FC<{ children: React.ReactNode }> = (
         try {
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
-            .select('first_name, last_name, role')
+            .select('first_name, last_name, role, avatar_url') // Include avatar_url
             .eq('id', user.id)
             .single();
 
@@ -59,6 +59,7 @@ export const SessionContextProvider: React.FC<{ children: React.ReactNode }> = (
             email: user.email || '',
             name: profileData?.first_name || user.email?.split('@')[0] || 'User',
             role: profileData?.role || 'utilisateur',
+            avatar_url: profileData?.avatar_url || null, // Set avatar_url
           });
         } catch (error) {
           console.error('Error fetching user profile in SessionContextProvider:', error);

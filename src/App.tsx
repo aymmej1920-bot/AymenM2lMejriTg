@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Truck, Users, Route as RouteIcon, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck, FileText as ReportIcon, UserCog } from 'lucide-react';
+import { Truck, Users, Route as RouteIcon, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck, FileText as ReportIcon, UserCog, User as UserIcon } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Vehicles from './components/Vehicles';
 import Drivers from './components/Drivers';
@@ -12,6 +12,7 @@ import Summary from './components/Summary';
 import PreDepartureChecklistComponent from './components/PreDepartureChecklist';
 import Reports from './pages/Reports';
 import Login from './pages/Login';
+import Profile from './pages/Profile'; // Import the new Profile page
 import UserManagement from './components/UserManagement';
 import ProtectedRoute from './components/ProtectedRoute'; // Import ProtectedRoute
 import { FleetData, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist } from './types';
@@ -197,6 +198,7 @@ function App() {
     { id: 'checklists', name: 'Checklists', icon: ClipboardCheck, path: '/checklists' },
     { id: 'reports', name: 'Rapports', icon: ReportIcon, path: '/reports' },
     { id: 'summary', name: 'Résumé', icon: BarChart3, path: '/summary' },
+    { id: 'profile', name: 'Mon Profil', icon: UserIcon, path: '/profile' }, // New Profile tab
     // Only show User Management tab if the current user is an admin
     ...(currentUser?.role === 'admin' ? [{ id: 'user-management', name: 'Gestion Utilisateurs', icon: UserCog, path: '/user-management' }] : []),
   ];
@@ -332,6 +334,7 @@ function App() {
             /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute><Reports key="reports-view" data={fleetData} userRole={userRole} /></ProtectedRoute>} />
             <Route path="/summary" element={<ProtectedRoute><Summary key="summary-view" data={fleetData} /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile key="profile-view" /></ProtectedRoute>} /> {/* New Profile Route */}
             <Route path="/user-management" element={<ProtectedRoute allowedRoles={['admin']}><UserManagement 
                 key="user-management-view" 
                 currentUserRole={userRole} 

@@ -89,3 +89,13 @@ export const preDepartureChecklistSchema = z.object({
   observations: z.string().nullable().optional(),
   issues_to_address: z.string().nullable().optional(),
 });
+
+export const profileSchema = z.object({
+  first_name: z.string().min(1, "Le prénom est requis.").nullable(),
+  last_name: z.string().min(1, "Le nom est requis.").nullable(),
+  avatar_url: z.string().url("L'URL de l'avatar doit être valide.").nullable().optional(),
+});
+
+export const inviteUserSchema = z.object({
+  email: z.string().email("L'adresse e-mail doit être valide."),
+});
