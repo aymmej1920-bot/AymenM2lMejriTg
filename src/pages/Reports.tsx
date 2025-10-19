@@ -3,7 +3,7 @@ import { FleetData, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry
 import { Button } from '../components/ui/button';
 import { Download, Search, Settings, ChevronUp, ChevronDown, Calendar } from 'lucide-react';
 import { exportToXLSX } from '../utils/export';
-import { showSuccess } from '../utils/toast';
+import { showSuccess, showError } from '../utils/toast'; // showError is now used
 import { formatDate } from '../utils/date';
 import {
   Dialog,
@@ -238,8 +238,8 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
-  const [sortColumn, setSortColumn] = useState<string>('date'); // Default sort column
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc'); // Default sort direction
+  const [sortColumn, setSortColumn] = useState<string>('date');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [showColumnCustomizeDialog, setShowColumnCustomizeDialog] = useState(false);
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
   const [columnOrder, setColumnOrder] = useState<string[]>([]);
@@ -254,7 +254,9 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
     { id: 'pre_departure_checklists', name: 'Checklists Pré-départ' },
   ];
 
-  const allPossibleColumns = useMemo(() => getColumnConfigs(selectedDataSource), [selectedDataSource]);
+  const allPossibleColumns = useMemo(() => {
+    return getColumnConfigs(selectedDataSource);
+  }, [selectedDataSource]);
 
   // Load column preferences from localStorage or set defaults
   useEffect(() => {
@@ -273,7 +275,6 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
       try {
         const parsed = JSON.parse(savedVisibilityRaw);
         if (typeof parsed === 'object' && parsed !== null) {
-          // Merge saved visibility with default to handle new/removed columns
           initialColumnVisibility = { ...defaultVisibility, ...parsed };
         }
       } catch (e) {
@@ -286,9 +287,7 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
       try {
         const parsed = JSON.parse(savedOrderRaw);
         if (Array.isArray(parsed)) {
-          // Filter out any keys from savedOrder that are no longer in allPossibleColumns
           const validParsedOrder = parsed.filter(key => allPossibleColumns.some(col => col.key === key));
-          // Add any new keys from allPossibleColumns that are not in savedOrder (at the end)
           const newKeys = allPossibleColumns.map(col => col.key).filter(key => !validParsedOrder.includes(key));
           initialColumnOrder = [...validParsedOrder, ...newKeys];
         }
@@ -299,15 +298,14 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
 
     setColumnVisibility(initialColumnVisibility);
     setColumnOrder(initialColumnOrder);
-    // Reset sort column to a default for the new data source if the current one isn't valid
     if (!allPossibleColumns.some(col => col.key === sortColumn)) {
-      setSortColumn(defaultOrder[0] || 'id'); // Fallback to 'id' if no columns
+      setSortColumn(defaultOrder[0] || 'id');
     }
   }, [selectedDataSource, allPossibleColumns]);
 
   // Save column preferences to localStorage
   useEffect(() => {
-    if (columnOrder.length > 0) { // Only save if there are actual columns
+    if (columnOrder.length > 0) {
       localStorage.setItem(`reportColumnsVisibility_${selectedDataSource}`, JSON.stringify(columnVisibility));
       localStorage.setItem(`reportColumnsOrder_${selectedDataSource}`, JSON.stringify(columnOrder));
     }
@@ -318,8 +316,10 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
   }, [data, selectedDataSource]);
 
   const filteredAndSortedData = useMemo(() => {
+    const currentSelectedDataSource = selectedDataSource as keyof FleetData;
+
     let filtered = currentData.filter(item => {
-      const row = getRowData(item, selectedDataSource, data.vehicles, data.drivers);
+      const row = getRowData(item, currentSelectedDataSource, data.vehicles, data.drivers);
       const lowerCaseSearchTerm = searchTerm.toLowerCase();
 
       const matchesSearch = Object.values(row).some(value =>
@@ -328,7 +328,7 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
 
       let matchesDateRange = true;
       if (startDate || endDate) {
-        const itemDateString = row.date || row.expiration || row.created_at; // Attempt to find a date field
+        const itemDateString = row.date || row.expiration || row.created_at;
         if (itemDateString) {
           const itemDate = new Date(itemDateString);
           const start = startDate ? new Date(startDate) : null;
@@ -344,8 +344,8 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
 
     // Apply sorting
     filtered.sort((a, b) => {
-      const aRow = getRowData(a, selectedDataSource, data.vehicles, data.drivers);
-      const bRow = getRowData(b, selectedDataSource, data.vehicles, data.drivers);
+      const aRow = getRowData(a, currentSelectedDataSource, data.vehicles, data.drivers);
+      const bRow = getRowData(b, currentSelectedDataSource, data.vehicles, data.drivers);
 
       const aValue = aRow[sortColumn];
       const bValue = bRow[sortColumn];
@@ -437,9 +437,13 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
   };
 
   const handleExport = () => {
+    if (!selectedDataSource) {
+      showError('Veuillez sélectionner une source de données avant d\'exporter.');
+      return;
+    }
     const headers = visibleColumns.map(col => col.label);
     const dataToExport = filteredAndSortedData.map(item => {
-      const row = getRowData(item, selectedDataSource, data.vehicles, data.drivers);
+      const row = getRowData(item, selectedDataSource as keyof FleetData, data.vehicles, data.drivers);
       const exportedRow: { [key: string]: any } = {};
       visibleColumns.forEach(col => {
         exportedRow[col.label] = row[col.key];
@@ -470,6 +474,7 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
           <Button
             onClick={handleExport}
             className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+            disabled={filteredAndSortedData.length === 0}
           >
             <Download className="w-5 h-5" />
             <span>Exporter XLSX</span>
@@ -544,13 +549,13 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredAndSortedData.length === 0 ? (
                 <tr>
-                  <td colSpan={visibleColumns.length} className="px-6 py-4 text-center text-gray-500">
-                    Aucune donnée trouvée pour ce rapport.
+                  <td colSpan={visibleColumns.length || 1} className="px-6 py-4 text-center text-gray-500">
+                    Aucune donnée trouvée pour ce rapport avec les filtres actuels.
                   </td>
                 </tr>
               ) : (
                 filteredAndSortedData.map((item, rowIndex) => {
-                  const rowData = getRowData(item, selectedDataSource, data.vehicles, data.drivers);
+                  const rowData = getRowData(item, selectedDataSource as keyof FleetData, data.vehicles, data.drivers);
                   return (
                     <tr key={item.id || rowIndex} className="hover:bg-gray-50">
                       {visibleColumns.map((col, cellIndex) => (
