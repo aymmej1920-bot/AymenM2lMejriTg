@@ -80,32 +80,23 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
     setShowModal(false);
   };
 
-  const getStatusBadge = (status: string) => {
-    const classes = {
-      'Disponible': 'bg-green-100 text-green-800',
-      'En mission': 'bg-orange-100 text-orange-800',
-      'Maintenance': 'bg-red-100 text-red-800'
-    };
-    return <span className={`px-3 py-1 text-xs rounded-full font-medium ${classes[status as keyof typeof classes] || 'bg-gray-100 text-gray-800'}`}>{status}</span>;
-  };
-
-  const getServiceStatus = (vehicle: Vehicle) => {
-    const nextService = (vehicle.last_service_mileage || 0) + 10000;
-    const kmUntilService = nextService - vehicle.mileage;
-    
-    if (kmUntilService <= 0) {
-      return { text: 'URGENT!', class: 'text-red-600 font-bold' };
-    } else if (kmUntilService <= 1000) {
-      return { text: `${kmUntilService.toLocaleString()} km restants - Bientôt`, class: 'text-orange-600 font-bold' };
-    } else {
-      return { text: `${kmUntilService.toLocaleString()} km restants`, class: 'text-green-600' };
-    }
-  };
-
   const columns: DataTableColumn<Vehicle>[] = useMemo(() => [
     { key: 'plate', label: 'Plaque', sortable: true, defaultVisible: true },
     { key: 'type', label: 'Type', sortable: true, defaultVisible: true },
-    { key: 'status', label: 'Statut', sortable: true, defaultVisible: true, render: (item) => getStatusBadge(item.status) },
+    { 
+      key: 'status', 
+      label: 'Statut', 
+      sortable: true, 
+      defaultVisible: true, 
+      render: (item) => {
+        const classes = {
+          'Disponible': 'bg-green-100 text-green-800',
+          'En mission': 'bg-orange-100 text-orange-800',
+          'Maintenance': 'bg-red-100 text-red-800'
+        };
+        return <span className={`px-3 py-1 text-xs rounded-full font-medium ${classes[item.status as keyof typeof classes] || 'bg-gray-100 text-gray-800'}`}>{item.status}</span>;
+      }
+    },
     { key: 'mileage', label: 'Kilométrage', sortable: true, defaultVisible: true, render: (item) => `${item.mileage.toLocaleString()} km` },
     { key: 'last_service_date', label: 'Dernière Vidange', sortable: true, defaultVisible: true, render: (item) => `${formatDate(item.last_service_date)} (${(item.last_service_mileage || 0).toLocaleString()} km)` },
     {
@@ -114,18 +105,32 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
       sortable: false, // This is a derived value, sorting might be complex
       defaultVisible: true,
       render: (item) => {
-        const serviceStatus = getServiceStatus(item);
-        const nextServiceKm = (item.last_service_mileage || 0) + 10000;
+        const nextService = (item.last_service_mileage || 0) + 10000;
+        const kmUntilService = nextService - item.mileage;
+        
+        let serviceStatusClass = 'text-green-600';
+        let serviceStatusText = '';
+
+        if (kmUntilService <= 0) {
+          serviceStatusClass = 'text-red-600 font-bold';
+          serviceStatusText = 'URGENT!';
+        } else if (kmUntilService <= 1000) {
+          serviceStatusClass = 'text-orange-600 font-bold';
+          serviceStatusText = `${kmUntilService.toLocaleString()} km restants - Bientôt`;
+        } else {
+          serviceStatusText = `${kmUntilService.toLocaleString()} km restants`;
+        }
+
         return (
-          <div className={serviceStatus.class}>
-            {nextServiceKm.toLocaleString()} km
+          <div className={serviceStatusClass}>
+            {nextService.toLocaleString()} km
             <br />
-            <span className="text-xs">({serviceStatus.text})</span>
+            <span className="text-xs">({serviceStatusText})</span>
           </div>
         );
       },
     },
-  ], [data]); // Re-memoize if data changes, as getServiceStatus depends on it
+  ], []);
 
   return (
     <>
