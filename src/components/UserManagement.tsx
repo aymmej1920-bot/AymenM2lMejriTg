@@ -31,7 +31,7 @@ interface Profile {
   last_name: string | null;
   email: string; // Added email for display
   role: 'admin' | 'direction' | 'utilisateur';
-  created_at: string;
+  updated_at: string; // Changed from created_at to updated_at
 }
 
 type InviteUserFormData = z.infer<typeof inviteUserSchema>;
@@ -219,10 +219,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
       Nom: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
       Email: user.email,
       Rôle: user.role,
-      "Date Création": new Date(user.created_at).toLocaleDateString(),
+      "Date Dernière Mise à Jour": new Date(user.updated_at).toLocaleDateString(), // Changed to updated_at
     }));
 
-    const headers = ["Nom", "Email", "Rôle", "Date Création"];
+    const headers = ["Nom", "Email", "Rôle", "Date Dernière Mise à Jour"]; // Changed header
 
     exportToXLSX(dataToExport, { fileName: 'utilisateurs', headers });
     showSuccess('Liste des utilisateurs exportée avec succès au format XLSX !');

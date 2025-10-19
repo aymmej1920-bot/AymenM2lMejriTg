@@ -16,7 +16,7 @@ interface DbProfile {
   first_name: string | null;
   last_name: string | null;
   role: 'admin' | 'direction' | 'utilisateur';
-  created_at: string;
+  updated_at: string; // Changed from created_at to updated_at
 }
 
 serve(async (req: Request) => {
@@ -73,7 +73,7 @@ serve(async (req: Request) => {
       // Fetch profiles
       const { data: profiles, error: profilesError } = await supabaseAdmin
         .from('profiles')
-        .select('id, first_name, last_name, role, created_at');
+        .select('id, first_name, last_name, role, updated_at'); // Changed from created_at to updated_at
 
       if (profilesError) throw profilesError;
 
