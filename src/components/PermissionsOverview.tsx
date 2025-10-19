@@ -1,7 +1,7 @@
 import React from 'react';
 import { PERMISSION_MAP, UserRole, Resource, Action } from '../utils/permissions';
 import { CheckCircle, XCircle, Info } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent } from './ui/card'; // Assuming shadcn/ui Card components
+import { Card, CardHeader, CardTitle, CardContent } from './ui/card'; // Corrected import path
 
 const PermissionsOverview: React.FC = () => {
   const roles: UserRole[] = ['admin', 'direction', 'utilisateur'];
