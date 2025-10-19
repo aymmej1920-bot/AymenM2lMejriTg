@@ -3,17 +3,7 @@ import { Truck, CheckCircle, Route, Wrench, TrendingUp, Fuel, AlertTriangle, Cli
 import { FleetData, PreDepartureChecklist } from '../../types'; // Seuls les types réellement utilisés sont conservés
 import VehicleStatusChart from '../charts/VehicleStatusChart';
 import MonthlyFuelConsumptionChart from '../charts/MonthlyFuelConsumptionChart';
-import { formatDate } from '../../utils/date';
-
-// Helper function to get days until expiration (reused from Documents)
-const getDaysUntilExpiration = (expirationDate: string) => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const expiry = new Date(expirationDate);
-  expiry.setHours(0, 0, 0, 0);
-  const timeDiff = expiry.getTime() - today.getTime();
-  return Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
-};
+import { formatDate, getDaysUntilExpiration } from '../../utils/date'; // Import from utils/date
 
 interface WidgetProps {
   data: FleetData;

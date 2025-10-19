@@ -1,33 +1,13 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { FleetData, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist, DataTableColumn } from '../types';
 import { Calendar, Search } from 'lucide-react'; // Only Calendar and Search are needed for date inputs and search icon
-import { formatDate } from '../utils/date';
+import { formatDate, getDaysUntilExpiration, getDaysSinceEntry } from '../utils/date'; // Import from utils/date
 import DataTable from '../components/DataTable'; // Import the new DataTable component
 
 interface ReportsProps {
   data: FleetData;
   userRole: 'admin' | 'direction' | 'utilisateur';
 }
-
-// Helper function to get days until expiration (reused from Documents)
-const getDaysUntilExpiration = (expirationDate: string) => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const expiry = new Date(expirationDate);
-  expiry.setHours(0, 0, 0, 0);
-  const timeDiff = expiry.getTime() - today.getTime();
-  return Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
-};
-
-// Helper function to get days since entry (reused from Maintenance)
-const getDaysSinceEntry = (dateString: string): number => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const entryDate = new Date(dateString);
-  entryDate.setHours(0, 0, 0, 0);
-  const timeDiff = today.getTime() - entryDate.getTime();
-  return Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-};
 
 const getColumnConfigs = (dataSource: keyof FleetData, allVehicles: Vehicle[], allDrivers: Driver[]): DataTableColumn<any>[] => {
   switch (dataSource) {

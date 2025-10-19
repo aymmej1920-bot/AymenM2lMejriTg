@@ -321,6 +321,8 @@ function App() {
               userRole={userRole} 
               onUpdate={(newData) => handleUpdateData('vehicles', newData, 'update')} 
               onAdd={(newData) => handleUpdateData('maintenance_entries', newData, 'insert')} 
+              {/* Added onDelete prop */}
+              onDelete={(id: string) => handleUpdateData('maintenance_entries', { id }, 'delete')}
               preDepartureChecklists={fleetData.pre_departure_checklists}
             /></ProtectedRoute>} />
             <Route path="/checklists" element={<ProtectedRoute><PreDepartureChecklistComponent 

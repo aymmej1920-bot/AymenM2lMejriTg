@@ -14,3 +14,21 @@ export const formatDate = (dateString: string | null | undefined): string => {
     return dateString; // Fallback to original string on error
   }
 };
+
+export const getDaysUntilExpiration = (expirationDate: string): number => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const expiry = new Date(expirationDate);
+  expiry.setHours(0, 0, 0, 0);
+  const timeDiff = expiry.getTime() - today.getTime();
+  return Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+};
+
+export const getDaysSinceEntry = (dateString: string): number => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const entryDate = new Date(dateString);
+  entryDate.setHours(0, 0, 0, 0);
+  const timeDiff = today.getTime() - entryDate.getTime();
+  return Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+};

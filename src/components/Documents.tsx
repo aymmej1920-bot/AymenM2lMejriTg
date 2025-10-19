@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Calendar, AlertTriangle, Search } from 'lucide-react'; // Ajout de Search pour le filtre par défaut
 import { FleetData, Document, DataTableColumn } from '../types';
 import { showSuccess } from '../utils/toast';
-import { formatDate } from '../utils/date';
+import { formatDate, getDaysUntilExpiration } from '../utils/date'; // Import from utils/date
 import { Button } from './ui/button';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -80,15 +80,6 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
       showSuccess('Document ajouté avec succès !');
     }
     setShowModal(false);
-  };
-
-  const getDaysUntilExpiration = (expirationDate: string) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const expiry = new Date(expirationDate);
-    expiry.setHours(0, 0, 0, 0);
-    const timeDiff = expiry.getTime() - today.getTime();
-    return Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
   };
 
   const getDocumentStatusBadge = (daysLeft: number) => {

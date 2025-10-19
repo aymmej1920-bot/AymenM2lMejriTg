@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Plus, Wrench, AlertTriangle, Clock, ClipboardCheck, Calendar } from 'lucide-react';
 import { FleetData, MaintenanceEntry, PreDepartureChecklist, DataTableColumn, Vehicle } from '../types';
 import { showSuccess } from '../utils/toast';
-import { formatDate } from '../utils/date';
+import { formatDate } from '../utils/date'; // Removed getDaysSinceEntry
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { maintenanceEntrySchema } from '../types/formSchemas'; // Import the schema
@@ -25,10 +25,11 @@ interface MaintenanceProps {
   userRole: 'admin' | 'direction' | 'utilisateur';
   onAdd: (maintenanceEntry: Omit<MaintenanceEntry, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (vehicle: { id: string; last_service_date: string; last_service_mileage: number; mileage: number }) => void;
+  onDelete: (id: string) => void; // Added onDelete prop
   preDepartureChecklists: PreDepartureChecklist[];
 }
 
-const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDepartureChecklists }) => {
+const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDelete, preDepartureChecklists }) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
 
@@ -90,10 +91,8 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
   };
 
   const handleDeleteMaintenance = (id: string) => {
-    // This function is currently not used by DataTable, but kept for future expansion
-    console.log("Delete maintenance entry with ID:", id);
-    // You would typically call onDelete here
-    // onDelete(id);
+    onDelete(id); // Call the onDelete prop
+    showSuccess('Entrée de maintenance supprimée avec succès !');
   };
 
   const onSubmit = (maintenanceData: MaintenanceEntryFormData) => {
@@ -391,7 +390,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
           columns={maintenanceHistoryColumns}
           onAdd={() => handleAddMaintenance()} // Re-use existing add handler
           onEdit={handleEditMaintenance} // Placeholder for future edit functionality
-          onDelete={handleDeleteMaintenance} // Placeholder for future delete functionality
+          onDelete={handleDeleteMaintenance} // Now correctly wired to the prop
           addLabel="Ajouter Maintenance"
           searchPlaceholder="Rechercher dans l'historique par véhicule, type, date ou coût..."
           exportFileName="historique_maintenance"
