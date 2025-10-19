@@ -105,3 +105,10 @@ export interface AuthUser {
   name: string;
   role: 'admin' | 'direction' | 'utilisateur'; // Added role property
 }
+
+export interface DashboardWidgetConfig {
+  id: string;
+  title: string;
+  componentKey: string; // A key to identify the component to render
+  isVisible: boolean;
+}
