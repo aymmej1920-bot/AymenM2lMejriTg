@@ -120,14 +120,14 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
             placeholder="Rechercher par date, véhicule, litres, prix ou kilométrage..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all glass"
           />
         </div>
         <div>
           <select
             value={selectedVehicle}
             onChange={(e) => setSelectedVehicle(e.target.value)}
-            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Tous les véhicules</option>
             {data.vehicles.map(vehicle => (
@@ -142,7 +142,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Date de début"
               />
               <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
@@ -152,7 +152,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Date de fin"
               />
               <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
@@ -186,7 +186,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
     
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="glass rounded-xl shadow-lg p-6 hover-lift">
               <div className="flex items-center">
                 <div className="p-3 bg-blue-100 rounded-full">
                   <Fuel className="w-6 h-6 text-blue-600" />
@@ -198,7 +198,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
               </div>
             </div>
     
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="glass rounded-xl shadow-lg p-6 hover-lift">
               <div className="flex items-center">
                 <div className="p-3 bg-green-100 rounded-full">
                   <DollarSign className="w-6 h-6 text-green-600" />
@@ -210,7 +210,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
               </div>
             </div>
     
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="glass rounded-xl shadow-lg p-6 hover-lift">
               <div className="flex items-center">
                 <div className="p-3 bg-orange-100 rounded-full">
                   <TrendingUp className="w-6 h-6 text-orange-600" />
@@ -241,7 +241,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
     
           {/* Modal */}
           <Dialog open={showModal} onOpenChange={setShowModal}>
-            <DialogContent className="sm:max-w-[425px] bg-gray-50">
+            <DialogContent className="sm:max-w-[425px] glass animate-scale-in">
               <DialogHeader>
                 <DialogTitle>{editingFuel ? 'Modifier un Plein' : 'Ajouter un Plein'}</DialogTitle>
                 <DialogDescription>
@@ -256,7 +256,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                       id="date"
                       type="date"
                       {...register('date')}
-                      className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                       disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
                     />
                     <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
@@ -268,7 +268,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                   <select
                     id="vehicle_id"
                     {...register('vehicle_id')}
-                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                     disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
                   >
                     <option value="">Sélectionner un véhicule</option>
@@ -287,7 +287,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                     type="number"
                     step="0.1"
                     {...register('liters', { valueAsNumber: true })}
-                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                     disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
                   />
                   {errors.liters && <p className="text-red-500 text-sm mt-1">{errors.liters.message}</p>}
@@ -299,7 +299,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                     type="number"
                     step="0.01"
                     {...register('price_per_liter', { valueAsNumber: true })}
-                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                     disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
                   />
                   {errors.price_per_liter && <p className="text-red-500 text-sm mt-1">{errors.price_per_liter.message}</p>}
@@ -310,7 +310,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                     id="mileage"
                     type="number"
                     {...register('mileage', { valueAsNumber: true })}
-                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                     disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
                   />
                   {errors.mileage && <p className="text-red-500 text-sm mt-1">{errors.mileage.message}</p>}
@@ -320,12 +320,14 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                     type="button"
                     variant="outline"
                     onClick={() => setShowModal(false)}
+                    className="hover-lift"
                   >
                     Annuler
                   </Button>
                   {(canAddForm && !editingFuel) || (canEditForm && editingFuel) ? (
                     <Button
                       type="submit"
+                      className="hover-lift"
                     >
                       Sauvegarder
                     </Button>

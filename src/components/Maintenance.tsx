@@ -197,7 +197,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
           <select
             value={selectedVehicleFilter}
             onChange={(e) => setSelectedVehicleFilter(e.target.value)}
-            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Tous les véhicules</option>
             {data.vehicles.map(vehicle => (
@@ -211,7 +211,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
           <select
             value={selectedTypeFilter}
             onChange={(e) => setSelectedTypeFilter(e.target.value)}
-            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Tous les types</option>
             {uniqueMaintenanceTypes.map(type => (
@@ -224,7 +224,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             placeholder="Date de début"
           />
           <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
@@ -234,7 +234,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             placeholder="Date de fin"
           />
           <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
@@ -260,8 +260,8 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
 
   const renderMaintenanceAlerts = useCallback(() => {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-        <div className="bg-orange-50 border-l-4 border-orange-400 p-6 rounded-r-lg shadow-lg">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6 animate-slide-up">
+        <div className="bg-orange-50 border-l-4 border-orange-400 p-6 rounded-r-lg shadow-lg glass">
           <div className="flex items-center">
             <Clock className="w-6 h-6 text-orange-400 mr-4" />
             <div>
@@ -273,7 +273,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
           </div>
         </div>
 
-        <div className="bg-red-50 border-l-4 border-red-400 p-6 rounded-r-lg shadow-lg">
+        <div className="bg-red-50 border-l-4 border-red-400 p-6 rounded-r-lg shadow-lg glass">
           <div className="flex items-center">
             <AlertTriangle className="w-6 h-6 text-red-400 mr-4" />
             <div>
@@ -286,7 +286,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
         </div>
 
         {checklistsWithIssues.length > 0 && (
-          <div className="bg-purple-50 border-l-4 border-purple-400 p-6 rounded-r-lg shadow-lg">
+          <div className="bg-purple-50 border-l-4 border-purple-400 p-6 rounded-r-lg shadow-lg glass">
             <div className="flex items-center">
               <ClipboardCheck className="w-6 h-6 text-purple-400 mr-4" />
               <div>
@@ -314,7 +314,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
           <Button
             key="add-maintenance-button"
             onClick={() => handleAddMaintenance()}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+            className="bg-gradient-brand text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300 hover-lift"
           >
             <Plus className="w-5 h-5" />
             <span>Ajouter Maintenance</span>
@@ -327,26 +327,26 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
 
       {/* Detailed list of checklist issues */}
       {checklistsWithIssues.length > 0 && (
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
+        <div className="glass rounded-xl shadow-lg overflow-hidden animate-fade-in">
+          <div className="px-6 py-4 border-b border-gray-200 bg-white/20">
             <h3 className="text-lg font-semibold text-gray-800">Détail des Points à Traiter</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-white/20">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Checklist</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Véhicule</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conducteur</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Points à Traiter</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Date Checklist</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Véhicule</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Conducteur</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Points à Traiter</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white/10 divide-y divide-gray-200">
                 {checklistsWithIssues.map((checklist) => {
                   const vehicle = data.vehicles.find(v => v.id === checklist.vehicle_id);
                   const driver = data.drivers.find(d => d.id === checklist.driver_id);
                   return (
-                    <tr key={checklist.id} className="hover:bg-gray-50">
+                    <tr key={checklist.id} className="hover:bg-white/20">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(checklist.date)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                         {vehicle?.plate || 'Véhicule inconnu'}
@@ -381,7 +381,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
             <Button
               key={item.id + "-maintenance-action"}
               onClick={() => handleAddMaintenance(item.id)}
-              className="text-blue-600 hover:text-blue-900 transition-colors flex items-center space-x-1"
+              className="text-blue-600 hover:text-blue-900 transition-colors flex items-center space-x-1 hover-lift"
               variant="ghost"
               size="icon"
             >
@@ -414,7 +414,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
 
       {/* Modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="sm:max-w-[425px] bg-gray-50">
+        <DialogContent className="sm:max-w-[425px] glass animate-scale-in">
           <DialogHeader>
             <DialogTitle>Enregistrer une Maintenance</DialogTitle>
             <DialogDescription>
@@ -427,7 +427,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
               <select
                 id="vehicle_id"
                 {...register('vehicle_id')}
-                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 disabled={!canAddMaintenance}
               >
                 <option value="">Sélectionner un véhicule</option>
@@ -444,7 +444,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
               <select
                 id="type"
                 {...register('type')}
-                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 disabled={!canAddMaintenance}
               >
                 <option value="Vidange">Vidange</option>
@@ -461,7 +461,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
                   id="date"
                   type="date"
                   {...register('date')}
-                  className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                   disabled={!canAddMaintenance}
                 />
                 <Calendar className="absolute right-3 w-5 h-5 text-gray-400 pointer-events-none" />
@@ -474,7 +474,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
                 id="mileage"
                 type="number"
                 {...register('mileage', { valueAsNumber: true })}
-                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 disabled={!canAddMaintenance}
               />
               {errors.mileage && <p className="text-red-500 text-sm mt-1">{errors.mileage.message}</p>}
@@ -486,7 +486,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
                 type="number"
                 step="0.01"
                 {...register('cost', { valueAsNumber: true })}
-                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 disabled={!canAddMaintenance}
               />
               {errors.cost && <p className="text-red-500 text-sm mt-1">{errors.cost.message}</p>}
@@ -496,12 +496,14 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
                 type="button"
                 variant="outline"
                 onClick={() => setShowModal(false)}
+                className="hover-lift"
               >
                 Annuler
               </Button>
               {canAddMaintenance && (
                 <Button
                   type="submit"
+                  className="hover-lift"
                 >
                   Sauvegarder
                 </Button>

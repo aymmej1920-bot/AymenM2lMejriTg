@@ -142,7 +142,7 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
             placeholder="Rechercher dans le rapport..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all glass"
             disabled={!selectedDataSource}
           />
         </div>
@@ -151,7 +151,7 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder="Date de début"
             disabled={!selectedDataSource}
           />
@@ -162,7 +162,7 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             placeholder="Date de fin"
             disabled={!selectedDataSource}
           />
@@ -189,7 +189,7 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
   }, [startDate, endDate]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Rapports Personnalisables</h2>
       </div>
@@ -204,7 +204,7 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
               setStartDate(''); // Reset date filters on data source change
               setEndDate('');
             }}
-            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="" disabled>Sélectionner la source de données</option>
             {dataSources.map(source => (
@@ -227,7 +227,7 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
           resourceType={selectedDataSource as Resource} // Added resourceType prop
         />
       ) : (
-        <div className="bg-white rounded-xl shadow-lg p-6 text-center text-gray-500">
+        <div className="glass rounded-xl shadow-lg p-6 text-center text-gray-600">
           Veuillez sélectionner une source de données pour afficher le rapport.
         </div>
       )}

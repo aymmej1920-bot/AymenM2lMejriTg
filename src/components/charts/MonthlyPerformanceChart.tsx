@@ -54,20 +54,20 @@ const MonthlyPerformanceChart: React.FC<MonthlyPerformanceChartProps> = ({ tours
           bottom: 5,
         }}
       >
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="month" />
-        <YAxis yAxisId="left" orientation="left" stroke="#8884d8" label={{ value: 'Distance (km)', angle: -90, position: 'insideLeft' }} />
-        <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" label={{ value: 'Coût Total (TND)', angle: 90, position: 'insideRight' }} />
-        <Tooltip formatter={(value: number, name: string) => {
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.3)" />
+        <XAxis dataKey="month" stroke="#8884d8" />
+        <YAxis yAxisId="left" orientation="left" stroke="#8884d8" label={{ value: 'Distance (km)', angle: -90, position: 'insideLeft', fill: '#8884d8' }} />
+        <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" label={{ value: 'Coût Total (TND)', angle: 90, position: 'insideRight', fill: '#82ca9d' }} />
+        <Tooltip contentStyle={{ backgroundColor: 'rgba(255,255,255,0.7)', border: 'none', borderRadius: '8px' }} formatter={(value: number, name: string) => {
           if (name === 'Distance Totale') return `${value.toLocaleString()} km`;
           if (name === 'Coût Carburant') return `${value.toFixed(2)} TND`;
           if (name === 'Coût Maintenance') return `${value.toFixed(2)} TND`;
           return value;
         }} />
         <Legend />
-        <Line yAxisId="left" type="monotone" dataKey="totalDistance" name="Distance Totale" stroke="#8884d8" activeDot={{ r: 8 }} />
-        <Line yAxisId="right" type="monotone" dataKey="totalFuelCost" name="Coût Carburant" stroke="#82ca9d" />
-        <Line yAxisId="right" type="monotone" dataKey="totalMaintenanceCost" name="Coût Maintenance" stroke="#ffc658" />
+        <Line yAxisId="left" type="monotone" dataKey="totalDistance" name="Distance Totale" stroke="#3b82f6" activeDot={{ r: 8 }} /> {/* Using brand blue */}
+        <Line yAxisId="right" type="monotone" dataKey="totalFuelCost" name="Coût Carburant" stroke="#10b981" /> {/* Using success green */}
+        <Line yAxisId="right" type="monotone" dataKey="totalMaintenanceCost" name="Coût Maintenance" stroke="#f59e0b" /> {/* Using warning amber */}
       </LineChart>
     </ResponsiveContainer>
   );

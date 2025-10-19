@@ -197,13 +197,13 @@ const DataTable = <T extends { id: string }>({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">{title}</h2>
         <div className="flex space-x-4">
           <Button
             onClick={handleExport}
-            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+            className="bg-gradient-success text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300 hover-lift"
             disabled={data.length === 0}
           >
             <Download className="w-5 h-5" />
@@ -211,7 +211,7 @@ const DataTable = <T extends { id: string }>({
           </Button>
           <Button
             onClick={() => setShowColumnCustomizeDialog(true)}
-            className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+            className="bg-white/20 hover:bg-white/30 text-gray-800 px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300 glass hover-lift"
           >
             <Settings className="w-5 h-5" />
             <span>Personnaliser Colonnes</span>
@@ -219,7 +219,7 @@ const DataTable = <T extends { id: string }>({
           {canAdd && ( // Conditionally render Add button
             <Button
               onClick={onAdd}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+              className="bg-gradient-brand text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300 hover-lift"
             >
               <Plus className="w-5 h-5" />
               <span>{addLabel}</span>
@@ -244,21 +244,21 @@ const DataTable = <T extends { id: string }>({
                 setSearchTerm(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all glass"
             />
           </div>
         )}
       </div>
 
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div className="glass rounded-xl shadow-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-white/20">
               <tr>
                 {visibleColumns.map((col) => (
                   <th
                     key={col.key}
-                    className={`px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider ${col.sortable ? 'cursor-pointer' : ''}`}
+                    className={`px-6 py-3 text-left text-xs font-semibold text-gray-800 uppercase tracking-wider ${col.sortable ? 'cursor-pointer' : ''}`}
                     onClick={() => col.sortable && handleSort(col.key)}
                   >
                     <div className="flex items-center">
@@ -267,20 +267,20 @@ const DataTable = <T extends { id: string }>({
                   </th>
                 ))}
                 {canPerformAnyAction && ( // Conditionally render Actions header
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-800 uppercase tracking-wider">Actions</th>
                 )}
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white/10 divide-y divide-gray-200">
               {currentItems.length === 0 ? (
                 <tr>
-                  <td colSpan={visibleColumns.length + (canPerformAnyAction ? 1 : 0)} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={visibleColumns.length + (canPerformAnyAction ? 1 : 0)} className="px-6 py-4 text-center text-gray-600">
                     Aucune donnée trouvée.
                   </td>
                 </tr>
               ) : (
                 currentItems.map((item: T) => (
-                  <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={item.id} className="hover:bg-white/20 transition-colors">
                     {visibleColumns.map((col) => (
                       <td key={col.key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {col.render ? col.render(item) : (item as any)[col.key]}
@@ -294,7 +294,7 @@ const DataTable = <T extends { id: string }>({
                               variant="ghost"
                               size="icon"
                               onClick={() => onEdit && onEdit(item)}
-                              className="text-blue-600 hover:text-blue-900 transition-colors"
+                              className="text-blue-600 hover:text-blue-900 transition-colors hover-lift"
                             >
                               <Edit2 className="w-4 h-4" />
                             </Button>
@@ -304,7 +304,7 @@ const DataTable = <T extends { id: string }>({
                               variant="ghost"
                               size="icon"
                               onClick={() => confirmDeleteItem(item.id)}
-                              className="text-red-600 hover:text-red-900 transition-colors"
+                              className="text-red-600 hover:text-red-900 transition-colors hover-lift"
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
@@ -328,7 +328,7 @@ const DataTable = <T extends { id: string }>({
             variant="outline"
             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
-            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-white/20 rounded-lg hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed glass"
           >
             Précédent
           </Button>
@@ -338,7 +338,7 @@ const DataTable = <T extends { id: string }>({
               variant={currentPage === page ? 'default' : 'outline'}
               onClick={() => setCurrentPage(page)}
               className={`px-4 py-2 rounded-lg ${
-                currentPage === page ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'
+                currentPage === page ? 'bg-gradient-brand text-white shadow-md' : 'bg-white/20 hover:bg-white/30 text-gray-800 glass'
               }`}
             >
               {page}
@@ -348,7 +348,7 @@ const DataTable = <T extends { id: string }>({
             variant="outline"
             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
             disabled={currentPage === totalPages}
-            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-white/20 rounded-lg hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed glass"
           >
             Suivant
           </Button>
@@ -358,7 +358,7 @@ const DataTable = <T extends { id: string }>({
               setItemsPerPage(Number(e.target.value));
               setCurrentPage(1); // Reset to first page when items per page changes
             }}
-            className="ml-4 bg-white border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+            className="ml-4 bg-white/20 border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm glass"
           >
             {itemsPerPageOptions.map((option: number) => (
               <option key={option} value={option}>{option} par page</option>

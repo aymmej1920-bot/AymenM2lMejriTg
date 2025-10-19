@@ -13,7 +13,7 @@ interface PieLabelProps {
   percent?: number;
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042']; // Blue, Green, Yellow, Orange
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444']; // Blue, Green, Yellow, Orange (using Tailwind equivalents)
 
 const CostDistributionChart: React.FC<CostDistributionChartProps> = ({ fuelEntries, maintenanceEntries }) => {
   const totalFuelCost = fuelEntries.reduce((sum, f) => sum + (f.liters * f.price_per_liter), 0);
@@ -42,7 +42,7 @@ const CostDistributionChart: React.FC<CostDistributionChartProps> = ({ fuelEntri
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
           ))}
         </Pie>
-        <Tooltip formatter={(value: number) => `${value.toFixed(2)} TND`} />
+        <Tooltip contentStyle={{ backgroundColor: 'rgba(255,255,255,0.7)', border: 'none', borderRadius: '8px' }} formatter={(value: number) => `${value.toFixed(2)} TND`} />
         <Legend />
       </PieChart>
     </ResponsiveContainer>

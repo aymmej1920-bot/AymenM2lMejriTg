@@ -335,7 +335,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
 
   if (error) {
     return (
-      <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
+      <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg glass">
         <p className="text-red-700">{error}</p>
       </div>
     );
@@ -343,20 +343,20 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
 
   if (!canAccess('users', 'view')) {
     return (
-      <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
+      <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg glass">
         <p className="text-red-700">Accès refusé. Vous n'avez pas les permissions pour accéder à cette page.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Gestion des Utilisateurs</h2>
         <div className="flex space-x-4">
           <Button
             onClick={handleExportUsers}
-            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+            className="bg-gradient-success text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300 hover-lift"
           >
             <Download className="w-5 h-5" />
             <span>Exporter XLSX</span>
@@ -364,7 +364,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
           {canCreateManualUser && (
             <Button
               onClick={() => setShowManualAddUserModal(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+              className="bg-gradient-brand text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300 hover-lift"
             >
               <UserCheck className="w-5 h-5" />
               <span>Ajouter Utilisateur Manuellement</span>
@@ -373,7 +373,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
           {canInvite && (
             <Button
               onClick={() => setShowInviteUserModal(true)}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300 hover-lift"
             >
               <UserPlus className="w-5 h-5" />
               <span>Inviter Utilisateur</span>
@@ -394,7 +394,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
               setSearchTerm(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all glass"
           />
         </div>
 
@@ -405,7 +405,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
               setSelectedRoleFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Tous les rôles</option>
             <option value="admin">Admin</option>
@@ -415,40 +415,40 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div className="glass rounded-xl shadow-lg overflow-hidden">
         <table className="min-w-full">
-          <thead className="bg-gray-50">
+          <thead className="bg-white/20">
             <tr>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('first_name')}>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-800 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('first_name')}>
                 <div className="flex items-center">
                   Nom {renderSortIcon('first_name')}
                 </div>
               </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('email')}>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-800 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('email')}>
                 <div className="flex items-center">
                   Email {renderSortIcon('email')}
                 </div>
               </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('role')}>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-800 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('role')}>
                 <div className="flex items-center">
                   Rôle {renderSortIcon('role')}
                 </div>
               </th>
               {(canEditRole || canDeleteUser) && (
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-800 uppercase tracking-wider">Actions</th>
               )}
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white/10 divide-y divide-gray-200">
             {currentUsers.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
+                <td colSpan={4} className="px-6 py-4 text-center text-gray-600">
                   Aucun utilisateur trouvé.
                 </td>
               </tr>
             ) : (
               currentUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={user.id} className="hover:bg-white/20 transition-colors">
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">
                     {user.first_name} {user.last_name}
                   </td>
@@ -470,7 +470,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
                             variant="ghost"
                             size="icon"
                             onClick={() => handleEditRole(user)}
-                            className="text-blue-600 hover:text-blue-900 transition-colors"
+                            className="text-blue-600 hover:text-blue-900 transition-colors hover-lift"
                           >
                             <Edit2 className="w-4 h-4" />
                           </Button>
@@ -480,7 +480,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
                             variant="ghost"
                             size="icon"
                             onClick={() => confirmDeleteUser(user.id)}
-                            className="text-red-600 hover:text-red-900 transition-colors"
+                            className="text-red-600 hover:text-red-900 transition-colors hover-lift"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -502,7 +502,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
             variant="outline"
             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
-            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-white/20 rounded-lg hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed glass"
           >
             Précédent
           </Button>
@@ -512,7 +512,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
               variant={currentPage === page ? 'default' : 'outline'}
               onClick={() => setCurrentPage(page)}
               className={`px-4 py-2 rounded-lg ${
-                currentPage === page ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'
+                currentPage === page ? 'bg-gradient-brand text-white shadow-md' : 'bg-white/20 hover:bg-white/30 text-gray-800 glass'
               }`}
             >
               {page}
@@ -522,7 +522,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
             variant="outline"
             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
             disabled={currentPage === totalPages}
-            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-white/20 rounded-lg hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed glass"
           >
             Suivant
           </Button>
@@ -532,7 +532,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
               setItemsPerPage(Number(e.target.value));
               setCurrentPage(1);
             }}
-            className="ml-4 bg-white border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+            className="ml-4 bg-white/20 border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm glass"
           >
             {itemsPerPageOptions.map((option: number) => (
               <option key={option} value={option}>{option} par page</option>
@@ -543,7 +543,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
 
       {/* Edit Role Modal */}
       <Dialog open={showEditRoleModal} onOpenChange={setShowEditRoleModal}>
-        <DialogContent className="sm:max-w-[425px] bg-gray-50">
+        <DialogContent className="sm:max-w-[425px] glass animate-scale-in">
           <DialogHeader>
             <DialogTitle>Modifier le Rôle de {editingUser?.email}</DialogTitle>
             <DialogDescription>
@@ -557,7 +557,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
                 id="role"
                 value={newRole}
                 onChange={(e) => setNewRole(e.target.value as UserRole)}
-                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="utilisateur">Utilisateur</option>
                 <option value="direction">Direction</option>
@@ -570,12 +570,14 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
               type="button"
               variant="outline"
               onClick={() => setShowEditRoleModal(false)}
+              className="hover-lift"
             >
               Annuler
             </Button>
             <Button
               type="submit"
               onClick={handleSaveRole}
+              className="hover-lift"
             >
               Sauvegarder
             </Button>
@@ -585,7 +587,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
 
       {/* Invite User Modal */}
       <Dialog open={showInviteUserModal} onOpenChange={setShowInviteUserModal}>
-        <DialogContent className="sm:max-w-[425px] bg-gray-50">
+        <DialogContent className="sm:max-w-[425px] glass animate-scale-in">
           <DialogHeader>
             <DialogTitle>Inviter un Nouvel Utilisateur</DialogTitle>
             <DialogDescription>
@@ -604,12 +606,14 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
                     inviteMethods.reset();
                   }}
                   disabled={isInviting}
+                  className="hover-lift"
                 >
                   Annuler
                 </Button>
                 <Button
                   type="submit"
                   disabled={isInviting}
+                  className="hover-lift"
                 >
                   {isInviting ? 'Envoi en cours...' : 'Envoyer l\'invitation'}
                 </Button>
@@ -621,7 +625,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
 
       {/* Manual Add User Modal */}
       <Dialog open={showManualAddUserModal} onOpenChange={setShowManualAddUserModal}>
-        <DialogContent className="sm:max-w-[425px] bg-gray-50">
+        <DialogContent className="sm:max-w-[425px] glass animate-scale-in">
           <DialogHeader>
             <DialogTitle>Ajouter un Utilisateur Manuellement</DialogTitle>
             <DialogDescription>
@@ -654,12 +658,14 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
                     manualUserMethods.reset();
                   }}
                   disabled={isCreatingManualUser}
+                  className="hover-lift"
                 >
                   Annuler
                 </Button>
                 <Button
                   type="submit"
                   disabled={isCreatingManualUser}
+                  className="hover-lift"
                 >
                   {isCreatingManualUser ? 'Création en cours...' : 'Créer Utilisateur'}
                 </Button>

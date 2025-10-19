@@ -157,7 +157,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
 
       {/* Modal for Add/Edit Vehicle */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="sm:max-w-[425px] bg-gray-50">
+        <DialogContent className="sm:max-w-[425px] glass animate-scale-in">
           <DialogHeader>
             <DialogTitle>{editingVehicle ? 'Modifier un Véhicule' : 'Ajouter un Véhicule'}</DialogTitle>
             <DialogDescription>
@@ -182,11 +182,11 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
               <FormField name="last_service_date" label="Date dernière vidange" type="date" disabled={(!canEditForm && !!editingVehicle) || (!canAddForm && !editingVehicle)} />
               <FormField name="last_service_mileage" label="Kilométrage dernière vidange" type="number" min={0} disabled={(!canEditForm && !!editingVehicle) || (!canAddForm && !editingVehicle)} />
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setShowModal(false)}>
+                <Button type="button" variant="outline" onClick={() => setShowModal(false)} className="hover-lift">
                   Annuler
                 </Button>
                 {(canAddForm && !editingVehicle) || (canEditForm && editingVehicle) ? (
-                  <Button type="submit">
+                  <Button type="submit" className="hover-lift">
                     Sauvegarder
                   </Button>
                 ) : null}

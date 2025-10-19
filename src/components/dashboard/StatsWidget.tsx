@@ -35,11 +35,11 @@ const StatsWidget: React.FC<StatsWidgetProps> = ({ data }) => {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-slide-up">
       {stats.map((stat) => {
         const Icon = stat.icon;
         return (
-          <div key={stat.title} className="bg-white rounded-xl shadow-lg p-6">
+          <div key={stat.title} className="glass rounded-xl shadow-lg p-6 hover-lift">
             <div className="flex items-center">
               <div className={`p-3 ${stat.bg} rounded-full`}>
                 <Icon className={`w-6 h-6 ${stat.color}`} />

@@ -37,7 +37,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, preDepartureChecklists }) =
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-in">
       <div className="flex items-center justify-between">
         <h2 className="text-4xl font-bold text-gray-800">Tableau de Bord</h2>
         <div className="flex items-center space-x-4">
@@ -49,7 +49,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, preDepartureChecklists }) =
               variant="ghost"
               size="icon"
               onClick={() => setShowCustomizeDialog(true)}
-              className="text-gray-600 hover:text-blue-600"
+              className="text-gray-600 hover:text-blue-600 hover-lift"
             >
               <Settings className="w-5 h-5" />
             </Button>
@@ -77,7 +77,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, preDepartureChecklists }) =
 
       {canAccess('dashboard', 'edit') && ( // Conditionally render customize dialog
         <Dialog open={showCustomizeDialog} onOpenChange={setShowCustomizeDialog}>
-          <DialogContent className="sm:max-w-[425px] bg-gray-50">
+          <DialogContent className="sm:max-w-[425px] glass animate-scale-in">
             <DialogHeader>
               <DialogTitle>Personnaliser le Tableau de Bord</DialogTitle>
               <DialogDescription>
@@ -86,7 +86,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, preDepartureChecklists }) =
             </DialogHeader>
             <div className="space-y-2 py-4">
               {widgets.map((widget: DashboardWidgetConfig, index: number) => (
-                <div key={widget.id} className="flex items-center justify-between p-2 border rounded-md bg-gray-100">
+                <div key={widget.id} className="flex items-center justify-between p-2 border rounded-md bg-white/20 glass-effect">
                   <div className="flex items-center space-x-2">
                     <input
                       type="checkbox"
@@ -105,6 +105,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, preDepartureChecklists }) =
                       size="icon"
                       onClick={() => moveWidget(widget.id, 'up')}
                       disabled={index === 0}
+                      className="hover-lift"
                     >
                       <ChevronUp className="w-4 h-4" />
                     </Button>
@@ -113,6 +114,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, preDepartureChecklists }) =
                       size="icon"
                       onClick={() => moveWidget(widget.id, 'down')}
                       disabled={index === widgets.length - 1}
+                      className="hover-lift"
                     >
                       <ChevronDown className="w-4 h-4" />
                     </Button>
@@ -121,10 +123,10 @@ const Dashboard: React.FC<DashboardProps> = ({ data, preDepartureChecklists }) =
               ))}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={resetToDefault}>
+              <Button variant="outline" onClick={resetToDefault} className="hover-lift">
                 Réinitialiser par défaut
               </Button>
-              <Button onClick={() => setShowCustomizeDialog(false)}>
+              <Button onClick={() => setShowCustomizeDialog(false)} className="hover-lift">
                 Fermer
               </Button>
             </DialogFooter>

@@ -12,7 +12,7 @@ interface PieLabelProps {
   percent?: number;
 }
 
-const COLORS = ['#4CAF50', '#FFC107', '#F44336', '#9E9E9E']; // Green, Amber, Red, Grey
+const COLORS = ['#10b981', '#f59e0b', '#ef4444', '#9E9E9E']; // Green, Amber, Red, Grey (using Tailwind equivalents)
 
 const VehicleStatusChart: React.FC<VehicleStatusChartProps> = ({ vehicles }) => {
   const statusCounts = vehicles.reduce((acc, vehicle) => {
@@ -43,7 +43,7 @@ const VehicleStatusChart: React.FC<VehicleStatusChartProps> = ({ vehicles }) => 
             <Cell key={`cell-${index}`} fill={entry.color} />
           ))}
         </Pie>
-        <Tooltip />
+        <Tooltip contentStyle={{ backgroundColor: 'rgba(255,255,255,0.7)', border: 'none', borderRadius: '8px' }} />
         <Legend />
       </PieChart>
     </ResponsiveContainer>

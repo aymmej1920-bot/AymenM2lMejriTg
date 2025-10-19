@@ -69,7 +69,7 @@ const PermissionsOverview: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-in">
       <h2 className="text-4xl font-bold text-gray-800">Gestion des Accès (Frontend)</h2>
       <p className="text-gray-600">
         Cet aperçu montre les permissions définies pour chaque rôle dans l'interface utilisateur.
@@ -80,7 +80,7 @@ const PermissionsOverview: React.FC = () => {
         Après avoir modifié les permissions ici, un administrateur doit manuellement mettre à jour les politiques RLS correspondantes dans Supabase pour que les changements soient sécurisés et effectifs au niveau de la base de données.
       </p>
 
-      <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg flex items-start space-x-3">
+      <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg flex items-start space-x-3 glass">
         <Info className="w-5 h-5 text-blue-400 mt-1" />
         <div>
           <h3 className="text-blue-800 font-semibold">Comment modifier les permissions ?</h3>
@@ -93,23 +93,23 @@ const PermissionsOverview: React.FC = () => {
         </div>
       </div>
 
-      <div className="overflow-x-auto bg-white rounded-xl shadow-lg p-6">
+      <div className="overflow-x-auto glass rounded-xl shadow-lg p-6">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead className="bg-white/20">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Ressource</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-800 uppercase tracking-wider">Ressource</th>
               {roles.map(role => (
-                <th key={role} colSpan={actions.length} className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider border-l border-gray-200">
+                <th key={role} colSpan={actions.length} className="px-4 py-3 text-center text-xs font-semibold text-gray-800 uppercase tracking-wider border-l border-gray-200">
                   {getRoleLabel(role)}
                 </th>
               ))}
             </tr>
             <tr>
-              <th className="px-4 py-2 bg-gray-100"></th>
+              <th className="px-4 py-2 bg-white/30"></th>
               {roles.map(role => (
                 <React.Fragment key={`${role}-actions`}>
                   {actions.map(action => (
-                    <th key={`${role}-${action}`} className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase border-l border-gray-200">
+                    <th key={`${role}-${action}`} className="px-2 py-2 text-center text-xs font-medium text-gray-700 uppercase border-l border-gray-200">
                       {getActionLabel(action)}
                     </th>
                   ))}
@@ -117,9 +117,9 @@ const PermissionsOverview: React.FC = () => {
               ))}
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white/10 divide-y divide-gray-200">
             {resources.map(resource => (
-              <tr key={resource} className="hover:bg-gray-50">
+              <tr key={resource} className="hover:bg-white/20">
                 <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {getResourceLabel(resource)}
                 </td>
@@ -134,7 +134,7 @@ const PermissionsOverview: React.FC = () => {
                       return (
                         <td
                           key={`${resource}-${role}-${action}`}
-                          className={`px-4 py-4 whitespace-nowrap text-center text-sm ${canEditThisPermission ? 'cursor-pointer hover:bg-gray-100' : ''}`}
+                          className={`px-4 py-4 whitespace-nowrap text-center text-sm ${canEditThisPermission ? 'cursor-pointer hover:bg-white/30' : ''}`}
                           onClick={canEditThisPermission ? () => handleTogglePermission(role, resource, action, isAllowed) : undefined}
                         >
                           {isAllowed ? (

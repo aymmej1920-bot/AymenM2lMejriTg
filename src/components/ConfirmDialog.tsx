@@ -37,16 +37,16 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] glass animate-scale-in">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="hover-lift">
             {cancelText}
           </Button>
-          <Button variant={variant} onClick={handleConfirm}>
+          <Button variant={variant} onClick={handleConfirm} className="hover-lift">
             {confirmText}
           </Button>
         </DialogFooter>

@@ -135,7 +135,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
   const renderAlerts = useCallback(() => {
     if (expiringDrivers.length === 0) return null;
     return (
-      <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
+      <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg glass">
         <div className="flex items-center">
           <AlertTriangle className="w-5 h-5 text-red-400 mr-3" />
           <div>
@@ -171,7 +171,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
 
       {/* Modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="sm:max-w-[425px] bg-gray-50">
+        <DialogContent className="sm:max-w-[425px] glass animate-scale-in">
           <DialogHeader>
             <DialogTitle>{editingDriver ? 'Modifier un Conducteur' : 'Ajouter un Conducteur'}</DialogTitle>
             <DialogDescription>
@@ -191,11 +191,11 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
               ]} disabled={(!canEditForm && !!editingDriver) || (!canAddForm && !editingDriver)} />
               <FormField name="phone" label="Téléphone" type="tel" placeholder="Ex: +216 22 123 456" disabled={(!canEditForm && !!editingDriver) || (!canAddForm && !editingDriver)} />
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setShowModal(false)}>
+                <Button type="button" variant="outline" onClick={() => setShowModal(false)} className="hover-lift">
                   Annuler
                 </Button>
                 {(canAddForm && !editingDriver) || (canEditForm && editingDriver) ? (
-                  <Button type="submit">
+                  <Button type="submit" className="hover-lift">
                     Sauvegarder
                   </Button>
                 ) : null}

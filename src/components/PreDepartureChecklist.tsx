@@ -188,7 +188,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
   const renderAlerts = useCallback(() => {
     if (vehiclesMissingChecklist.length === 0) return null;
     return (
-      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
+      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg glass">
         <div className="flex items-center">
           <AlertTriangle className="w-5 h-5 text-yellow-400 mr-3" />
           <div>
@@ -212,7 +212,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
             placeholder="Rechercher une checklist..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all glass"
           />
         </div>
         <div>
@@ -221,7 +221,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
             onChange={(e) => {
               setSelectedVehicle(e.target.value);
             }}
-            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Tous les véhicules</option>
             {data.vehicles.map(vehicle => (
@@ -238,7 +238,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
             onChange={(e) => {
               setSelectedDriver(e.target.value);
             }}
-            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Tous les conducteurs</option>
             {data.drivers.map(driver => (
@@ -256,7 +256,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
             onChange={(e) => {
               setStartDate(e.target.value);
             }}
-            className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             placeholder="Date de début"
           />
           <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
@@ -269,7 +269,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
             onChange={(e) => {
               setEndDate(e.target.value);
             }}
-            className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             placeholder="Date de fin"
           />
           <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
@@ -296,7 +296,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
 
       {/* Modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="sm:max-w-2xl bg-gray-50">
+        <DialogContent className="sm:max-w-2xl glass animate-scale-in">
           <DialogHeader>
             <DialogTitle>Nouvelle Checklist Avant Départ</DialogTitle>
             <DialogDescription>
@@ -312,7 +312,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                     id="date"
                     type="date"
                     {...register('date')}
-                    className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                     disabled={!canAdd}
                   />
                   <Calendar className="absolute right-3 w-5 h-5 text-gray-400 pointer-events-none" />
@@ -324,7 +324,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                 <select
                   id="vehicle_id"
                   {...register('vehicle_id')}
-                  className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                   disabled={!canAdd}
                 >
                   <option value="">Sélectionner un véhicule</option>
@@ -343,7 +343,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
               <select
                 id="driver_id"
                 {...register('driver_id')}
-                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 disabled={!canAdd}
               >
                 <option value="">Sélectionner un conducteur</option>
@@ -635,7 +635,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                 id="observations"
                 {...register('observations')}
                 rows={3}
-                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 disabled={!canAdd}
               ></textarea>
               {errors.observations && <p className="text-red-500 text-sm mt-1">{errors.observations.message}</p>}
@@ -646,7 +646,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                 id="issues_to_address"
                 {...register('issues_to_address')}
                 rows={3}
-                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 disabled={!canAdd}
               ></textarea>
               {errors.issues_to_address && <p className="text-red-500 text-sm mt-1">{errors.issues_to_address.message}</p>}
@@ -657,12 +657,14 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                 type="button"
                 variant="outline"
                 onClick={() => setShowModal(false)}
+                className="hover-lift"
               >
                 Annuler
               </Button>
               {canAdd && (
                 <Button
                   type="submit"
+                  className="hover-lift"
                 >
                   Sauvegarder
                 </Button>

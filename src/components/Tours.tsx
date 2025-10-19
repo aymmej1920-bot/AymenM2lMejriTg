@@ -159,14 +159,14 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
             placeholder="Rechercher par date, véhicule, conducteur ou statut..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all glass"
           />
         </div>
         <div>
           <select
             value={selectedVehicle}
             onChange={(e) => setSelectedVehicle(e.target.value)}
-            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Tous les véhicules</option>
             {data.vehicles.map(vehicle => (
@@ -180,7 +180,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
           <select
             value={selectedDriver}
             onChange={(e) => setSelectedDriver(e.target.value)}
-            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Tous les conducteurs</option>
             {data.drivers.map(driver => (
@@ -194,7 +194,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Tous les statuts</option>
             {uniqueStatuses.map(status => (
@@ -207,7 +207,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             placeholder="Date de début"
           />
           <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
@@ -217,7 +217,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             placeholder="Date de fin"
           />
           <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
@@ -265,7 +265,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
 
       {/* Modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="sm:max-w-[600px] bg-gray-50">
+        <DialogContent className="sm:max-w-[600px] glass animate-scale-in">
           <DialogHeader>
             <DialogTitle>{editingTour ? 'Modifier une Tournée' : 'Ajouter une Tournée'}</DialogTitle>
             <DialogDescription>
@@ -281,7 +281,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                     id="date"
                     type="date"
                     {...register('date')}
-                    className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                     disabled={(!canEditForm && !!editingTour) || (!canAddForm && !editingTour)}
                   />
                   <Calendar className="absolute right-3 w-5 h-5 text-gray-400 pointer-events-none" />
@@ -293,7 +293,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                 <select
                   id="status"
                   {...register('status')}
-                  className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                   disabled={(!canEditForm && !!editingTour) || (!canAddForm && !editingTour)}
                 >
                   <option value="Planifié">Planifié</option>
@@ -311,7 +311,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                 <select
                   id="vehicle_id"
                   {...register('vehicle_id')}
-                  className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                   disabled={(!canEditForm && !!editingTour) || (!canAddForm && !editingTour)}
                 >
                   <option value="">Sélectionner un véhicule</option>
@@ -328,7 +328,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                 <select
                   id="driver_id"
                   {...register('driver_id')}
-                  className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                   disabled={(!canEditForm && !!editingTour) || (!canAddForm && !editingTour)}
                 >
                   <option value="">Sélectionner un conducteur</option>
@@ -351,7 +351,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                   min="0"
                   max="100"
                   {...register('fuel_start', { valueAsNumber: true })}
-                  className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                   disabled={((!canEditForm && !!editingTour) || (!canAddForm && !editingTour)) || (status !== 'En cours' && status !== 'Terminé')}
                 />
                 {errors.fuel_start && <p className="text-red-500 text-sm mt-1">{errors.fuel_start.message}</p>}
@@ -362,7 +362,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                   id="km_start"
                   type="number"
                   {...register('km_start', { valueAsNumber: true })}
-                  className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                   disabled={((!canEditForm && !!editingTour) || (!canAddForm && !editingTour)) || (status !== 'En cours' && status !== 'Terminé')}
                 />
                 {errors.km_start && <p className="text-red-500 text-sm mt-1">{errors.km_start.message}</p>}
@@ -378,7 +378,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                   min="0"
                   max="100"
                   {...register('fuel_end', { valueAsNumber: true })}
-                  className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                   disabled={((!canEditForm && !!editingTour) || (!canAddForm && !editingTour)) || (status !== 'Terminé')}
                 />
                 {errors.fuel_end && <p className="text-red-500 text-sm mt-1">{errors.fuel_end.message}</p>}
@@ -389,7 +389,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                   id="km_end"
                   type="number"
                   {...register('km_end', { valueAsNumber: true })}
-                  className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                   disabled={((!canEditForm && !!editingTour) || (!canAddForm && !editingTour)) || (status !== 'Terminé')}
                 />
                 {errors.km_end && <p className="text-red-500 text-sm mt-1">{errors.km_end.message}</p>}
@@ -402,7 +402,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                 id="distance"
                 type="number"
                 {...register('distance', { valueAsNumber: true })}
-                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 disabled={((!canEditForm && !!editingTour) || (!canAddForm && !editingTour)) || (status !== 'Terminé')}
               />
               {errors.distance && <p className="text-red-500 text-sm mt-1">{errors.distance.message}</p>}
@@ -417,12 +417,14 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                 type="button"
                 variant="outline"
                 onClick={() => setShowModal(false)}
+                className="hover-lift"
               >
                 Annuler
               </Button>
               {(canAddForm && !editingTour) || (canEditForm && editingTour) ? (
                 <Button
                   type="submit"
+                  className="hover-lift"
                 >
                   Sauvegarder
                 </Button>

@@ -44,11 +44,11 @@ const KpisWidget: React.FC<KpisWidgetProps> = ({ data }) => {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-slide-up">
       {kpis.map((kpi) => {
         const Icon = kpi.icon;
         return (
-          <div key={kpi.title} className={`bg-gradient-to-br ${kpi.color} text-white rounded-xl shadow-lg p-6`}>
+          <div key={kpi.title} className={`bg-gradient-to-br ${kpi.color} text-white rounded-xl shadow-lg p-6 glass hover-lift`}>
             <div className="flex items-center justify-between">
               <div>
                 <h3 className={`${kpi.textColor} text-sm font-medium`}>{kpi.title}</h3>

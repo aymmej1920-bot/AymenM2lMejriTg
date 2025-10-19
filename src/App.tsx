@@ -193,17 +193,17 @@ function AppContent() { // Renamed App to AppContent
   if (isLoading || isProfileLoading || dataLoading || isLoadingPermissions) { // Wait for permissions to load
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg">
+        <header className="glass rounded-b-3xl m-4 mb-0 animate-fade-in">
           <div className="container mx-auto px-6 py-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <div className="bg-white bg-opacity-20 p-3 rounded-full">
-                  <Truck className="w-8 h-8" />
+                <div className="w-12 h-12 bg-gradient-brand rounded-xl flex items-center justify-center">
+                  <Truck className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold">Fleet Manager Pro</h1>
-                  <p className="text-purple-100 text-sm">Système de Gestion de Flotte Avancé</p>
-                  <p className="text-purple-100 text-xs mt-1">M2L&TG</p>
+                  <h1 className="text-3xl font-bold text-gray-800">Fleet Manager Pro</h1>
+                  <p className="text-gray-600 text-sm">Système de Gestion de Flotte Avancé</p>
+                  <p className="text-gray-500 text-xs mt-1">M2L&TG</p>
                 </div>
               </div>
               <SkeletonLoader height="h-10" className="w-32" />
@@ -211,7 +211,7 @@ function AppContent() { // Renamed App to AppContent
           </div>
         </header>
         <div className="flex flex-1">
-          <aside className="w-64 bg-white shadow-md p-4">
+          <aside className="w-64 glass rounded-tr-2xl m-4 mt-0 p-4 animate-slide-up">
             <div className="flex flex-col space-y-2">
               <SkeletonLoader count={tabs.length} height="h-12" className="w-full" />
             </div>
@@ -236,25 +236,25 @@ function AppContent() { // Renamed App to AppContent
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg">
+    <div className="min-h-screen flex flex-col">
+      <header className="glass rounded-b-3xl m-4 mb-0 animate-fade-in">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="bg-white bg-opacity-20 p-3 rounded-full">
-                <Truck className="w-8 h-8" />
+              <div className="w-12 h-12 bg-gradient-brand rounded-xl flex items-center justify-center">
+                <Truck className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold">Fleet Manager Pro</h1>
-                <p className="text-purple-100 text-sm">Système de Gestion de Flotte Avancé</p>
-                <p className="text-purple-100 text-xs mt-1">M2L&TG</p>
+                <h1 className="text-3xl font-bold text-gray-800">Fleet Manager Pro</h1>
+                <p className="text-gray-600 text-sm">Système de Gestion de Flotte Avancé</p>
+                <p className="text-gray-500 text-xs mt-1">M2L&TG</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-sm">Bienvenue, {currentUser?.name} ({currentUser?.role})</span>
+              <span className="text-sm text-gray-700">Bienvenue, <span className="font-semibold">{currentUser?.name}</span> (<span className="font-semibold">{currentUser?.role}</span>)</span>
               <button
                 onClick={handleLogout}
-                className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-all duration-300 flex items-center space-x-2"
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300 flex items-center space-x-2 hover-lift"
               >
                 <LogOut className="w-4 h-4" />
                 <span>Déconnexion</span>
@@ -265,7 +265,7 @@ function AppContent() { // Renamed App to AppContent
       </header>
 
       <div className="flex flex-1">
-        <aside className="w-64 bg-white shadow-md sticky top-0 h-screen overflow-y-auto z-40">
+        <aside className="w-64 glass rounded-tr-2xl m-4 mt-0 p-4 animate-slide-up">
           <nav className="p-4">
             <div className="flex flex-col space-y-2">
               {tabs.map((tab) => {
@@ -274,10 +274,10 @@ function AppContent() { // Renamed App to AppContent
                   <Link
                     key={tab.id}
                     to={tab.path}
-                    className={`w-full px-4 py-3 rounded-lg transition-all duration-300 flex items-center space-x-3 justify-start ${
+                    className={`w-full px-4 py-3 rounded-lg transition-all duration-300 flex items-center space-x-3 justify-start hover-lift ${
                       location.pathname === tab.path
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 hover:bg-indigo-200 text-gray-700'
+                        ? 'bg-gradient-brand text-white shadow-md'
+                        : 'bg-white/20 hover:bg-white/30 text-gray-800'
                     }`}
                   >
                     <Icon className="w-5 h-5" />

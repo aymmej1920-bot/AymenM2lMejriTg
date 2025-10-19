@@ -27,9 +27,9 @@ const AlertsWidget: React.FC<AlertsWidgetProps> = ({ data, preDepartureChecklist
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 animate-slide-up">
       {maintenanceAlerts.length > 0 && (
-        <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-r-lg">
+        <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-r-lg glass">
           <div className="flex items-center">
             <AlertTriangle className="w-5 h-5 text-orange-400 mr-3" />
             <div>
@@ -43,7 +43,7 @@ const AlertsWidget: React.FC<AlertsWidgetProps> = ({ data, preDepartureChecklist
       )}
       
       {expiringDocs.length > 0 && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg glass">
           <div className="flex items-center">
             <AlertTriangle className="w-5 h-5 text-red-400 mr-3" />
             <div>
@@ -57,7 +57,7 @@ const AlertsWidget: React.FC<AlertsWidgetProps> = ({ data, preDepartureChecklist
       )}
 
       {checklistsWithIssues.length > 0 && (
-        <div className="bg-purple-50 border-l-4 border-purple-400 p-4 rounded-r-lg">
+        <div className="bg-purple-50 border-l-4 border-purple-400 p-4 rounded-r-lg glass">
           <div className="flex items-center">
             <ClipboardCheck className="w-5 h-5 text-purple-400 mr-3" />
             <div>

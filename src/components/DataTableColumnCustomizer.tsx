@@ -123,7 +123,7 @@ const DataTableColumnCustomizer = <T extends { id: string }>({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] bg-gray-50">
+      <DialogContent className="sm:max-w-[425px] glass animate-scale-in">
         <DialogHeader>
           <DialogTitle>Personnaliser les Colonnes</DialogTitle>
           <DialogDescription>
@@ -135,7 +135,7 @@ const DataTableColumnCustomizer = <T extends { id: string }>({
             const col = allColumns.find(c => c.key === key);
             if (!col) return null;
             return (
-              <div key={col.key} className="flex items-center justify-between p-2 border rounded-md bg-gray-100">
+              <div key={col.key} className="flex items-center justify-between p-2 border rounded-md bg-white/20 glass-effect">
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -154,6 +154,7 @@ const DataTableColumnCustomizer = <T extends { id: string }>({
                     size="icon"
                     onClick={() => handleMoveColumn(col.key, 'up')}
                     disabled={index === 0}
+                    className="hover-lift"
                   >
                     <ChevronUp className="w-4 h-4" />
                   </Button>
@@ -162,6 +163,7 @@ const DataTableColumnCustomizer = <T extends { id: string }>({
                     size="icon"
                     onClick={() => handleMoveColumn(col.key, 'down')}
                     disabled={index === columnOrder.length - 1}
+                    className="hover-lift"
                   >
                     <ChevronDown className="w-4 h-4" />
                   </Button>
@@ -171,10 +173,10 @@ const DataTableColumnCustomizer = <T extends { id: string }>({
           })}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={handleResetColumns}>
+          <Button variant="outline" onClick={handleResetColumns} className="hover-lift">
             Réinitialiser par défaut
           </Button>
-          <Button onClick={() => onOpenChange(false)}>
+          <Button onClick={() => onOpenChange(false)} className="hover-lift">
             Fermer
           </Button>
         </DialogFooter>

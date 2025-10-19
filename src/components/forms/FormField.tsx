@@ -59,10 +59,10 @@ const FormField = <TFieldValues extends FieldValues>({
                   value={field.value || ''}
                   disabled={disabled}
                 >
-                  <SelectTrigger className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                  <SelectTrigger className="w-full glass border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500">
                     <SelectValue placeholder={placeholder || `Sélectionner ${label.toLowerCase()}`} />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="glass">
                     {options?.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
@@ -79,7 +79,7 @@ const FormField = <TFieldValues extends FieldValues>({
                   disabled={disabled}
                   {...field}
                   value={field.value || ''}
-                  className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full glass border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 />
               );
             case 'checkbox':
@@ -106,7 +106,7 @@ const FormField = <TFieldValues extends FieldValues>({
                     disabled={disabled}
                     {...field}
                     value={field.value ? String(field.value).split('T')[0] : ''} // Ensure date format for input
-                    className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full glass border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                   />
                   <Calendar className="absolute right-3 w-5 h-5 text-gray-400 pointer-events-none" />
                 </div>
@@ -124,7 +124,7 @@ const FormField = <TFieldValues extends FieldValues>({
                   min={min}
                   max={max}
                   step={step}
-                  className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full glass border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 />
               );
             default:
@@ -136,7 +136,7 @@ const FormField = <TFieldValues extends FieldValues>({
                   disabled={disabled}
                   {...field}
                   value={field.value || ''}
-                  className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full glass border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 />
               );
           }
