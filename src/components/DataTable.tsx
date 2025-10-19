@@ -47,6 +47,7 @@ const DataTable = <T extends { id: string }>({
   customFilter, // Destructure customFilter
   resourceType, // Destructure resourceType
 }: React.PropsWithChildren<DataTableProps<T>>) => {
+  void Action; // Suppress TS6133 for Action
   const { canAccess } = usePermissions(); // Use usePermissions hook
 
   const [searchTerm, setSearchTerm] = useState('');
