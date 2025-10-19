@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom'; // Import useLocation
+import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import { Truck, Users, Route as RouteIcon, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck, FileText as ReportIcon, UserCog } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import Vehicles from './components/Vehicles';
@@ -13,16 +13,17 @@ import PreDepartureChecklistComponent from './components/PreDepartureChecklist';
 import Reports from './pages/Reports';
 import Login from './pages/Login';
 import UserManagement from './components/UserManagement';
-import { FleetData, AuthUser, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist } from './types';
+import ProtectedRoute from './components/ProtectedRoute'; // Import ProtectedRoute
+import { FleetData, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist } from './types';
 import { useSession } from './components/SessionContextProvider';
 import { supabase } from './integrations/supabase/client';
 import { showSuccess, showError, showLoading, dismissToast } from './utils/toast';
 import SkeletonLoader from './components/SkeletonLoader';
 
 function App() {
-  const { session, isLoading } = useSession();
-  const navigate = useNavigate(); // Initialize useNavigate
-  const location = useLocation(); // Initialize useLocation
+  const { session, currentUser, isLoading, isProfileLoading } = useSession(); // Use currentUser from context
+  const navigate = useNavigate();
+  const location = useLocation();
   const [fleetData, setFleetData] = useState<FleetData>({
     vehicles: [],
     drivers: [],
@@ -32,20 +33,11 @@ function App() {
     maintenance: [],
     pre_departure_checklists: [],
   });
-  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
-  const [dataLoading, setDataLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true); // Only for fleet data, not session/profile
 
   const fetchData = useCallback(async (userId: string) => {
     setDataLoading(true);
     try {
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('first_name, last_name, role')
-        .eq('id', userId)
-        .single();
-
-      if (profileError) throw profileError;
-
       const [
         { data: vehiclesData, error: vehiclesError },
         { data: driversData, error: driversError },
@@ -82,53 +74,35 @@ function App() {
         pre_departure_checklists: checklistsData as PreDepartureChecklist[],
       });
 
-      setCurrentUser({
-        id: session?.user?.id || userId,
-        email: session?.user?.email || '',
-        name: profileData?.first_name || session?.user?.email?.split('@')[0] || 'User',
-        role: profileData?.role || 'utilisateur',
-      });
-
     } catch (error) {
-      console.error('Error fetching fleet data or profile:', error);
-      showError('Erreur lors du chargement des données de flotte ou du profil.');
+      console.error('Error fetching fleet data:', error);
+      showError('Erreur lors du chargement des données de flotte.');
     } finally {
       setDataLoading(false);
     }
-  }, [session]);
+  }, []);
 
   useEffect(() => {
-    if (isLoading) {
-      // Still loading session, do nothing yet
-      return;
-    }
-
-    if (session?.user) {
-      // User is authenticated
-      fetchData(session.user.id);
-      // Only redirect to dashboard if currently on login or root
-      if (location.pathname === '/login' || location.pathname === '/') {
-        navigate('/dashboard');
-      }
-    } else {
-      // User is NOT authenticated
-      setCurrentUser(null);
-      setFleetData({
-        vehicles: [],
-        drivers: [],
-        tours: [],
-        fuel: [],
-        documents: [],
-        maintenance: [],
-        pre_departure_checklists: [],
-      });
-      setDataLoading(false);
-      // Only redirect to login if not already on login
-      if (location.pathname !== '/login') {
-        navigate('/login');
+    if (!isLoading && !isProfileLoading) {
+      if (session?.user) {
+        fetchData(session.user.id);
+        // Redirect to dashboard if on login page after successful authentication
+        if (location.pathname === '/login' || location.pathname === '/') {
+          navigate('/dashboard');
+        }
+      } else {
+        // If not authenticated, ensure we are on the login page
+        if (location.pathname !== '/login') {
+          navigate('/login');
+        }
+        // Clear fleet data if user logs out
+        setFleetData({
+          vehicles: [], drivers: [], tours: [], fuel: [], documents: [], maintenance: [], pre_departure_checklists: [],
+        });
+        setDataLoading(false);
       }
     }
-  }, [session, isLoading, fetchData, navigate, location.pathname]); // Add location.pathname to dependencies
+  }, [session, isLoading, isProfileLoading, fetchData, navigate, location.pathname]);
 
   const handleUpdateData = async (tableName: string, newData: any, action: 'insert' | 'update' | 'delete') => {
     if (!currentUser?.id) return;
@@ -173,6 +147,8 @@ function App() {
       if (error) throw error;
       dismissToast(loadingToastId);
       showSuccess('Rôle utilisateur mis à jour avec succès !');
+      // Re-fetch data to update user list and potentially current user's role if it was changed
+      if (currentUser?.id) fetchData(currentUser.id);
     } catch (error: any) {
       console.error('Error updating user role:', error.message);
       dismissToast(loadingToastId);
@@ -192,6 +168,8 @@ function App() {
       if (authError) throw authError;
       dismissToast(loadingToastId);
       showSuccess('Utilisateur supprimé avec succès !');
+      // Re-fetch data to update user list
+      if (currentUser?.id) fetchData(currentUser.id);
     } catch (error: any) {
       console.error('Error deleting user:', error.message);
       dismissToast(loadingToastId);
@@ -202,16 +180,7 @@ function App() {
   const handleLogout = async () => {
     const loadingToastId = showLoading('Déconnexion...');
     await supabase.auth.signOut();
-    setCurrentUser(null);
-    setFleetData({
-      vehicles: [],
-      drivers: [],
-      tours: [],
-      fuel: [],
-      documents: [],
-      maintenance: [],
-      pre_departure_checklists: [],
-    });
+    // SessionContextProvider will handle clearing currentUser and user states
     dismissToast(loadingToastId);
     showSuccess('Déconnexion réussie.');
     navigate('/login'); // Redirect to login page after logout
@@ -221,7 +190,7 @@ function App() {
     { id: 'dashboard', name: 'Dashboard', icon: BarChart3, path: '/dashboard' },
     { id: 'vehicles', name: 'Véhicules', icon: Truck, path: '/vehicles' },
     { id: 'drivers', name: 'Conducteurs', icon: Users, path: '/drivers' },
-    { id: 'tours', name: 'Tournées', icon: RouteIcon, path: '/tours' }, // Renamed Route to RouteIcon to avoid conflict
+    { id: 'tours', name: 'Tournées', icon: RouteIcon, path: '/tours' },
     { id: 'fuel', name: 'Carburant', icon: Fuel, path: '/fuel' },
     { id: 'documents', name: 'Documents', icon: FileText, path: '/documents' },
     { id: 'maintenance', name: 'Maintenance', icon: Wrench, path: '/maintenance' },
@@ -232,7 +201,7 @@ function App() {
     ...(currentUser?.role === 'admin' ? [{ id: 'user-management', name: 'Gestion Utilisateurs', icon: UserCog, path: '/user-management' }] : []),
   ];
 
-  if (isLoading || dataLoading) {
+  if (isLoading || isProfileLoading || dataLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <header className="bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg">
@@ -268,11 +237,12 @@ function App() {
     );
   }
 
+  // If not authenticated, only render the Login route. ProtectedRoute will handle redirection for others.
   if (!session) {
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="*" element={<Login />} /> {/* Redirect any other path to login if not authenticated */}
+        <Route path="*" element={<Login />} />
       </Routes>
     );
   }
@@ -317,9 +287,9 @@ function App() {
                 return (
                   <Link
                     key={tab.id}
-                    to={tab.path} // Use Link to navigate
+                    to={tab.path}
                     className={`w-full px-4 py-3 rounded-lg transition-all duration-300 flex items-center space-x-3 justify-start ${
-                      location.pathname === tab.path // Check current path for active state
+                      location.pathname === tab.path
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-100 hover:bg-indigo-200 text-gray-700'
                     }`}
@@ -335,37 +305,39 @@ function App() {
 
         <main className="flex-1 px-6 py-8 min-w-0 overflow-x-auto w-full">
           <Routes>
-            <Route path="/dashboard" element={<Dashboard key="dashboard-view" data={fleetData} userRole={userRole} preDepartureChecklists={fleetData.pre_departure_checklists} />} />
-            <Route path="/vehicles" element={<Vehicles key="vehicles-view" data={fleetData} userRole={userRole} onUpdate={(newData: Vehicle) => handleUpdateData('vehicles', newData, 'update')} onDelete={(id: string) => handleUpdateData('vehicles', { id }, 'delete')} onAdd={(newData: Omit<Vehicle, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('vehicles', newData, 'insert')} />} />
-            <Route path="/drivers" element={<Drivers key="drivers-view" data={fleetData} userRole={userRole} onUpdate={(newData: Driver) => handleUpdateData('drivers', newData, 'update')} onDelete={(id: string) => handleUpdateData('drivers', { id }, 'delete')} onAdd={(newData: Omit<Driver, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('drivers', newData, 'insert')} />} />
-            <Route path="/tours" element={<Tours key="tours-view" data={fleetData} userRole={userRole} onUpdate={(newData: Tour) => handleUpdateData('tours', newData, 'update')} onDelete={(id: string) => handleUpdateData('tours', { id }, 'delete')} onAdd={(newData: Omit<Tour, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('tours', newData, 'insert')} />} />
-            <Route path="/fuel" element={<FuelManagement key="fuel-view" data={fleetData} userRole={userRole} onUpdate={(newData: FuelEntry) => handleUpdateData('fuel_entries', newData, 'update')} onDelete={(id: string) => handleUpdateData('fuel_entries', { id }, 'delete')} onAdd={(newData: Omit<FuelEntry, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('fuel_entries', newData, 'insert')} />} />
-            <Route path="/documents" element={<Documents key="documents-view" data={fleetData} userRole={userRole} onUpdate={(newData: Document) => handleUpdateData('documents', newData, 'update')} onDelete={(id: string) => handleUpdateData('documents', { id }, 'delete')} onAdd={(newData: Omit<Document, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('documents', newData, 'insert')} />} />
-            <Route path="/maintenance" element={<Maintenance 
+            {/* Public route for login */}
+            <Route path="/login" element={<Login />} />
+
+            {/* Protected routes */}
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard key="dashboard-view" data={fleetData} userRole={userRole} preDepartureChecklists={fleetData.pre_departure_checklists} /></ProtectedRoute>} />
+            <Route path="/vehicles" element={<ProtectedRoute><Vehicles key="vehicles-view" data={fleetData} userRole={userRole} onUpdate={(newData: Vehicle) => handleUpdateData('vehicles', newData, 'update')} onDelete={(id: string) => handleUpdateData('vehicles', { id }, 'delete')} onAdd={(newData: Omit<Vehicle, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('vehicles', newData, 'insert')} /></ProtectedRoute>} />
+            <Route path="/drivers" element={<ProtectedRoute><Drivers key="drivers-view" data={fleetData} userRole={userRole} onUpdate={(newData: Driver) => handleUpdateData('drivers', newData, 'update')} onDelete={(id: string) => handleUpdateData('drivers', { id }, 'delete')} onAdd={(newData: Omit<Driver, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('drivers', newData, 'insert')} /></ProtectedRoute>} />
+            <Route path="/tours" element={<ProtectedRoute><Tours key="tours-view" data={fleetData} userRole={userRole} onUpdate={(newData: Tour) => handleUpdateData('tours', newData, 'update')} onDelete={(id: string) => handleUpdateData('tours', { id }, 'delete')} onAdd={(newData: Omit<Tour, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('tours', newData, 'insert')} /></ProtectedRoute>} />
+            <Route path="/fuel" element={<ProtectedRoute><FuelManagement key="fuel-view" data={fleetData} userRole={userRole} onUpdate={(newData: FuelEntry) => handleUpdateData('fuel_entries', newData, 'update')} onDelete={(id: string) => handleUpdateData('fuel_entries', { id }, 'delete')} onAdd={(newData: Omit<FuelEntry, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('fuel_entries', newData, 'insert')} /></ProtectedRoute>} />
+            <Route path="/documents" element={<ProtectedRoute><Documents key="documents-view" data={fleetData} userRole={userRole} onUpdate={(newData: Document) => handleUpdateData('documents', newData, 'update')} onDelete={(id: string) => handleUpdateData('documents', { id }, 'delete')} onAdd={(newData: Omit<Document, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('documents', newData, 'insert')} /></ProtectedRoute>} />
+            <Route path="/maintenance" element={<ProtectedRoute><Maintenance 
               key="maintenance-view"
               data={fleetData} 
               userRole={userRole} 
               onUpdate={(newData) => handleUpdateData('vehicles', newData, 'update')} 
               onAdd={(newData) => handleUpdateData('maintenance_entries', newData, 'insert')} 
               preDepartureChecklists={fleetData.pre_departure_checklists}
-            />} />
-            <Route path="/checklists" element={<PreDepartureChecklistComponent 
+            /></ProtectedRoute>} />
+            <Route path="/checklists" element={<ProtectedRoute><PreDepartureChecklistComponent 
               key="checklists-view" 
               data={fleetData} 
               userRole={userRole} 
               onAdd={(newData: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('pre_departure_checklists', newData, 'insert')} 
-            />} />
-            <Route path="/reports" element={<Reports key="reports-view" data={fleetData} userRole={userRole} />} />
-            <Route path="/summary" element={<Summary key="summary-view" data={fleetData} />} />
-            {currentUser?.role === 'admin' && (
-              <Route path="/user-management" element={<UserManagement 
+            /></ProtectedRoute>} />
+            <Route path="/reports" element={<ProtectedRoute><Reports key="reports-view" data={fleetData} userRole={userRole} /></ProtectedRoute>} />
+            <Route path="/summary" element={<ProtectedRoute><Summary key="summary-view" data={fleetData} /></ProtectedRoute>} />
+            <Route path="/user-management" element={<ProtectedRoute allowedRoles={['admin']}><UserManagement 
                 key="user-management-view" 
                 currentUserRole={userRole} 
                 onUpdateUserRole={handleUpdateUserRole}
                 onDeleteUser={handleDeleteUser}
-              />} />
-            )}
-            <Route path="*" element={<Dashboard key="default-dashboard-view" data={fleetData} userRole={userRole} preDepartureChecklists={fleetData.pre_departure_checklists} />} /> {/* Default route */}
+              /></ProtectedRoute>} />
+            <Route path="*" element={<ProtectedRoute><Dashboard key="default-dashboard-view" data={fleetData} userRole={userRole} preDepartureChecklists={fleetData.pre_departure_checklists} /></ProtectedRoute>} />
           </Routes>
         </main>
       </div>
