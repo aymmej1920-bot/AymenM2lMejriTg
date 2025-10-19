@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Truck, CheckCircle, Route, Wrench, TrendingUp, Fuel, AlertTriangle, Settings, ChevronUp, ChevronDown } from 'lucide-react';
-import { FleetData, DashboardWidgetConfig } from '../types'; // Added DashboardWidgetConfig import
+import { FleetData, DashboardWidgetConfig } from '../types';
 import VehicleStatusChart from './charts/VehicleStatusChart';
 import MonthlyFuelConsumptionChart from './charts/MonthlyFuelConsumptionChart';
 import { formatDate } from '../utils/date';
@@ -100,8 +100,8 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
     return daysLeft <= 30;
   });
 
-  const renderWidget = (widgetId: string) => {
-    switch (widgetId) {
+  const renderWidget = (widgetKey: string) => {
+    switch (widgetKey) {
       case 'alerts':
         return (
           (maintenanceAlerts.length > 0 || expiringDocs.length > 0) && (
@@ -233,6 +233,16 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
     }
   };
 
+  const visibleWidgets = widgets.filter(widget => widget.isVisible);
+
+  const chartWidgets = visibleWidgets.filter(
+    widget => widget.componentKey === 'vehicleStatusChart' || widget.componentKey === 'monthlyFuelConsumptionChart'
+  );
+
+  const otherWidgets = visibleWidgets.filter(
+    widget => !(widget.componentKey === 'vehicleStatusChart' || widget.componentKey === 'monthlyFuelConsumptionChart')
+  );
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -252,18 +262,21 @@ const Dashboard: React.FC<DashboardProps> = ({ data }) => {
         </div>
       </div>
 
-      {widgets.filter((widget: DashboardWidgetConfig) => widget.isVisible).map((widget: DashboardWidgetConfig) => (
+      {otherWidgets.map((widget: DashboardWidgetConfig) => (
         <React.Fragment key={widget.id}>
-          {widget.componentKey === 'vehicleStatusChart' || widget.componentKey === 'monthlyFuelConsumptionChart' ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {renderWidget(widget.componentKey)}
-              {/* If there's another chart widget, it would go here */}
-            </div>
-          ) : (
-            renderWidget(widget.componentKey)
-          )}
+          {renderWidget(widget.componentKey)}
         </React.Fragment>
       ))}
+
+      {chartWidgets.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {chartWidgets.map((widget: DashboardWidgetConfig) => (
+            <React.Fragment key={widget.id}>
+              {renderWidget(widget.componentKey)}
+            </React.Fragment>
+          ))}
+        </div>
+      )}
 
       <Dialog open={showCustomizeDialog} onOpenChange={setShowCustomizeDialog}>
         <DialogContent className="sm:max-w-[425px]">
