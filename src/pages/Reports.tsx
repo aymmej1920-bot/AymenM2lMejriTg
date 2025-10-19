@@ -3,7 +3,7 @@ import { FleetData, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry
 import { Button } from '../components/ui/button';
 import { Download, Search, Settings, ChevronUp, ChevronDown, Calendar } from 'lucide-react';
 import { exportToXLSX } from '../utils/export';
-import { showSuccess, showError } from '../utils/toast'; // showError is now used
+import { showSuccess, showError } from '../utils/toast';
 import { formatDate } from '../utils/date';
 import {
   Dialog,
@@ -234,7 +234,7 @@ const getRowData = (item: any, dataSource: keyof FleetData, allVehicles: Vehicle
 };
 
 const Reports: React.FC<ReportsProps> = ({ data }) => {
-  const [selectedDataSource, setSelectedDataSource] = useState<keyof FleetData>('vehicles');
+  const [selectedDataSource, setSelectedDataSource] = useState<keyof FleetData | ''>(''); // Changed default to empty string
   const [searchTerm, setSearchTerm] = useState('');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
@@ -255,11 +255,19 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
   ];
 
   const allPossibleColumns = useMemo(() => {
+    if (!selectedDataSource) return []; // Return empty if no data source is selected
     return getColumnConfigs(selectedDataSource);
   }, [selectedDataSource]);
 
   // Load column preferences from localStorage or set defaults
   useEffect(() => {
+    if (!selectedDataSource) {
+      setColumnVisibility({});
+      setColumnOrder([]);
+      setSortColumn('date'); // Reset sort column when no data source is selected
+      return;
+    }
+
     const savedVisibilityRaw = localStorage.getItem(`reportColumnsVisibility_${selectedDataSource}`);
     const savedOrderRaw = localStorage.getItem(`reportColumnsOrder_${selectedDataSource}`);
 
@@ -275,6 +283,7 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
       try {
         const parsed = JSON.parse(savedVisibilityRaw);
         if (typeof parsed === 'object' && parsed !== null) {
+          // Merge saved visibility with default to handle new/removed columns
           initialColumnVisibility = { ...defaultVisibility, ...parsed };
         }
       } catch (e) {
@@ -287,7 +296,9 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
       try {
         const parsed = JSON.parse(savedOrderRaw);
         if (Array.isArray(parsed)) {
+          // Filter out any keys from savedOrder that are no longer in allPossibleColumns
           const validParsedOrder = parsed.filter(key => allPossibleColumns.some(col => col.key === key));
+          // Add any new keys from allPossibleColumns that are not in savedOrder (at the end)
           const newKeys = allPossibleColumns.map(col => col.key).filter(key => !validParsedOrder.includes(key));
           initialColumnOrder = [...validParsedOrder, ...newKeys];
         }
@@ -298,6 +309,7 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
 
     setColumnVisibility(initialColumnVisibility);
     setColumnOrder(initialColumnOrder);
+    // Reset sort column to a default for the new data source if the current one isn't valid
     if (!allPossibleColumns.some(col => col.key === sortColumn)) {
       setSortColumn(defaultOrder[0] || 'id');
     }
@@ -305,17 +317,20 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
 
   // Save column preferences to localStorage
   useEffect(() => {
-    if (columnOrder.length > 0) {
+    if (selectedDataSource && columnOrder.length > 0) {
       localStorage.setItem(`reportColumnsVisibility_${selectedDataSource}`, JSON.stringify(columnVisibility));
       localStorage.setItem(`reportColumnsOrder_${selectedDataSource}`, JSON.stringify(columnOrder));
     }
   }, [columnVisibility, columnOrder, selectedDataSource]);
 
   const currentData = useMemo(() => {
+    if (!selectedDataSource) return [];
     return data[selectedDataSource] || [];
   }, [data, selectedDataSource]);
 
   const filteredAndSortedData = useMemo(() => {
+    if (!selectedDataSource) return [];
+
     const currentSelectedDataSource = selectedDataSource as keyof FleetData;
 
     let filtered = currentData.filter(item => {
@@ -467,6 +482,7 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
           <Button
             onClick={() => setShowColumnCustomizeDialog(true)}
             className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+            disabled={!selectedDataSource} // Disable if no data source is selected
           >
             <Settings className="w-5 h-5" />
             <span>Personnaliser Colonnes</span>
@@ -474,7 +490,7 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
           <Button
             onClick={handleExport}
             className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
-            disabled={filteredAndSortedData.length === 0}
+            disabled={!selectedDataSource || filteredAndSortedData.length === 0} // Disable if no data source or no data
           >
             <Download className="w-5 h-5" />
             <span>Exporter XLSX</span>
@@ -484,13 +500,14 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
-          <label htmlFor="dataSource" className="block text-sm font-semibold mb-2 text-gray-900">Sélectionner la source de données</label>
+          {/* Removed label, added placeholder option */}
           <select
             id="dataSource"
             value={selectedDataSource}
             onChange={(e) => setSelectedDataSource(e.target.value as keyof FleetData)}
             className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
+            <option value="" disabled>Sélectionner la source de données</option>
             {dataSources.map(source => (
               <option key={source.id} value={source.id}>{source.name}</option>
             ))}
@@ -504,6 +521,7 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            disabled={!selectedDataSource} // Disable if no data source is selected
           />
         </div>
         <div className="relative">
@@ -513,6 +531,7 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
             onChange={(e) => setStartDate(e.target.value)}
             className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             placeholder="Date de début"
+            disabled={!selectedDataSource} // Disable if no data source is selected
           />
           <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
         </div>
@@ -523,6 +542,7 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
             onChange={(e) => setEndDate(e.target.value)}
             className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             placeholder="Date de fin"
+            disabled={!selectedDataSource} // Disable if no data source is selected
           />
           <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
         </div>
@@ -550,7 +570,7 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
               {filteredAndSortedData.length === 0 ? (
                 <tr>
                   <td colSpan={visibleColumns.length || 1} className="px-6 py-4 text-center text-gray-500">
-                    Aucune donnée trouvée pour ce rapport avec les filtres actuels.
+                    {selectedDataSource ? 'Aucune donnée trouvée pour ce rapport avec les filtres actuels.' : 'Veuillez sélectionner une source de données pour afficher le rapport.'}
                   </td>
                 </tr>
               ) : (
