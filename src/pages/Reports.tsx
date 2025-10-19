@@ -55,6 +55,7 @@ const getColumnConfigs = (dataSource: keyof FleetData): ColumnConfig[] => {
         { key: 'fuel_end', label: 'Fuel Fin (%)', defaultVisible: true },
         { key: 'km_end', label: 'Km Fin', defaultVisible: true },
         { key: 'distance', label: 'Distance', defaultVisible: true },
+        { key: 'consumption_per_100km', label: 'L/100km', defaultVisible: true }, // New analytical column
       ];
     case 'fuel':
       return [
@@ -79,6 +80,7 @@ const getColumnConfigs = (dataSource: keyof FleetData): ColumnConfig[] => {
         { key: 'date', label: 'Date', defaultVisible: true },
         { key: 'mileage', label: 'Kilométrage', defaultVisible: true },
         { key: 'cost', label: 'Coût', defaultVisible: true },
+        { key: 'days_since_entry', label: 'Jours depuis l\'entrée', defaultVisible: true }, // New analytical column
       ];
     case 'pre_departure_checklists':
       return [
@@ -136,6 +138,17 @@ const getRowData = (item: any, dataSource: keyof FleetData, allVehicles: Vehicle
       const tour = item as Tour;
       const tourVehicle = allVehicles.find(v => v.id === tour.vehicle_id);
       const tourDriver = allDrivers.find(d => d.id === tour.driver_id);
+
+      const calculateConsumption = (t: Tour): string => {
+        if (t.distance != null && t.distance > 0 && t.fuel_start != null && t.fuel_end != null) {
+          const fuelConsumed = t.fuel_start - t.fuel_end;
+          if (fuelConsumed > 0) {
+            return ((fuelConsumed / t.distance) * 100).toFixed(1);
+          }
+        }
+        return '-';
+      };
+
       return {
         ...commonData,
         date: formatDate(tour.date),
@@ -147,6 +160,7 @@ const getRowData = (item: any, dataSource: keyof FleetData, allVehicles: Vehicle
         fuel_end: tour.fuel_end ?? '-',
         km_end: tour.km_end ?? '-',
         distance: tour.distance ?? '-',
+        consumption_per_100km: calculateConsumption(tour), // Added
       };
     case 'fuel':
       const fuelEntry = item as FuelEntry;
@@ -173,6 +187,16 @@ const getRowData = (item: any, dataSource: keyof FleetData, allVehicles: Vehicle
     case 'maintenance':
       const maintenanceEntry = item as MaintenanceEntry;
       const maintVehicle = allVehicles.find(v => v.id === maintenanceEntry.vehicle_id);
+
+      const getDaysSinceEntry = (dateString: string): number => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const entryDate = new Date(dateString);
+        entryDate.setHours(0, 0, 0, 0);
+        const timeDiff = today.getTime() - entryDate.getTime();
+        return Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+      };
+
       return {
         ...commonData,
         vehicle_plate: maintVehicle?.plate || 'N/A',
@@ -180,6 +204,7 @@ const getRowData = (item: any, dataSource: keyof FleetData, allVehicles: Vehicle
         date: formatDate(maintenanceEntry.date),
         mileage: maintenanceEntry.mileage,
         cost: maintenanceEntry.cost,
+        days_since_entry: getDaysSinceEntry(maintenanceEntry.date), // Added
       };
     case 'pre_departure_checklists':
       const checklist = item as PreDepartureChecklist;
