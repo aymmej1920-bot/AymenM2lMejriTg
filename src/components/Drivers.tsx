@@ -25,13 +25,16 @@ type DriverFormData = z.infer<typeof driverSchema>;
 
 interface DriversProps {
   data: FleetData;
-  userRole: 'admin' | 'direction' | 'utilisateur';
+  // userRole: 'admin' | 'direction' | 'utilisateur'; // Removed prop
   onAdd: (driver: Omit<Driver, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (driver: Driver) => void;
   onDelete: (id: string) => void;
 }
 
-const Drivers: React.FC<DriversProps> = ({ data, userRole, onAdd, onUpdate, onDelete }) => {
+const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) => {
+  const { currentUser } = useSession(); // Use useSession directly
+  const userRole = currentUser?.role || 'utilisateur';
+
   const [showModal, setShowModal] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
 
@@ -180,16 +183,16 @@ const Drivers: React.FC<DriversProps> = ({ data, userRole, onAdd, onUpdate, onDe
           </DialogHeader>
           <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
-              <FormField name="name" label="Nom complet" type="text" placeholder="Ex: John Doe" disabled={!canEditForm && editingDriver || !canAddForm && !editingDriver} />
-              <FormField name="license" label="Numéro de permis" type="text" placeholder="Ex: 123456789" disabled={!canEditForm && editingDriver || !canAddForm && !editingDriver} />
-              <FormField name="expiration" label="Date d'expiration" type="date" disabled={!canEditForm && editingDriver || !canAddForm && !editingDriver} />
+              <FormField name="name" label="Nom complet" type="text" placeholder="Ex: John Doe" disabled={(!canEditForm && !!editingDriver) || (!canAddForm && !editingDriver)} />
+              <FormField name="license" label="Numéro de permis" type="text" placeholder="Ex: 123456789" disabled={(!canEditForm && !!editingDriver) || (!canAddForm && !editingDriver)} />
+              <FormField name="expiration" label="Date d'expiration" type="date" disabled={(!canEditForm && !!editingDriver) || (!canAddForm && !editingDriver)} />
               <FormField name="status" label="Statut" type="select" options={[
                 { value: 'Disponible', label: 'Disponible' },
                 { value: 'En mission', label: 'En mission' },
                 { value: 'Repos', label: 'Repos' },
                 { value: 'Congé', label: 'Congé' },
-              ]} disabled={!canEditForm && editingDriver || !canAddForm && !editingDriver} />
-              <FormField name="phone" label="Téléphone" type="tel" placeholder="Ex: +216 22 123 456" disabled={!canEditForm && editingDriver || !canAddForm && !editingDriver} />
+              ]} disabled={(!canEditForm && !!editingDriver) || (!canAddForm && !editingDriver)} />
+              <FormField name="phone" label="Téléphone" type="tel" placeholder="Ex: +216 22 123 456" disabled={(!canEditForm && !!editingDriver) || (!canAddForm && !editingDriver)} />
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setShowModal(false)}>
                   Annuler

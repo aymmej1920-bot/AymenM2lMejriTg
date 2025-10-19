@@ -24,14 +24,17 @@ type MaintenanceEntryFormData = z.infer<typeof maintenanceEntrySchema>;
 
 interface MaintenanceProps {
   data: FleetData;
-  userRole: 'admin' | 'direction' | 'utilisateur';
+  // userRole: 'admin' | 'direction' | 'utilisateur'; // Removed prop
   onAdd: (maintenanceEntry: Omit<MaintenanceEntry, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (vehicle: { id: string; last_service_date: string; last_service_mileage: number; mileage: number }) => void;
   onDelete: (id: string) => void; // Added onDelete prop
   preDepartureChecklists: PreDepartureChecklist[];
 }
 
-const Maintenance: React.FC<MaintenanceProps> = ({ data, userRole, onAdd, onUpdate, onDelete, preDepartureChecklists }) => {
+const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDelete, preDepartureChecklists }) => {
+  const { currentUser } = useSession(); // Use useSession directly
+  const userRole = currentUser?.role || 'utilisateur';
+
   const [showModal, setShowModal] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
 

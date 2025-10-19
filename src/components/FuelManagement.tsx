@@ -24,13 +24,16 @@ type FuelEntryFormData = z.infer<typeof fuelEntrySchema>;
 
 interface FuelManagementProps {
   data: FleetData;
-  userRole: 'admin' | 'direction' | 'utilisateur';
+  // userRole: 'admin' | 'direction' | 'utilisateur'; // Removed prop
   onAdd: (fuelEntry: Omit<FuelEntry, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (fuelEntry: FuelEntry) => void;
   onDelete: (id: string) => void;
 }
 
-const FuelManagement: React.FC<FuelManagementProps> = ({ data, userRole, onAdd, onUpdate, onDelete }) => {
+const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, onDelete }) => {
+  const { currentUser } = useSession(); // Use useSession directly
+  const userRole = currentUser?.role || 'utilisateur';
+
   const [showModal, setShowModal] = useState(false);
   const [editingFuel, setEditingFuel] = useState<FuelEntry | null>(null);
 
@@ -257,7 +260,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, userRole, onAdd, 
                   type="date"
                   {...register('date')}
                   className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                  disabled={!canEditForm && editingFuel || !canAddForm && !editingFuel}
+                  disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
                 />
                 <Calendar className="absolute right-3 w-5 h-5 text-gray-400 pointer-events-none" />
               </div>
@@ -269,7 +272,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, userRole, onAdd, 
                 id="vehicle_id"
                 {...register('vehicle_id')}
                 className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                disabled={!canEditForm && editingFuel || !canAddForm && !editingFuel}
+                disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
               >
                 <option value="">Sélectionner un véhicule</option>
                 {data.vehicles.map(vehicle => (
@@ -288,7 +291,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, userRole, onAdd, 
                 step="0.1"
                 {...register('liters', { valueAsNumber: true })}
                 className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                disabled={!canEditForm && editingFuel || !canAddForm && !editingFuel}
+                disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
               />
               {errors.liters && <p className="text-red-500 text-sm mt-1">{errors.liters.message}</p>}
             </div>
@@ -300,7 +303,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, userRole, onAdd, 
                 step="0.01"
                 {...register('price_per_liter', { valueAsNumber: true })}
                 className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                disabled={!canEditForm && editingFuel || !canAddForm && !editingFuel}
+                disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
               />
               {errors.price_per_liter && <p className="text-red-500 text-sm mt-1">{errors.price_per_liter.message}</p>}
             </div>
@@ -311,7 +314,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, userRole, onAdd, 
                 type="number"
                 {...register('mileage', { valueAsNumber: true })}
                 className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                disabled={!canEditForm && editingFuel || !canAddForm && !editingFuel}
+                disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
               />
               {errors.mileage && <p className="text-red-500 text-sm mt-1">{errors.mileage.message}</p>}
             </div>

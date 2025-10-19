@@ -24,13 +24,16 @@ type VehicleFormData = z.infer<typeof vehicleSchema>;
 
 interface VehiclesProps {
   data: FleetData;
-  userRole: 'admin' | 'direction' | 'utilisateur';
+  // userRole: 'admin' | 'direction' | 'utilisateur'; // Removed prop
   onAdd: (vehicle: Omit<Vehicle, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (vehicle: Vehicle) => void;
   onDelete: (id: string) => void;
 }
 
-const Vehicles: React.FC<VehiclesProps> = ({ data, userRole, onAdd, onUpdate, onDelete }) => {
+const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) => {
+  const { currentUser } = useSession(); // Use useSession directly
+  const userRole = currentUser?.role || 'utilisateur';
+
   const [showModal, setShowModal] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
 
@@ -166,21 +169,21 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, userRole, onAdd, onUpdate, on
           </DialogHeader>
           <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
-              <FormField name="plate" label="Plaque d'immatriculation" type="text" placeholder="Ex: 123TU456" disabled={!canEditForm && editingVehicle || !canAddForm && !editingVehicle} />
+              <FormField name="plate" label="Plaque d'immatriculation" type="text" placeholder="Ex: 123TU456" disabled={(!canEditForm && !!editingVehicle) || (!canAddForm && !editingVehicle)} />
               <FormField name="type" label="Type de véhicule" type="select" options={[
                 { value: 'Camionnette', label: 'Camionnette' },
                 { value: 'Camion', label: 'Camion' },
                 { value: 'Fourgon', label: 'Fourgon' },
                 { value: 'Utilitaire', label: 'Utilitaire' },
-              ]} disabled={!canEditForm && editingVehicle || !canAddForm && !editingVehicle} />
+              ]} disabled={(!canEditForm && !!editingVehicle) || (!canAddForm && !editingVehicle)} />
               <FormField name="status" label="Statut" type="select" options={[
                 { value: 'Disponible', label: 'Disponible' },
                 { value: 'En mission', label: 'En mission' },
                 { value: 'Maintenance', label: 'Maintenance' },
-              ]} disabled={!canEditForm && editingVehicle || !canAddForm && !editingVehicle} />
-              <FormField name="mileage" label="Kilométrage actuel" type="number" min={0} disabled={!canEditForm && editingVehicle || !canAddForm && !editingVehicle} />
-              <FormField name="last_service_date" label="Date dernière vidange" type="date" disabled={!canEditForm && editingVehicle || !canAddForm && !editingVehicle} />
-              <FormField name="last_service_mileage" label="Kilométrage dernière vidange" type="number" min={0} disabled={!canEditForm && editingVehicle || !canAddForm && !editingVehicle} />
+              ]} disabled={(!canEditForm && !!editingVehicle) || (!canAddForm && !editingVehicle)} />
+              <FormField name="mileage" label="Kilométrage actuel" type="number" min={0} disabled={(!canEditForm && !!editingVehicle) || (!canAddForm && !editingVehicle)} />
+              <FormField name="last_service_date" label="Date dernière vidange" type="date" disabled={(!canEditForm && !!editingVehicle) || (!canAddForm && !editingVehicle)} />
+              <FormField name="last_service_mileage" label="Kilométrage dernière vidange" type="number" min={0} disabled={(!canEditForm && !!editingVehicle) || (!canAddForm && !editingVehicle)} />
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setShowModal(false)}>
                   Annuler

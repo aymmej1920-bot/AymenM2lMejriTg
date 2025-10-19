@@ -24,13 +24,16 @@ type DocumentFormData = z.infer<typeof documentSchema>;
 
 interface DocumentsProps {
   data: FleetData;
-  userRole: 'admin' | 'direction' | 'utilisateur';
+  // userRole: 'admin' | 'direction' | 'utilisateur'; // Removed prop
   onAdd: (document: Omit<Document, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (document: Document) => void;
   onDelete: (id: string) => void;
 }
 
-const Documents: React.FC<DocumentsProps> = ({ data, userRole, onAdd, onUpdate, onDelete }) => {
+const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }) => {
+  const { currentUser } = useSession(); // Use useSession directly
+  const userRole = currentUser?.role || 'utilisateur';
+
   const [showModal, setShowModal] = useState(false);
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
 
@@ -292,7 +295,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, userRole, onAdd, onUpdate, 
                 id="vehicle_id"
                 {...register('vehicle_id')}
                 className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                disabled={!canEditForm && editingDocument || !canAddForm && !editingDocument}
+                disabled={(!canEditForm && !!editingDocument) || (!canAddForm && !editingDocument)}
               >
                 <option value="">Sélectionner un véhicule</option>
                 {data.vehicles.map(vehicle => (
@@ -309,7 +312,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, userRole, onAdd, onUpdate, 
                 id="type"
                 {...register('type')}
                 className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                disabled={!canEditForm && editingDocument || !canAddForm && !editingDocument}
+                disabled={(!canEditForm && !!editingDocument) || (!canAddForm && !editingDocument)}
               >
                 <option value="">Sélectionner un type</option>
                 <option value="Assurance">Assurance</option>
@@ -327,7 +330,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, userRole, onAdd, onUpdate, 
                 type="text"
                 {...register('number')}
                 className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                disabled={!canEditForm && editingDocument || !canAddForm && !editingDocument}
+                disabled={(!canEditForm && !!editingDocument) || (!canAddForm && !editingDocument)}
               />
               {errors.number && <p className="text-red-500 text-sm mt-1">{errors.number.message}</p>}
             </div>
@@ -338,8 +341,8 @@ const Documents: React.FC<DocumentsProps> = ({ data, userRole, onAdd, onUpdate, 
                   id="expiration"
                   type="date"
                   {...register('expiration')}
-                  className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                  disabled={!canEditForm && editingDocument || !canAddForm && !editingDocument}
+                  className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={(!canEditForm && !!editingDocument) || (!canAddForm && !editingDocument)}
                 />
                 <Calendar className="absolute right-3 w-5 h-5 text-gray-400 pointer-events-none" />
               </div>
