@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, CheckCircle, XCircle, AlertTriangle, ChevronUp, ChevronDown, Search, Calendar, Download } from 'lucide-react';
-import { FleetData, PreDepartureChecklist } from '../types';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { CheckCircle, XCircle, AlertTriangle, Calendar } from 'lucide-react';
+import { FleetData, PreDepartureChecklist, DataTableColumn } from '../types';
 import { showSuccess, showError } from '../utils/toast';
 import { formatDate } from '../utils/date';
 import { useForm } from 'react-hook-form';
@@ -15,9 +15,8 @@ import {
   DialogFooter,
   DialogTitle,
   DialogDescription,
-
 } from './ui/dialog'; // Import shadcn/ui Dialog components
-import { exportToXLSX } from '../utils/export'; // Import the export utility
+import DataTable from './DataTable'; // Import the new DataTable component
 
 type PreDepartureChecklistFormData = z.infer<typeof preDepartureChecklistSchema>;
 
@@ -73,31 +72,20 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
     });
   }, [showModal, reset]);
 
-  // State for filtering, sorting, and pagination
-  const [searchTerm, setSearchTerm] = useState('');
+  // State for filtering
   const [selectedVehicle, setSelectedVehicle] = useState<string>('');
   const [selectedDriver, setSelectedDriver] = useState<string>('');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
-  const [sortColumn, setSortColumn] = useState<keyof PreDepartureChecklist>('date');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10; // You can adjust this value
 
-  // Filtered and sorted data
-  const filteredAndSortedChecklists = useMemo(() => {
-    let filtered = data.pre_departure_checklists.filter(checklist => {
+  // Filtered data for DataTable
+  const filteredChecklists = useMemo(() => {
+    return data.pre_departure_checklists.filter(checklist => {
       const vehicle = data.vehicles.find(v => v.id === checklist.vehicle_id);
       const driver = data.drivers.find(d => d.id === checklist.driver_id);
       
-      const matchesSearch = (
-        checklist.date.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (vehicle?.plate || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (driver?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (checklist.observations || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (checklist.issues_to_address || '').toLowerCase().includes(searchTerm.toLowerCase())
-      );
-
+      // DataTable's internal search will handle the main search term.
+      // This filter focuses on the specific dropdowns and date range.
       const matchesVehicle = selectedVehicle ? checklist.vehicle_id === selectedVehicle : true;
       const matchesDriver = selectedDriver ? checklist.driver_id === selectedDriver : true;
 
@@ -109,62 +97,9 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
         (!start || checklistDate >= start) &&
         (!end || checklistDate <= end);
 
-      return matchesSearch && matchesVehicle && matchesDriver && matchesDateRange;
+      return matchesVehicle && matchesDriver && matchesDateRange;
     });
-
-    filtered.sort((a, b) => {
-      const aValue = a[sortColumn];
-      const bValue = b[sortColumn];
-
-      // Handle null/undefined values first
-      if (aValue === null || aValue === undefined) {
-        return sortDirection === 'asc' ? -1 : 1;
-      }
-      if (bValue === null || bValue === undefined) {
-        return sortDirection === 'asc' ? 1 : -1;
-      }
-
-      // Special handling for vehicle_id to sort by plate
-      if (sortColumn === 'vehicle_id') {
-        const aVehicle = data.vehicles.find(v => v.id === a.vehicle_id);
-        const bVehicle = data.vehicles.find(d => d.id === b.vehicle_id);
-        const aPlate = aVehicle?.plate || '';
-        const bPlate = bVehicle?.plate || '';
-        return sortDirection === 'asc' ? aPlate.localeCompare(bPlate) : bPlate.localeCompare(aPlate);
-      }
-
-      // Special handling for driver_id to sort by name
-      if (sortColumn === 'driver_id') {
-        const aDriver = data.drivers.find(d => d.id === a.driver_id);
-        const bDriver = data.drivers.find(d => d.id === b.driver_id);
-        const aName = aDriver?.name || '';
-        const bName = bDriver?.name || '';
-        return sortDirection === 'asc' ? aName.localeCompare(bName) : bName.localeCompare(aName);
-      }
-
-      // For date strings (like 'date'), compare them directly as strings
-      if (sortColumn === 'date' && typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-      }
-      
-      // General string comparison (fallback for other string columns)
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-      }
-      
-      // Fallback for other types
-      return 0;
-    });
-    return filtered;
-  }, [data.pre_departure_checklists, data.vehicles, data.drivers, searchTerm, selectedVehicle, selectedDriver, startDate, endDate, sortColumn, sortDirection]);
-
-  // Paginated data
-  const totalPages = Math.ceil(filteredAndSortedChecklists.length / itemsPerPage);
-  const currentChecklists = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return filteredAndSortedChecklists.slice(startIndex, endIndex);
-  }, [filteredAndSortedChecklists, currentPage, itemsPerPage]);
+  }, [data.pre_departure_checklists, data.vehicles, data.drivers, selectedVehicle, selectedDriver, startDate, endDate]);
 
   const hasChecklistForMonth = (vehicleId: string, month: number, year: number): boolean => {
     return data.pre_departure_checklists.some(cl => {
@@ -218,117 +153,62 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
     !hasChecklistForMonth(vehicle.id, currentMonth, currentYear)
   );
 
-  const handleSort = (column: keyof PreDepartureChecklist) => {
-    if (sortColumn === column) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortColumn(column);
-      setSortDirection('asc');
-    }
-  };
+  const columns: DataTableColumn<PreDepartureChecklist>[] = useMemo(() => [
+    { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item) => formatDate(item.date) },
+    {
+      key: 'vehicle_id',
+      label: 'Véhicule',
+      sortable: true,
+      defaultVisible: true,
+      render: (item) => data.vehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A',
+    },
+    {
+      key: 'driver_id',
+      label: 'Conducteur',
+      sortable: true,
+      defaultVisible: true,
+      render: (item) => data.drivers.find(d => d.id === item.driver_id)?.name || 'N/A',
+    },
+    { key: 'tire_pressure_ok', label: 'Pneus', sortable: true, defaultVisible: true, render: (item) => getStatusIcon(item.tire_pressure_ok) },
+    { key: 'lights_ok', label: 'Feux', sortable: true, defaultVisible: true, render: (item) => getStatusIcon(item.lights_ok) },
+    { key: 'oil_level_ok', label: 'Huile', sortable: true, defaultVisible: true, render: (item) => getStatusIcon(item.oil_level_ok) },
+    { key: 'fluid_levels_ok', label: 'Fluides', sortable: true, defaultVisible: true, render: (item) => getStatusIcon(item.fluid_levels_ok) },
+    { key: 'brakes_ok', label: 'Freins', sortable: true, defaultVisible: true, render: (item) => getStatusIcon(item.brakes_ok) },
+    { key: 'wipers_ok', label: 'Essuie-glaces', sortable: true, defaultVisible: true, render: (item) => getStatusIcon(item.wipers_ok) },
+    { key: 'horn_ok', label: 'Klaxon', sortable: true, defaultVisible: true, render: (item) => getStatusIcon(item.horn_ok) },
+    { key: 'mirrors_ok', label: 'Rétroviseurs', sortable: true, defaultVisible: true, render: (item) => getStatusIcon(item.mirrors_ok) },
+    { key: 'ac_working_ok', label: 'Climatiseur', sortable: true, defaultVisible: true, render: (item) => getStatusIcon(item.ac_working_ok) },
+    { key: 'windows_working_ok', label: 'Vitres', sortable: true, defaultVisible: true, render: (item) => getStatusIcon(item.windows_working_ok) },
+    { key: 'observations', label: 'Observations', sortable: true, defaultVisible: true, render: (item) => item.observations || '-' },
+    { key: 'issues_to_address', label: 'À Traiter', sortable: true, defaultVisible: true, render: (item) => item.issues_to_address || '-' },
+  ], [data.vehicles, data.drivers]);
 
-  const renderSortIcon = (column: keyof PreDepartureChecklist) => {
-    if (sortColumn === column) {
-      return sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />;
-    }
-    return null;
-  };
-
-  const handleExportChecklists = () => {
-    const dataToExport = filteredAndSortedChecklists.map(checklist => {
-      const vehicle = data.vehicles.find(v => v.id === checklist.vehicle_id);
-      const driver = data.drivers.find(d => d.id === checklist.driver_id);
-      return {
-        Date: formatDate(checklist.date),
-        Véhicule: vehicle?.plate || 'N/A',
-        Conducteur: driver?.name || 'N/A',
-        Pneus: checklist.tire_pressure_ok ? 'OK' : 'NOK',
-        Feux: checklist.lights_ok ? 'OK' : 'NOK',
-        Huile: checklist.oil_level_ok ? 'OK' : 'NOK',
-        Fluides: checklist.fluid_levels_ok ? 'OK' : 'NOK',
-        Freins: checklist.brakes_ok ? 'OK' : 'NOK',
-        "Essuie-glaces": checklist.wipers_ok ? 'OK' : 'NOK',
-        Klaxon: checklist.horn_ok ? 'OK' : 'NOK',
-        Rétroviseurs: checklist.mirrors_ok ? 'OK' : 'NOK',
-        Climatiseur: checklist.ac_working_ok ? 'OK' : 'NOK',
-        Vitres: checklist.windows_working_ok ? 'OK' : 'NOK',
-        Observations: checklist.observations || '-',
-        "À Traiter": checklist.issues_to_address || '-',
-      };
-    });
-
-    const headers = [
-      "Date", "Véhicule", "Conducteur", "Pneus", "Feux", "Huile", "Fluides", "Freins",
-      "Essuie-glaces", "Klaxon", "Rétroviseurs", "Climatiseur", "Vitres", "Observations", "À Traiter"
-    ];
-
-    exportToXLSX(dataToExport, { fileName: 'checklists_avant_depart', headers });
-    showSuccess('Checklists exportées avec succès au format XLSX !');
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-4xl font-bold text-gray-800">Checklists Avant Départ</h2>
-        <div className="flex space-x-4">
-          <Button
-            onClick={handleExportChecklists}
-            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
-          >
-            <Download className="w-5 h-5" />
-            <span>Exporter XLSX</span>
-          </Button>
-          {canAdd && (
-            <Button
-              key="add-checklist-button"
-              onClick={handleAddChecklist}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
-            >
-              <Plus className="w-5 h-5" />
-              <span>Nouvelle Checklist</span>
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Alerte pour les checklists mensuelles manquantes */}
-      {vehiclesMissingChecklist.length > 0 && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
-          <div className="flex items-center">
-            <AlertTriangle className="w-5 h-5 text-yellow-400 mr-3" />
-            <div>
-              <h3 className="text-yellow-800 font-semibold">Checklists Mensuelles Manquantes</h3>
-              <p className="text-yellow-700">
-                {vehiclesMissingChecklist.length} véhicule(s) n'ont pas de checklist pour ce mois-ci :{' '}
-                <span className="font-medium">{vehiclesMissingChecklist.map(v => v.plate).join(', ')}</span>.
-              </p>
-            </div>
+  const renderAlerts = useCallback(() => {
+    if (vehiclesMissingChecklist.length === 0) return null;
+    return (
+      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
+        <div className="flex items-center">
+          <AlertTriangle className="w-5 h-5 text-yellow-400 mr-3" />
+          <div>
+            <h3 className="text-yellow-800 font-semibold">Checklists Mensuelles Manquantes</h3>
+            <p className="text-yellow-700">
+              {vehiclesMissingChecklist.length} véhicule(s) n'ont pas de checklist pour ce mois-ci :{' '}
+              <span className="font-medium">{vehiclesMissingChecklist.map(v => v.plate).join(', ')}</span>.
+            </p>
           </div>
         </div>
-      )}
+      </div> // <-- Added missing closing div tag here
+    );
+  }, [vehiclesMissingChecklist]);
 
-      {/* Search and Filter Inputs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Rechercher une checklist par date, véhicule, conducteur, observations ou problèmes..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1); // Reset to first page on new search
-            }}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-          />
-        </div>
-
+  const renderFilters = useCallback((_searchTerm: string, _setSearchTerm: (term: string) => void) => {
+    return (
+      <>
         <div>
           <select
             value={selectedVehicle}
             onChange={(e) => {
               setSelectedVehicle(e.target.value);
-              setCurrentPage(1);
             }}
             className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
@@ -346,7 +226,6 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
             value={selectedDriver}
             onChange={(e) => {
               setSelectedDriver(e.target.value);
-              setCurrentPage(1);
             }}
             className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
@@ -365,7 +244,6 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
             value={startDate}
             onChange={(e) => {
               setStartDate(e.target.value);
-              setCurrentPage(1);
             }}
             className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             placeholder="Date de début"
@@ -379,119 +257,30 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
             value={endDate}
             onChange={(e) => {
               setEndDate(e.target.value);
-              setCurrentPage(1);
             }}
             className="w-full bg-white border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             placeholder="Date de fin"
           />
           <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
         </div>
-      </div>
+      </>
+    );
+  }, [data.vehicles, data.drivers, selectedVehicle, selectedDriver, startDate, endDate]);
 
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('date')}>
-                  <div className="flex items-center">
-                    Date {renderSortIcon('date')}
-                  </div>
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('vehicle_id')}>
-                  <div className="flex items-center">
-                    Véhicule {renderSortIcon('vehicle_id')}
-                  </div>
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('driver_id')}>
-                  <div className="flex items-center">
-                    Conducteur {renderSortIcon('driver_id')}
-                  </div>
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Pneus</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Feux</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Huile</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Fluides</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Freins</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Essuie-glaces</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Klaxon</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Rétroviseurs</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Climatiseur</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Vitres</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Observations</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">À Traiter</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {currentChecklists.length === 0 ? (
-                <tr>
-                  <td colSpan={15} className="px-6 py-4 text-center text-gray-500">
-                    Aucune checklist trouvée.
-                  </td>
-                </tr>
-              ) : (
-                currentChecklists.map((checklist) => {
-                  const vehicle = data.vehicles.find(v => v.id === checklist.vehicle_id);
-                  const driver = data.drivers.find(d => d.id === checklist.driver_id);
-                  return (
-                    <tr key={checklist.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 text-sm text-gray-900">{formatDate(checklist.date)}</td>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{vehicle?.plate || 'N/A'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{driver?.name || 'N/A'}</td>
-                      <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.tire_pressure_ok)}</td>
-                      <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.lights_ok)}</td>
-                      <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.oil_level_ok)}</td>
-                      <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.fluid_levels_ok)}</td>
-                      <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.brakes_ok)}</td>
-                      <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.wipers_ok)}</td>
-                      <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.horn_ok)}</td>
-                      <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.mirrors_ok)}</td>
-                      <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.ac_working_ok)}</td>
-                      <td className="px-6 py-4 text-sm flex justify-center">{getStatusIcon(checklist.windows_working_ok)}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600 max-w-xs overflow-hidden text-ellipsis">{checklist.observations || '-'}</td>
-                      <td className="px-6 py-4 text-sm text-red-600 max-w-xs overflow-hidden text-ellipsis">{checklist.issues_to_address || '-'}</td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Pagination Controls */}
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center space-x-2 mt-4">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-            disabled={currentPage === 1}
-            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Précédent
-          </Button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-            <Button
-              key={page}
-              variant={currentPage === page ? 'default' : 'outline'}
-              onClick={() => setCurrentPage(page)}
-              className={`px-4 py-2 rounded-lg ${
-                currentPage === page ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'
-              }`}
-            >
-              {page}
-            </Button>
-          ))}
-          <Button
-            variant="outline"
-            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-            disabled={currentPage === totalPages}
-            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Suivant
-          </Button>
-        </div>
-      )}
+  return (
+    <div className="space-y-6">
+      <DataTable
+        title="Checklists Avant Départ"
+        data={filteredChecklists}
+        columns={columns}
+        onAdd={handleAddChecklist}
+        addLabel="Nouvelle Checklist"
+        searchPlaceholder="Rechercher une checklist par date, véhicule, conducteur, observations ou problèmes..."
+        exportFileName="checklists_avant_depart"
+        isLoading={false}
+        renderFilters={renderFilters}
+        renderAlerts={renderAlerts}
+      />
 
       {/* Modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
@@ -564,7 +353,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       type="radio"
                       id="tire_pressure_ok_ok"
                       value="true"
-                      {...register('tire_pressure_ok')}
+                      {...register('tire_pressure_ok', { setValueAs: v => v === 'true' })}
                       className="h-4 w-4 text-green-600 bg-white border border-gray-300 shadow-sm focus:ring-green-500"
                       disabled={!canAdd}
                     />
@@ -575,7 +364,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       type="radio"
                       id="tire_pressure_ok_nok"
                       value="false"
-                      {...register('tire_pressure_ok')}
+                      {...register('tire_pressure_ok', { setValueAs: v => v === 'true' })}
                       className="h-4 w-4 text-red-600 bg-white border border-gray-300 shadow-sm focus:ring-red-500"
                       disabled={!canAdd}
                     />
@@ -591,7 +380,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       type="radio"
                       id="lights_ok_ok"
                       value="true"
-                      {...register('lights_ok')}
+                      {...register('lights_ok', { setValueAs: v => v === 'true' })}
                       className="h-4 w-4 text-green-600 bg-white border border-gray-300 shadow-sm focus:ring-green-500"
                       disabled={!canAdd}
                     />
@@ -602,7 +391,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       type="radio"
                       id="lights_ok_nok"
                       value="false"
-                      {...register('lights_ok')}
+                      {...register('lights_ok', { setValueAs: v => v === 'true' })}
                       className="h-4 w-4 text-red-600 bg-white border border-gray-300 shadow-sm focus:ring-red-500"
                       disabled={!canAdd}
                     />
@@ -618,7 +407,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       type="radio"
                       id="oil_level_ok_ok"
                       value="true"
-                      {...register('oil_level_ok')}
+                      {...register('oil_level_ok', { setValueAs: v => v === 'true' })}
                       className="h-4 w-4 text-green-600 bg-white border border-gray-300 shadow-sm focus:ring-green-500"
                       disabled={!canAdd}
                     />
@@ -629,7 +418,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       type="radio"
                       id="oil_level_ok_nok"
                       value="false"
-                      {...register('oil_level_ok')}
+                      {...register('oil_level_ok', { setValueAs: v => v === 'true' })}
                       className="h-4 w-4 text-red-600 bg-white border border-gray-300 shadow-sm focus:ring-red-500"
                       disabled={!canAdd}
                     />
@@ -645,7 +434,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       type="radio"
                       id="fluid_levels_ok_ok"
                       value="true"
-                      {...register('fluid_levels_ok')}
+                      {...register('fluid_levels_ok', { setValueAs: v => v === 'true' })}
                       className="h-4 w-4 text-green-600 bg-white border border-gray-300 shadow-sm focus:ring-green-500"
                       disabled={!canAdd}
                     />
@@ -656,7 +445,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       type="radio"
                       id="fluid_levels_ok_nok"
                       value="false"
-                      {...register('fluid_levels_ok')}
+                      {...register('fluid_levels_ok', { setValueAs: v => v === 'true' })}
                       className="h-4 w-4 text-red-600 bg-white border border-gray-300 shadow-sm focus:ring-red-500"
                       disabled={!canAdd}
                     />
@@ -672,7 +461,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       type="radio"
                       id="brakes_ok_ok"
                       value="true"
-                      {...register('brakes_ok')}
+                      {...register('brakes_ok', { setValueAs: v => v === 'true' })}
                       className="h-4 w-4 text-green-600 bg-white border border-gray-300 shadow-sm focus:ring-green-500"
                       disabled={!canAdd}
                     />
@@ -683,7 +472,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       type="radio"
                       id="brakes_ok_nok"
                       value="false"
-                      {...register('brakes_ok')}
+                      {...register('brakes_ok', { setValueAs: v => v === 'true' })}
                       className="h-4 w-4 text-red-600 bg-white border border-gray-300 shadow-sm focus:ring-red-500"
                       disabled={!canAdd}
                     />
@@ -699,7 +488,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       type="radio"
                       id="wipers_ok_ok"
                       value="true"
-                      {...register('wipers_ok')}
+                      {...register('wipers_ok', { setValueAs: v => v === 'true' })}
                       className="h-4 w-4 text-green-600 bg-white border border-gray-300 shadow-sm focus:ring-green-500"
                       disabled={!canAdd}
                     />
@@ -710,7 +499,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       type="radio"
                       id="wipers_ok_nok"
                       value="false"
-                      {...register('wipers_ok')}
+                      {...register('wipers_ok', { setValueAs: v => v === 'true' })}
                       className="h-4 w-4 text-red-600 bg-white border border-gray-300 shadow-sm focus:ring-red-500"
                       disabled={!canAdd}
                     />
@@ -726,7 +515,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       type="radio"
                       id="horn_ok_ok"
                       value="true"
-                      {...register('horn_ok')}
+                      {...register('horn_ok', { setValueAs: v => v === 'true' })}
                       className="h-4 w-4 text-green-600 bg-white border border-gray-300 shadow-sm focus:ring-green-500"
                       disabled={!canAdd}
                     />
@@ -737,7 +526,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       type="radio"
                       id="horn_ok_nok"
                       value="false"
-                      {...register('horn_ok')}
+                      {...register('horn_ok', { setValueAs: v => v === 'true' })}
                       className="h-4 w-4 text-red-600 bg-white border border-gray-300 shadow-sm focus:ring-red-500"
                       disabled={!canAdd}
                     />
@@ -753,7 +542,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       type="radio"
                       id="mirrors_ok_ok"
                       value="true"
-                      {...register('mirrors_ok')}
+                      {...register('mirrors_ok', { setValueAs: v => v === 'true' })}
                       className="h-4 w-4 text-green-600 bg-white border border-gray-300 shadow-sm focus:ring-green-500"
                       disabled={!canAdd}
                     />
@@ -764,7 +553,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       type="radio"
                       id="mirrors_ok_nok"
                       value="false"
-                      {...register('mirrors_ok')}
+                      {...register('mirrors_ok', { setValueAs: v => v === 'true' })}
                       className="h-4 w-4 text-red-600 bg-white border border-gray-300 shadow-sm focus:ring-red-500"
                       disabled={!canAdd}
                     />
@@ -780,7 +569,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       type="radio"
                       id="ac_working_ok_ok"
                       value="true"
-                      {...register('ac_working_ok')}
+                      {...register('ac_working_ok', { setValueAs: v => v === 'true' })}
                       className="h-4 w-4 text-green-600 bg-white border border-gray-300 shadow-sm focus:ring-green-500"
                       disabled={!canAdd}
                     />
@@ -791,7 +580,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       type="radio"
                       id="ac_working_ok_nok"
                       value="false"
-                      {...register('ac_working_ok')}
+                      {...register('ac_working_ok', { setValueAs: v => v === 'true' })}
                       className="h-4 w-4 text-red-600 bg-white border border-gray-300 shadow-sm focus:ring-red-500"
                       disabled={!canAdd}
                     />
@@ -807,7 +596,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       type="radio"
                       id="windows_working_ok_ok"
                       value="true"
-                      {...register('windows_working_ok')}
+                      {...register('windows_working_ok', { setValueAs: v => v === 'true' })}
                       className="h-4 w-4 text-green-600 bg-white border border-gray-300 shadow-sm focus:ring-green-500"
                       disabled={!canAdd}
                     />
@@ -818,7 +607,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
                       type="radio"
                       id="windows_working_ok_nok"
                       value="false"
-                      {...register('windows_working_ok')}
+                      {...register('windows_working_ok', { setValueAs: v => v === 'true' })}
                       className="h-4 w-4 text-red-600 bg-white border border-gray-300 shadow-sm focus:ring-red-500"
                       disabled={!canAdd}
                     />
