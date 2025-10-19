@@ -162,25 +162,7 @@ function AppContent() { // Renamed App to AppContent
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
-    if (!currentUser || !canAccess('users', 'delete')) { // Use canAccess from hook
-      showError('Seuls les administrateurs peuvent supprimer des utilisateurs.');
-      return;
-    }
-    const loadingToastId = showLoading(`Suppression de l'utilisateur ${userId}...`);
-    try {
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-
-      if (authError) throw authError;
-      dismissToast(loadingToastId);
-      showSuccess('Utilisateur supprimé avec succès !');
-      if (currentUser?.id) fetchData(currentUser.id);
-    } catch (error: any) {
-      console.error('Error deleting user:', error.message);
-      dismissToast(loadingToastId);
-      showError(`Erreur lors de la suppression de l'utilisateur : ${error.message}`);
-    }
-  };
+  // Removed handleDeleteUser function as it's now handled by the edge function via UserManagement component
 
   const handleLogout = async () => {
     const loadingToastId = showLoading('Déconnexion...');
@@ -336,7 +318,7 @@ function AppContent() { // Renamed App to AppContent
                 key="user-management-view" 
                 currentUserRole={userRole} 
                 onUpdateUserRole={handleUpdateUserRole}
-                onDeleteUser={handleDeleteUser}
+                // onDeleteUser={handleDeleteUser} // Removed onDeleteUser prop
               /></ProtectedRoute>} />
             <Route path="/permissions-overview" element={<ProtectedRoute allowedRoles={['admin']}><PermissionsOverview key="permissions-overview-view" /></ProtectedRoute>} />
             <Route path="*" element={<ProtectedRoute><Dashboard key="default-dashboard-view" data={fleetData} userRole={userRole} preDepartureChecklists={fleetData.pre_departure_checklists} /></ProtectedRoute>} />

@@ -1,12 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Edit2, Trash2, ChevronUp, ChevronDown, Search, Download, Settings } from 'lucide-react';
 import { Button } from './ui/button';
-import ConfirmDialog from './components/ConfirmDialog';
+import ConfirmDialog from './ConfirmDialog'; // Corrected import path
 import { exportToXLSX } from '../utils/export';
 import { showSuccess, showError } from '../utils/toast';
-import SkeletonLoader from './components/SkeletonLoader';
-import { DataTableColumn, ProcessedDataTableColumn, Resource, Action } from '../types'; // Import the new interface
-import DataTableColumnCustomizer from './components/DataTableColumnCustomizer'; // Import the new component
+import SkeletonLoader from './SkeletonLoader'; // Corrected import path
+import { DataTableColumn, ProcessedDataTableColumn, Resource } from '../types'; // Removed Action from import
+import DataTableColumnCustomizer from './DataTableColumnCustomizer'; // Corrected import path
 import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
 
 interface DataTableProps<T extends { id: string }> {

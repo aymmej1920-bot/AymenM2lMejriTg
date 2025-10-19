@@ -24,7 +24,7 @@ import { UserRole } from '../types'; // Import UserRole
 interface UserManagementProps {
   currentUserRole: UserRole; // Use UserRole type
   onUpdateUserRole: (userId: string, newRole: UserRole) => Promise<void>; // Use UserRole type
-  onDeleteUser: (userId: string) => Promise<void>;
+  // onDeleteUser: (userId: string) => Promise<void>; // Removed onDeleteUser prop
 }
 
 interface Profile {
@@ -38,8 +38,7 @@ interface Profile {
 
 type InviteUserFormData = z.infer<typeof inviteUserSchema>;
 
-const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpdateUserRole, onDeleteUser }) => {
-  void onDeleteUser; // Explicitly mark as "used" for TypeScript
+const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpdateUserRole }) => {
   void currentUserRole; // Explicitly mark as "used" for TypeScript
   const { canAccess } = usePermissions(); // Use usePermissions hook
 
@@ -60,7 +59,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
   const [sortColumn, setSortColumn] = useState<keyof Profile>('first_name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(10); // Declared itemsPerPage state
+  const itemsPerPageOptions = [10, 25, 50]; // Declared itemsPerPageOptions
 
   const inviteMethods = useForm<InviteUserFormData>({
     resolver: zodResolver(inviteUserSchema),
@@ -466,6 +466,18 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
           >
             Suivant
           </Button>
+          <select
+            value={itemsPerPage}
+            onChange={(e) => {
+              setItemsPerPage(Number(e.target.value));
+              setCurrentPage(1); // Reset to first page when items per page changes
+            }}
+            className="ml-4 bg-white border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+          >
+            {itemsPerPageOptions.map((option: number) => (
+              <option key={option} value={option}>{option} par page</option>
+            ))}
+          </select>
         </div>
       )}
 

@@ -1,8 +1,4 @@
-// @ts-ignore
-/// <reference lib="deno.ns" /> 
-// @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-// @ts-ignore
 import { createClient, User } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 const corsHeaders = {
@@ -16,7 +12,7 @@ interface DbProfile {
   first_name: string | null;
   last_name: string | null;
   role: 'admin' | 'direction' | 'utilisateur';
-  updated_at: string; // Changed from created_at to updated_at
+  updated_at: string;
 }
 
 serve(async (req: Request) => {
@@ -27,9 +23,7 @@ serve(async (req: Request) => {
 
   // Create a Supabase client with the service role key
   const supabaseAdmin = createClient(
-    // @ts-ignore
     Deno.env.get('SUPABASE_URL') ?? '',
-    // @ts-ignore
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   );
 
@@ -70,29 +64,35 @@ serve(async (req: Request) => {
 
   try {
     if (req.method === 'GET') {
-      // Fetch profiles
-      const { data: profiles, error: profilesError } = await supabaseAdmin
-        .from('profiles')
-        .select('id, first_name, last_name, role, updated_at'); // Changed from created_at to updated_at
-
-      if (profilesError) throw profilesError;
-
-      // Fetch auth.users to get emails
-      const { data: authUsers, error: authUsersError } = await supabaseAdmin.auth.admin.listUsers();
-
+      // Fetch all users from auth.users (includes invited users)
+      const { data: authUsersData, error: authUsersError } = await supabaseAdmin.auth.admin.listUsers();
       if (authUsersError) throw authUsersError;
+      const allAuthUsers = authUsersData.users;
 
-      const usersWithEmails = (profiles as DbProfile[]).map((profile: DbProfile) => {
-        const authUser = authUsers.users.find((au: User) => au.id === profile.id);
+      // Fetch all profiles from public.profiles
+      const { data: profilesData, error: profilesError } = await supabaseAdmin
+        .from('profiles')
+        .select('id, first_name, last_name, role, updated_at');
+      if (profilesError) throw profilesError;
+      const allProfiles = profilesData;
+
+      // Create a map for quick profile lookup
+      const profilesMap = new Map<string, DbProfile>();
+      allProfiles.forEach((p: DbProfile) => profilesMap.set(p.id, p));
+
+      const usersToDisplay = allAuthUsers.map((user: User) => {
+        const profile = profilesMap.get(user.id);
         return {
-          ...profile,
-          email: authUser?.email || 'N/A',
-          first_name: profile.first_name || authUser?.user_metadata?.first_name || 'N/A',
-          last_name: profile.last_name || authUser?.user_metadata?.last_name || 'N/A',
+          id: user.id,
+          email: user.email || 'N/A',
+          first_name: profile?.first_name || user.user_metadata?.first_name || 'N/A',
+          last_name: profile?.last_name || user.user_metadata?.last_name || 'N/A',
+          role: profile?.role || 'utilisateur', // Default role for invited users or those without profile
+          updated_at: profile?.updated_at || user.created_at, // Use profile updated_at if available, else auth user created_at
         };
       });
 
-      return new Response(JSON.stringify(usersWithEmails), {
+      return new Response(JSON.stringify(usersToDisplay), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
