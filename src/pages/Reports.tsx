@@ -147,26 +147,6 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
     return data[selectedDataSource] || [];
   }, [data, selectedDataSource]);
 
-  const filteredData = useMemo(() => {
-    if (!selectedDataSource) return [];
-
-    return currentData.filter(item => {
-      let matchesDateRange = true;
-      const itemDateString = (item as any).date || (item as any).expiration || (item as any).created_at; // Common date fields
-      
-      if (itemDateString) {
-        const itemDate = new Date(itemDateString);
-        const start = startDate ? new Date(startDate) : null;
-        const end = endDate ? new Date(endDate) : null;
-
-        matchesDateRange = 
-          (!start || itemDate >= start) &&
-          (!end || itemDate <= end);
-      }
-      return matchesDateRange;
-    });
-  }, [currentData, startDate, endDate, selectedDataSource]);
-
   const columns = useMemo(() => {
     if (!selectedDataSource) return [];
     return getColumnConfigs(selectedDataSource, data.vehicles, data.drivers);
@@ -212,6 +192,22 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
     );
   }, [selectedDataSource, startDate, endDate]);
 
+  const customFilter = useCallback((item: any) => {
+    let matchesDateRange = true;
+    const itemDateString = (item as any).date || (item as any).expiration || (item as any).created_at; // Common date fields
+    
+    if (itemDateString) {
+      const itemDate = new Date(itemDateString);
+      const start = startDate ? new Date(startDate) : null;
+      const end = endDate ? new Date(endDate) : null;
+
+      matchesDateRange = 
+        (!start || itemDate >= start) &&
+        (!end || itemDate <= end);
+    }
+    return matchesDateRange;
+  }, [startDate, endDate]);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -242,11 +238,12 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
       {selectedDataSource ? (
         <DataTable
           title={`Rapport: ${dataSources.find(ds => ds.id === selectedDataSource)?.name || ''}`}
-          data={filteredData}
+          data={currentData}
           columns={columns}
           exportFileName={`rapport_${selectedDataSource}`}
           isLoading={false} // Adjust based on actual loading state if needed
           renderFilters={renderFilters}
+          customFilter={customFilter}
         />
       ) : (
         <div className="bg-white rounded-xl shadow-lg p-6 text-center text-gray-500">

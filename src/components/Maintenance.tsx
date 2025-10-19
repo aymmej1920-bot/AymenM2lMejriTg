@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Plus, Wrench, AlertTriangle, Clock, ClipboardCheck, Calendar } from 'lucide-react';
-import { FleetData, MaintenanceEntry, PreDepartureChecklist, DataTableColumn } from '../types';
+import { FleetData, MaintenanceEntry, PreDepartureChecklist, DataTableColumn, Vehicle } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date';
 import { useForm } from 'react-hook-form';
@@ -75,24 +75,6 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
     return Array.from(types);
   }, [data.maintenance]);
 
-  // Filtered data for Maintenance History (DataTable will handle sorting and search)
-  const filteredMaintenanceEntries = useMemo(() => {
-    return data.maintenance.filter(entry => {
-      const matchesVehicle = selectedVehicleFilter ? entry.vehicle_id === selectedVehicleFilter : true;
-      const matchesType = selectedTypeFilter ? entry.type === selectedTypeFilter : true;
-
-      const entryDate = new Date(entry.date);
-      const start = startDate ? new Date(startDate) : null;
-      const end = endDate ? new Date(endDate) : null;
-
-      const matchesDateRange = 
-        (!start || entryDate >= start) &&
-        (!end || entryDate <= end);
-
-      return matchesVehicle && matchesType && matchesDateRange;
-    });
-  }, [data.maintenance, selectedVehicleFilter, selectedTypeFilter, startDate, endDate]);
-
   const handleAddMaintenance = (vehicleId?: string) => {
     setSelectedVehicleId(vehicleId || '');
     setShowModal(true);
@@ -132,7 +114,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
     setShowModal(false);
   };
 
-  const getMaintenanceStatus = (vehicle: any) => {
+  const getMaintenanceStatus = (vehicle: Vehicle) => {
     const nextServiceKm = (vehicle.last_service_mileage || 0) + 10000;
     const kmUntilService = nextServiceKm - vehicle.mileage;
     
@@ -160,7 +142,40 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
   // Filter checklists with issues to address
   const checklistsWithIssues = preDepartureChecklists.filter(cl => cl.issues_to_address && cl.issues_to_address.trim() !== '');
 
-  const columns: DataTableColumn<MaintenanceEntry>[] = useMemo(() => [
+  const vehicleMaintenanceColumns: DataTableColumn<Vehicle>[] = useMemo(() => [
+    { key: 'plate', label: 'Véhicule', sortable: true, defaultVisible: true },
+    { key: 'mileage', label: 'Km Actuel', sortable: true, defaultVisible: true, render: (item) => `${item.mileage.toLocaleString()} km` },
+    { key: 'last_service_date', label: 'Dernière Vidange', sortable: true, defaultVisible: true, render: (item) => formatDate(item.last_service_date) || 'N/A' },
+    { key: 'last_service_mileage', label: 'Km Dernière Vidange', sortable: true, defaultVisible: true, render: (item) => `${(item.last_service_mileage || 0).toLocaleString()} km` },
+    { 
+      key: 'next_service_km', 
+      label: 'Prochaine Vidange', 
+      sortable: true, 
+      defaultVisible: true, 
+      render: (item) => {
+        const nextServiceKm = (item.last_service_mileage || 0) + 10000;
+        return `${nextServiceKm.toLocaleString()} km`;
+      }
+    },
+    { 
+      key: 'status', 
+      label: 'Statut', 
+      sortable: false, 
+      defaultVisible: true, 
+      render: (item) => {
+        const status = getMaintenanceStatus(item);
+        const StatusIcon = status.icon;
+        return (
+          <span className={`px-3 py-1 text-xs rounded-full font-medium ${status.class} flex items-center space-x-1`}>
+            <StatusIcon className="w-3 h-3" />
+            <span>{status.text}</span>
+          </span>
+        );
+      }
+    },
+  ], []);
+
+  const maintenanceHistoryColumns: DataTableColumn<MaintenanceEntry>[] = useMemo(() => [
     { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item) => formatDate(item.date) },
     {
       key: 'vehicle_id',
@@ -174,7 +189,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
     { key: 'cost', label: 'Coût', sortable: true, defaultVisible: true, render: (item) => `${item.cost.toFixed(2)} TND` },
   ], [data.vehicles]);
 
-  const renderFilters = useCallback((_searchTerm: string, _setSearchTerm: (term: string) => void) => {
+  const renderMaintenanceHistoryFilters = useCallback((_searchTerm: string, _setSearchTerm: (term: string) => void) => {
     return (
       <>
         <div>
@@ -227,22 +242,24 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
     );
   }, [data.vehicles, uniqueMaintenanceTypes, selectedVehicleFilter, selectedTypeFilter, startDate, endDate]);
 
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-4xl font-bold text-gray-800">Suivi Maintenance & Vidanges</h2>
-        <Button
-          key="add-maintenance-button"
-          onClick={() => handleAddMaintenance()}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Ajouter Maintenance</span>
-        </Button>
-      </div>
+  const customMaintenanceHistoryFilter = useCallback((entry: MaintenanceEntry) => {
+    const matchesVehicle = selectedVehicleFilter ? entry.vehicle_id === selectedVehicleFilter : true;
+    const matchesType = selectedTypeFilter ? entry.type === selectedTypeFilter : true;
 
-      {/* Alertes maintenance */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    const entryDate = new Date(entry.date);
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
+
+    const matchesDateRange = 
+      (!start || entryDate >= start) &&
+      (!end || entryDate <= end);
+
+    return matchesVehicle && matchesType && matchesDateRange;
+  }, [selectedVehicleFilter, selectedTypeFilter, startDate, endDate]);
+
+  const renderMaintenanceAlerts = useCallback(() => {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
         <div className="bg-orange-50 border-l-4 border-orange-400 p-6 rounded-r-lg shadow-lg">
           <div className="flex items-center">
             <Clock className="w-6 h-6 text-orange-400 mr-4" />
@@ -267,7 +284,6 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
           </div>
         </div>
 
-        {/* New Alert for Checklist Issues */}
         {checklistsWithIssues.length > 0 && (
           <div className="bg-purple-50 border-l-4 border-purple-400 p-6 rounded-r-lg shadow-lg">
             <div className="flex items-center">
@@ -282,6 +298,25 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
           </div>
         )}
       </div>
+    );
+  }, [upcomingMaintenanceCount, urgentMaintenanceCount, checklistsWithIssues]);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-4xl font-bold text-gray-800">Suivi Maintenance & Vidanges</h2>
+        <Button
+          key="add-maintenance-button"
+          onClick={() => handleAddMaintenance()}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+        >
+          <Plus className="w-5 h-5" />
+          <span>Ajouter Maintenance</span>
+        </Button>
+      </div>
+
+      {/* Alerts for Maintenance and Checklists */}
+      {renderMaintenanceAlerts()}
 
       {/* Detailed list of checklist issues */}
       {checklistsWithIssues.length > 0 && (
@@ -324,63 +359,36 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        <table className="min-w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Véhicule</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Km Actuel</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Dernière Vidange</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Km Dernière Vidange</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Prochaine Vidange</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Statut</th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {data.vehicles.map((vehicle) => {
-              const nextServiceKm = (vehicle.last_service_mileage || 0) + 10000;
-              const status = getMaintenanceStatus(vehicle);
-              const StatusIcon = status.icon;
-              
-              return (
-                <tr key={vehicle.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{vehicle.plate}</td>
-                  <td className="px-6 py-4 text-sm font-semibold">{vehicle.mileage.toLocaleString()} km</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{formatDate(vehicle.last_service_date) || 'N/A'}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{(vehicle.last_service_mileage || 0).toLocaleString()} km</td>
-                  <td className="px-6 py-4 text-sm font-semibold">{nextServiceKm.toLocaleString()} km</td>
-                  <td className="px-6 py-4 text-sm">
-                    <span className={`px-3 py-1 text-xs rounded-full font-medium ${status.class} flex items-center space-x-1`}>
-                      <StatusIcon className="w-3 h-3" />
-                      <span>{status.text}</span>
-                    </span>
-                  </td>
-                    <td className="px-6 py-4 text-sm">
-                      <Button
-                        key={vehicle.id + "-maintenance"}
-                        onClick={() => handleAddMaintenance(vehicle.id)}
-                        className="text-blue-600 hover:text-blue-900 transition-colors flex items-center space-x-1"
-                        variant="ghost"
-                        size="icon"
-                      >
-                        <Wrench className="w-4 h-4" />
-                        <span>Maintenance</span>
-                      </Button>
-                    </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      {/* Suivi Maintenance & Vidanges - Now using DataTable */}
+      <DataTable
+        title="Suivi Maintenance & Vidanges des Véhicules"
+        data={data.vehicles}
+        columns={vehicleMaintenanceColumns}
+        onAdd={() => handleAddMaintenance()} // Re-use existing add handler
+        addLabel="Ajouter Maintenance"
+        searchPlaceholder="Rechercher un véhicule par plaque, type ou statut..."
+        exportFileName="suivi_maintenance_vehicules"
+        isLoading={false}
+        renderRowActions={(item) => (
+          <Button
+            key={item.id + "-maintenance-action"}
+            onClick={() => handleAddMaintenance(item.id)}
+            className="text-blue-600 hover:text-blue-900 transition-colors flex items-center space-x-1"
+            variant="ghost"
+            size="icon"
+          >
+            <Wrench className="w-4 h-4" />
+            <span>Maintenance</span>
+          </Button>
+        )}
+      />
 
       {/* Historique des maintenances - Now using DataTable */}
       {data.maintenance.length > 0 && (
         <DataTable
           title="Historique des Maintenances"
-          data={filteredMaintenanceEntries}
-          columns={columns}
+          data={data.maintenance}
+          columns={maintenanceHistoryColumns}
           onAdd={() => handleAddMaintenance()} // Re-use existing add handler
           onEdit={handleEditMaintenance} // Placeholder for future edit functionality
           onDelete={handleDeleteMaintenance} // Placeholder for future delete functionality
@@ -388,7 +396,8 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, preDep
           searchPlaceholder="Rechercher dans l'historique par véhicule, type, date ou coût..."
           exportFileName="historique_maintenance"
           isLoading={false}
-          renderFilters={renderFilters}
+          renderFilters={renderMaintenanceHistoryFilters}
+          customFilter={customMaintenanceHistoryFilter}
         />
       )}
 
