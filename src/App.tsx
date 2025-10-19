@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Truck, Users, Route, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck } from 'lucide-react';
+import { Truck, Users, Route, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck, FileText as ReportIcon } from 'lucide-react'; // Added ReportIcon
 import Dashboard from './components/Dashboard';
 import Vehicles from './components/Vehicles';
 import Drivers from './components/Drivers';
@@ -9,6 +9,7 @@ import Documents from './components/Documents';
 import Maintenance from './components/Maintenance';
 import Summary from './components/Summary';
 import PreDepartureChecklistComponent from './components/PreDepartureChecklist';
+import Reports from './pages/Reports'; // Import the new Reports component
 import Login from './pages/Login';
 import { FleetData, AuthUser, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist } from './types';
 import { useSession } from './components/SessionContextProvider';
@@ -165,6 +166,7 @@ function App() {
     { id: 'documents', name: 'Documents', icon: FileText },
     { id: 'maintenance', name: 'Maintenance', icon: Wrench },
     { id: 'checklists', name: 'Checklists', icon: ClipboardCheck },
+    { id: 'reports', name: 'Rapports', icon: ReportIcon }, // New Reports tab
     { id: 'summary', name: 'Résumé', icon: BarChart3 }
   ];
 
@@ -239,6 +241,8 @@ function App() {
           userRole={userRole} 
           onAdd={(newData: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('pre_departure_checklists', newData, 'insert')} 
         />;
+      case 'reports': // New case for Reports tab
+        return <Reports key="reports-view" data={fleetData} userRole={userRole} />;
       case 'summary':
         return <Summary key="summary-view" data={fleetData} />;
       default:
