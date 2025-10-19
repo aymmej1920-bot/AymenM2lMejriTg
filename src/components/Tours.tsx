@@ -122,24 +122,6 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
     return '-';
   };
 
-  const filteredTours = useMemo(() => {
-    return data.tours.filter(tour => {
-      const matchesVehicle = selectedVehicle ? tour.vehicle_id === selectedVehicle : true;
-      const matchesDriver = selectedDriver ? tour.driver_id === selectedDriver : true;
-      const matchesStatus = selectedStatus ? tour.status === selectedStatus : true;
-
-      const tourDate = new Date(tour.date);
-      const start = startDate ? new Date(startDate) : null;
-      const end = endDate ? new Date(endDate) : null;
-
-      const matchesDateRange =
-        (!start || tourDate >= start) &&
-        (!end || tourDate <= end);
-
-      return matchesVehicle && matchesDriver && matchesStatus && matchesDateRange;
-    });
-  }, [data.tours, selectedVehicle, selectedDriver, selectedStatus, startDate, endDate]);
-
   const columns: DataTableColumn<Tour>[] = useMemo(() => [
     { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item) => formatDate(item.date) },
     {
@@ -165,10 +147,19 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
     { key: 'consumption_per_100km', label: 'L/100km', sortable: false, defaultVisible: true, render: (item) => calculateConsumption(item) },
   ], [data.vehicles, data.drivers]); // Dependencies for memoization
 
-  const renderFilters = useCallback((_searchTerm: string, _setSearchTerm: (term: string) => void) => {
+  const renderFilters = useCallback((searchTerm: string, setSearchTerm: (term: string) => void) => {
     const uniqueStatuses = Array.from(new Set(data.tours.map(t => t.status)));
     return (
       <>
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Rechercher par date, véhicule, conducteur ou statut..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          />
+        </div>
         <div>
           <select
             value={selectedVehicle}
@@ -233,12 +224,28 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
     );
   }, [data.vehicles, data.drivers, data.tours, selectedVehicle, selectedDriver, selectedStatus, startDate, endDate]);
 
+  const filterData = useCallback((item: Tour) => {
+    const matchesVehicle = selectedVehicle ? item.vehicle_id === selectedVehicle : true;
+    const matchesDriver = selectedDriver ? item.driver_id === selectedDriver : true;
+    const matchesStatus = selectedStatus ? item.status === selectedStatus : true;
+
+    const tourDate = new Date(item.date);
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
+
+    const matchesDateRange =
+      (!start || tourDate >= start) &&
+      (!end || tourDate <= end);
+
+    return matchesVehicle && matchesDriver && matchesStatus && matchesDateRange;
+  }, [selectedVehicle, selectedDriver, selectedStatus, startDate, endDate]);
+
 
   return (
     <>
       <DataTable
         title="Suivi des Tournées"
-        data={filteredTours} // Pass pre-filtered data
+        data={data.tours} // Pass all data, DataTable will handle filtering
         columns={columns}
         onAdd={handleAddTour}
         onEdit={handleEditTour}
@@ -248,6 +255,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
         exportFileName="tournees"
         isLoading={false}
         renderFilters={renderFilters}
+        customFilter={filterData} // Pass the custom filter function
       />
 
       {/* Modal */}

@@ -31,6 +31,7 @@ interface DataTableProps<T extends { id: string }> {
   renderAlerts?: () => React.ReactNode;
   // Optional custom row actions, if more than just edit/delete are needed
   renderRowActions?: (item: T) => React.ReactNode;
+  customFilter?: (item: T) => boolean; // Added customFilter prop
 }
 
 const DataTable = <T extends { id: string }>({
@@ -48,6 +49,7 @@ const DataTable = <T extends { id: string }>({
   renderFilters,
   renderAlerts,
   renderRowActions,
+  customFilter, // Destructure customFilter
 }: React.PropsWithChildren<DataTableProps<T>>) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortColumn, setSortColumn] = useState<keyof T | string>(initialColumns.find(col => col.sortable)?.key || '');
@@ -139,10 +141,14 @@ const DataTable = <T extends { id: string }>({
   const filteredAndSortedData = useMemo(() => {
     let filtered = data.filter(item => {
       const lowerCaseSearchTerm = searchTerm.toLowerCase();
-      return Object.values(item).some(value =>
+      const matchesSearch = Object.values(item).some(value =>
         (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') &&
         String(value).toLowerCase().includes(lowerCaseSearchTerm)
       );
+
+      const matchesCustomFilter = customFilter ? customFilter(item) : true; // Apply custom filter
+
+      return matchesSearch && matchesCustomFilter;
     });
 
     if (sortColumn) {
@@ -167,7 +173,7 @@ const DataTable = <T extends { id: string }>({
       });
     }
     return filtered;
-  }, [data, searchTerm, sortColumn, sortDirection]);
+  }, [data, searchTerm, sortColumn, sortDirection, customFilter]); // Add customFilter to dependencies
 
   const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
   const currentItems = useMemo(() => {
@@ -305,20 +311,22 @@ const DataTable = <T extends { id: string }>({
 
       {/* Search and Filters */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder={searchPlaceholder}
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-          />
-        </div>
         {renderFilters && renderFilters(searchTerm, setSearchTerm)}
+        {!renderFilters && ( // Only show default search if no custom filters are rendered
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder={searchPlaceholder}
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            />
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
