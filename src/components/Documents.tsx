@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Calendar, AlertTriangle } from 'lucide-react';
+import { Calendar, AlertTriangle, Search } from 'lucide-react'; // Ajout de Search pour le filtre par défaut
 import { FleetData, Document, DataTableColumn } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date';
@@ -108,23 +108,6 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
     return Array.from(types);
   }, [data.documents]);
 
-  const filteredDocuments = useMemo(() => {
-    return data.documents.filter(doc => {
-      const matchesVehicle = selectedVehicle ? doc.vehicle_id === selectedVehicle : true;
-      const matchesType = selectedType ? doc.type === selectedType : true;
-
-      const docExpirationDate = new Date(doc.expiration);
-      const start = startDate ? new Date(startDate) : null;
-      const end = endDate ? new Date(endDate) : null;
-
-      const matchesDateRange = 
-        (!start || docExpirationDate >= start) &&
-        (!end || docExpirationDate <= end);
-
-      return matchesVehicle && matchesType && matchesDateRange;
-    });
-  }, [data.documents, selectedVehicle, selectedType, startDate, endDate]);
-
   const columns: DataTableColumn<Document>[] = useMemo(() => [
     {
       key: 'vehicle_id',
@@ -200,9 +183,19 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
     );
   }, [expiringDocs]);
 
-  const renderFilters = useCallback((_searchTerm: string, _setSearchTerm: (term: string) => void) => {
+  const renderFilters = useCallback((searchTerm: string, setSearchTerm: (term: string) => void) => {
     return (
       <>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Rechercher un document par véhicule, type, numéro ou expiration..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          />
+        </div>
         <div>
           <select
             value={selectedVehicle}
@@ -253,11 +246,26 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
     );
   }, [data.vehicles, uniqueTypes, selectedVehicle, selectedType, startDate, endDate]);
 
+  const customFilter = useCallback((doc: Document) => {
+    const matchesVehicle = selectedVehicle ? doc.vehicle_id === selectedVehicle : true;
+    const matchesType = selectedType ? doc.type === selectedType : true;
+
+    const docExpirationDate = new Date(doc.expiration);
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
+
+    const matchesDateRange = 
+      (!start || docExpirationDate >= start) &&
+      (!end || docExpirationDate <= end);
+
+    return matchesVehicle && matchesType && matchesDateRange;
+  }, [selectedVehicle, selectedType, startDate, endDate]);
+
   return (
     <>
       <DataTable
         title="Suivi des Documents"
-        data={filteredDocuments}
+        data={data.documents}
         columns={columns}
         onAdd={handleAddDocument}
         onEdit={handleEditDocument}
@@ -268,6 +276,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
         isLoading={false}
         renderFilters={renderFilters}
         renderAlerts={renderAlerts}
+        customFilter={customFilter}
       />
 
       {/* Modal */}
