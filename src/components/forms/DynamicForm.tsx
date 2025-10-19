@@ -1,4 +1,4 @@
-import { useForm, FormProvider, FieldValues, Path, DefaultValues } from 'react-hook-form';
+import { useForm, FormProvider, FieldValues, Path, DefaultValues, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import FormField from './FormField';
@@ -21,9 +21,9 @@ export interface DynamicFormFieldConfig<TFieldValues extends FieldValues> {
 }
 
 interface DynamicFormProps<TFieldValues extends FieldValues> {
-  schema: z.AnyZodObject; // Simplified schema type to z.AnyZodObject
+  schema: z.ZodSchema<TFieldValues>; // Simplified schema type
   defaultValues: DefaultValues<TFieldValues>;
-  onSubmit: (data: TFieldValues) => void; // Changed to a function signature to avoid TS2345
+  onSubmit: SubmitHandler<TFieldValues>;
   fields: DynamicFormFieldConfig<TFieldValues>[];
   submitLabel?: string;
   cancelLabel?: string;
