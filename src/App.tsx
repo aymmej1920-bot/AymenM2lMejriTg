@@ -196,7 +196,7 @@ function App() {
               <SkeletonLoader count={tabs.length} height="h-12" className="w-full" />
             </div>
           </aside>
-          <main className="flex-1 px-6 py-8"> {/* Removed container mx-auto */}
+          <main className="flex-1 px-6 py-8 min-w-0 overflow-x-auto"> {/* Added min-w-0 and overflow-x-auto */}
             <SkeletonLoader count={5} height="h-16" className="w-full mb-4" />
             <SkeletonLoader count={3} height="h-24" className="w-full mb-4" />
             <SkeletonLoader count={2} height="h-64" className="w-full mb-4" />
@@ -304,7 +304,7 @@ function App() {
           </nav>
         </aside>
 
-        <main className="flex-1 px-6 py-8"> {/* Main content - Removed container mx-auto */}
+        <main className="flex-1 px-6 py-8 min-w-0 overflow-x-auto"> {/* Main content - Added min-w-0 and overflow-x-auto */}
           {renderContent()}
         </main>
       </div>
