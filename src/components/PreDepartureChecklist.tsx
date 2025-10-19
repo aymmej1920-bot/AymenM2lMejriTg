@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, CheckCircle, XCircle, AlertTriangle, ChevronUp, ChevronDown, Search, Calendar } from 'lucide-react';
+import { Plus, CheckCircle, XCircle, AlertTriangle, ChevronUp, ChevronDown, Search, Calendar, Download } from 'lucide-react';
 import { FleetData, PreDepartureChecklist } from '../types';
 import { showSuccess, showError } from '../utils/toast';
 import { formatDate } from '../utils/date';
@@ -17,6 +17,7 @@ import {
   DialogDescription,
 
 } from './ui/dialog'; // Import shadcn/ui Dialog components
+import { exportToXLSX } from '../utils/export'; // Import the export utility
 
 type PreDepartureChecklistFormData = z.infer<typeof preDepartureChecklistSchema>;
 
@@ -233,20 +234,61 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
     return null;
   };
 
+  const handleExportChecklists = () => {
+    const dataToExport = filteredAndSortedChecklists.map(checklist => {
+      const vehicle = data.vehicles.find(v => v.id === checklist.vehicle_id);
+      const driver = data.drivers.find(d => d.id === checklist.driver_id);
+      return {
+        Date: formatDate(checklist.date),
+        Véhicule: vehicle?.plate || 'N/A',
+        Conducteur: driver?.name || 'N/A',
+        Pneus: checklist.tire_pressure_ok ? 'OK' : 'NOK',
+        Feux: checklist.lights_ok ? 'OK' : 'NOK',
+        Huile: checklist.oil_level_ok ? 'OK' : 'NOK',
+        Fluides: checklist.fluid_levels_ok ? 'OK' : 'NOK',
+        Freins: checklist.brakes_ok ? 'OK' : 'NOK',
+        "Essuie-glaces": checklist.wipers_ok ? 'OK' : 'NOK',
+        Klaxon: checklist.horn_ok ? 'OK' : 'NOK',
+        Rétroviseurs: checklist.mirrors_ok ? 'OK' : 'NOK',
+        Climatiseur: checklist.ac_working_ok ? 'OK' : 'NOK',
+        Vitres: checklist.windows_working_ok ? 'OK' : 'NOK',
+        Observations: checklist.observations || '-',
+        "À Traiter": checklist.issues_to_address || '-',
+      };
+    });
+
+    const headers = [
+      "Date", "Véhicule", "Conducteur", "Pneus", "Feux", "Huile", "Fluides", "Freins",
+      "Essuie-glaces", "Klaxon", "Rétroviseurs", "Climatiseur", "Vitres", "Observations", "À Traiter"
+    ];
+
+    exportToXLSX(dataToExport, { fileName: 'checklists_avant_depart', headers });
+    showSuccess('Checklists exportées avec succès au format XLSX !');
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Checklists Avant Départ</h2>
-        {canAdd && (
+        <div className="flex space-x-4">
           <Button
-            key="add-checklist-button"
-            onClick={handleAddChecklist}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+            onClick={handleExportChecklists}
+            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
           >
-            <Plus className="w-5 h-5" />
-            <span>Nouvelle Checklist</span>
+            <Download className="w-5 h-5" />
+            <span>Exporter XLSX</span>
           </Button>
-        )}
+          {canAdd && (
+            <Button
+              key="add-checklist-button"
+              onClick={handleAddChecklist}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Nouvelle Checklist</span>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Alerte pour les checklists mensuelles manquantes */}

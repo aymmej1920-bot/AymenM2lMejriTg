@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Edit2, Trash2, ChevronUp, ChevronDown, Search, Calendar } from 'lucide-react';
+import { Plus, Edit2, Trash2, ChevronUp, ChevronDown, Search, Calendar, Download } from 'lucide-react';
 import { FleetData, Vehicle } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date';
@@ -17,6 +17,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from './ui/dialog'; // Import shadcn/ui Dialog components
+import { exportToXLSX } from '../utils/export'; // Import the export utility
 
 type VehicleFormData = z.infer<typeof vehicleSchema>;
 
@@ -191,10 +192,38 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
     return null;
   };
 
+  const handleExportVehicles = () => {
+    const dataToExport = filteredAndSortedVehicles.map(vehicle => ({
+      Plaque: vehicle.plate,
+      Type: vehicle.type,
+      Statut: vehicle.status,
+      Kilométrage: vehicle.mileage,
+      "Date Dernière Vidange": formatDate(vehicle.last_service_date),
+      "Km Dernière Vidange": vehicle.last_service_mileage,
+      "Prochaine Vidange (Km)": (vehicle.last_service_mileage || 0) + 10000,
+    }));
+
+    const headers = [
+      "Plaque", "Type", "Statut", "Kilométrage", 
+      "Date Dernière Vidange", "Km Dernière Vidange", "Prochaine Vidange (Km)"
+    ];
+
+    exportToXLSX(dataToExport, { fileName: 'vehicules', headers });
+    showSuccess('Véhicules exportés avec succès au format XLSX !');
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Gestion des Véhicules</h2>
+        <div className="flex space-x-4">
+          <Button
+            onClick={handleExportVehicles}
+            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+          >
+            <Download className="w-5 h-5" />
+            <span>Exporter XLSX</span>
+          </Button>
           <Button
             onClick={handleAddVehicle}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
@@ -202,6 +231,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
             <Plus className="w-5 h-5" />
             <span>Ajouter Véhicule</span>
           </Button>
+        </div>
       </div>
 
       {/* Search and Filter Inputs */}

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Edit2, Trash2, ChevronUp, ChevronDown, Search, Calendar } from 'lucide-react';
+import { Plus, Edit2, Trash2, ChevronUp, ChevronDown, Search, Calendar, Download } from 'lucide-react';
 import { FleetData, Tour } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date';
@@ -17,6 +17,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from './ui/dialog'; // Import shadcn/ui Dialog components
+import { exportToXLSX } from '../utils/export'; // Import the export utility
 
 type TourFormData = z.infer<typeof tourSchema>;
 
@@ -226,10 +227,45 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
     return null;
   };
 
+  const handleExportTours = () => {
+    const dataToExport = filteredAndSortedTours.map(tour => {
+      const vehicle = data.vehicles.find(v => v.id === tour.vehicle_id);
+      const driver = data.drivers.find(d => d.id === tour.driver_id);
+      return {
+        Date: formatDate(tour.date),
+        Véhicule: vehicle?.plate || 'N/A',
+        Conducteur: driver?.name || 'N/A',
+        Statut: tour.status,
+        "Fuel Début (%)": tour.fuel_start ?? '-',
+        "Km Début": tour.km_start ?? '-',
+        "Fuel Fin (%)": tour.fuel_end ?? '-',
+        "Km Fin": tour.km_end ?? '-',
+        "Distance (km)": tour.distance ?? '-',
+        "L/100km": calculateConsumption(tour),
+      };
+    });
+
+    const headers = [
+      "Date", "Véhicule", "Conducteur", "Statut", "Fuel Début (%)", 
+      "Km Début", "Fuel Fin (%)", "Km Fin", "Distance (km)", "L/100km"
+    ];
+
+    exportToXLSX(dataToExport, { fileName: 'tournees', headers });
+    showSuccess('Tournées exportées avec succès au format XLSX !');
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Suivi des Tournées</h2>
+        <div className="flex space-x-4">
+          <Button
+            onClick={handleExportTours}
+            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+          >
+            <Download className="w-5 h-5" />
+            <span>Exporter XLSX</span>
+          </Button>
           <Button
             onClick={handleAddTour}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
@@ -237,6 +273,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
             <Plus className="w-5 h-5" />
             <span>Nouvelle Tournée</span>
           </Button>
+        </div>
       </div>
 
       {/* Search and Filter Inputs */}

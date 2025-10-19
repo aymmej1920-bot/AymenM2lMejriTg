@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Phone, ChevronUp, ChevronDown, Search, Calendar } from 'lucide-react';
+import { Plus, Edit2, Trash2, Phone, ChevronUp, ChevronDown, Search, Calendar, Download } from 'lucide-react';
 import { FleetData, Driver } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date';
@@ -17,6 +17,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from './ui/dialog'; // Import shadcn/ui Dialog components
+import { exportToXLSX } from '../utils/export'; // Import the export utility
 
 type DriverFormData = z.infer<typeof driverSchema>;
 
@@ -183,10 +184,33 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
     return null;
   };
 
+  const handleExportDrivers = () => {
+    const dataToExport = filteredAndSortedDrivers.map(driver => ({
+      Nom: driver.name,
+      "N° Permis": driver.license,
+      Expiration: formatDate(driver.expiration),
+      Statut: driver.status,
+      Téléphone: driver.phone,
+    }));
+
+    const headers = ["Nom", "N° Permis", "Expiration", "Statut", "Téléphone"];
+
+    exportToXLSX(dataToExport, { fileName: 'conducteurs', headers });
+    showSuccess('Conducteurs exportés avec succès au format XLSX !');
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Gestion des Conducteurs</h2>
+        <div className="flex space-x-4">
+          <Button
+            onClick={handleExportDrivers}
+            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+          >
+            <Download className="w-5 h-5" />
+            <span>Exporter XLSX</span>
+          </Button>
           <Button
             onClick={handleAddDriver}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
@@ -194,6 +218,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
             <Plus className="w-5 h-5" />
             <span>Ajouter Conducteur</span>
           </Button>
+        </div>
       </div>
 
       {/* Search and Filter Inputs */}

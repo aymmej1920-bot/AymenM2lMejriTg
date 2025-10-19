@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Fuel, DollarSign, TrendingUp, ChevronUp, ChevronDown, Search, Calendar } from 'lucide-react';
+import { Plus, Edit2, Trash2, Fuel, DollarSign, TrendingUp, ChevronUp, ChevronDown, Search, Calendar, Download } from 'lucide-react';
 import { FleetData, FuelEntry } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date';
@@ -17,6 +17,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from './ui/dialog'; // Import shadcn/ui Dialog components
+import { exportToXLSX } from '../utils/export'; // Import the export utility
 
 type FuelEntryFormData = z.infer<typeof fuelEntrySchema>;
 
@@ -199,10 +200,39 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
     return null;
   };
 
+  const handleExportFuelEntries = () => {
+    const dataToExport = filteredAndSortedFuelEntries.map(fuel => {
+      const vehicle = data.vehicles.find(v => v.id === fuel.vehicle_id);
+      return {
+        Date: formatDate(fuel.date),
+        Véhicule: vehicle?.plate || 'N/A',
+        Litres: fuel.liters,
+        "Prix/L (TND)": fuel.price_per_liter,
+        "Coût Total (TND)": (fuel.liters * fuel.price_per_liter).toFixed(2),
+        Kilométrage: fuel.mileage,
+      };
+    });
+
+    const headers = [
+      "Date", "Véhicule", "Litres", "Prix/L (TND)", "Coût Total (TND)", "Kilométrage"
+    ];
+
+    exportToXLSX(dataToExport, { fileName: 'carburant', headers });
+    showSuccess('Enregistrements de carburant exportés avec succès au format XLSX !');
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Gestion du Carburant</h2>
+        <div className="flex space-x-4">
+          <Button
+            onClick={handleExportFuelEntries}
+            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+          >
+            <Download className="w-5 h-5" />
+            <span>Exporter XLSX</span>
+          </Button>
           <Button
             onClick={handleAddFuel}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
@@ -210,6 +240,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
             <Plus className="w-5 h-5" />
             <span>Ajouter Plein</span>
           </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
