@@ -1,4 +1,4 @@
-import { useForm, FormProvider, FieldValues, Path, DefaultValues } from 'react-hook-form';
+import { useForm, FormProvider, FieldValues, Path, DefaultValues, Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import FormField from './FormField';
@@ -21,7 +21,7 @@ export interface DynamicFormFieldConfig<TFieldValues extends FieldValues> {
 }
 
 interface DynamicFormProps<TFieldValues extends FieldValues> {
-  schema: z.ZodSchema<TFieldValues>;
+  schema: z.ZodSchema<TFieldValues, z.ZodTypeDef, TFieldValues>; // Explicitly define Input as TFieldValues
   defaultValues: DefaultValues<TFieldValues>;
   onSubmit: (data: TFieldValues) => void;
   fields: DynamicFormFieldConfig<TFieldValues>[];
@@ -44,7 +44,7 @@ const DynamicForm = <TFieldValues extends FieldValues>({
   gridCols = 'grid-cols-1',
 }: DynamicFormProps<TFieldValues>) => {
   const methods = useForm<TFieldValues>({
-    resolver: zodResolver<TFieldValues>(schema), // Explicitly pass TFieldValues to zodResolver
+    resolver: zodResolver(schema), // Remove explicit cast, schema type is now correct
     defaultValues,
   });
 
