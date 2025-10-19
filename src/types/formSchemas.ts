@@ -99,3 +99,13 @@ export const profileSchema = z.object({
 export const inviteUserSchema = z.object({
   email: z.string().email("L'adresse e-mail doit être valide."),
 });
+
+export const manualUserSchema = z.object({
+  email: z.string().email("L'adresse e-mail doit être valide."),
+  password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères."),
+  first_name: z.string().min(1, "Le prénom est requis."),
+  last_name: z.string().min(1, "Le nom est requis."),
+  role: z.enum(['admin', 'direction', 'utilisateur'], {
+    message: "Le rôle est requis.", // Corrected: use 'message' instead of 'errorMap'
+  }),
+});

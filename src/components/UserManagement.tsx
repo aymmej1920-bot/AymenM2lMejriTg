@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Edit2, Trash2, ChevronUp, ChevronDown, Search, Download, UserPlus } from 'lucide-react';
+import { Edit2, Trash2, ChevronUp, ChevronDown, Search, Download, UserPlus, UserCheck } from 'lucide-react';
 import { showSuccess, showError, showLoading, dismissToast } from '../utils/toast';
 import ConfirmDialog from './ConfirmDialog';
 import { Button } from './ui/button';
@@ -15,32 +15,32 @@ import { supabase } from '../integrations/supabase/client';
 import { exportToXLSX } from '../utils/export';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { inviteUserSchema } from '../types/formSchemas';
+import { inviteUserSchema, manualUserSchema } from '../types/formSchemas'; // Import manualUserSchema
 import { z } from 'zod';
 import FormField from './forms/FormField';
-import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
-import { UserRole } from '../types'; // Import UserRole
+import { usePermissions } from '../hooks/usePermissions';
+import { UserRole } from '../types';
 
 interface UserManagementProps {
-  currentUserRole: UserRole; // Use UserRole type
-  onUpdateUserRole: (userId: string, newRole: UserRole) => Promise<void>; // Use UserRole type
-  // onDeleteUser: (userId: string) => Promise<void>; // Removed onDeleteUser prop
+  currentUserRole: UserRole;
+  onUpdateUserRole: (userId: string, newRole: UserRole) => Promise<void>;
 }
 
 interface Profile {
   id: string;
   first_name: string | null;
   last_name: string | null;
-  email: string; // Added email for display
-  role: UserRole; // Use UserRole type
-  updated_at: string; // Changed from created_at to updated_at
+  email: string;
+  role: UserRole;
+  updated_at: string;
 }
 
 type InviteUserFormData = z.infer<typeof inviteUserSchema>;
+type ManualUserFormData = z.infer<typeof manualUserSchema>; // New type for manual user form
 
 const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpdateUserRole }) => {
-  void currentUserRole; // Explicitly mark as "used" for TypeScript
-  const { canAccess } = usePermissions(); // Use usePermissions hook
+  void currentUserRole;
+  const { canAccess } = usePermissions();
 
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,23 +49,37 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
   const [userToDelete, setUserToDelete] = useState<string | null>(null);
   const [showEditRoleModal, setShowEditRoleModal] = useState(false);
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
-  const [newRole, setNewRole] = useState<UserRole>('utilisateur'); // Use UserRole type
+  const [newRole, setNewRole] = useState<UserRole>('utilisateur');
   const [showInviteUserModal, setShowInviteUserModal] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
 
-  // State for filtering, sorting, and pagination
+  // New states for manual user creation
+  const [showManualAddUserModal, setShowManualAddUserModal] = useState(false);
+  const [isCreatingManualUser, setIsCreatingManualUser] = useState(false);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>('');
   const [sortColumn, setSortColumn] = useState<keyof Profile>('first_name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10); // Declared itemsPerPage state
-  const itemsPerPageOptions = [10, 25, 50]; // Declared itemsPerPageOptions
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const itemsPerPageOptions = [10, 25, 50];
 
   const inviteMethods = useForm<InviteUserFormData>({
     resolver: zodResolver(inviteUserSchema),
     defaultValues: {
       email: '',
+    },
+  });
+
+  const manualUserMethods = useForm<ManualUserFormData>({ // New form methods for manual user
+    resolver: zodResolver(manualUserSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+      first_name: '',
+      last_name: '',
+      role: 'utilisateur',
     },
   });
 
@@ -105,13 +119,13 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
   };
 
   useEffect(() => {
-    if (canAccess('users', 'view')) { // Use canAccess from hook
+    if (canAccess('users', 'view')) {
       fetchUsers();
     } else {
       setError('Vous n\'avez pas les permissions pour accéder à cette page.');
       setLoading(false);
     }
-  }, [canAccess]); // Depend on canAccess
+  }, [canAccess]);
 
   const filteredAndSortedUsers = useMemo(() => {
     let filtered = users.filter(user => {
@@ -157,7 +171,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
       showSuccess(`Rôle de ${editingUser.email} mis à jour en ${newRole}.`);
       setShowEditRoleModal(false);
       setEditingUser(null);
-      fetchUsers(); // Re-fetch to update the list
+      fetchUsers();
     }
   };
 
@@ -196,7 +210,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
       dismissToast(loadingToastId);
       showSuccess('Utilisateur supprimé avec succès !');
       setUserToDelete(null);
-      fetchUsers(); // Re-fetch to update the list
+      fetchUsers();
     } catch (error: any) {
       console.error('Error deleting user:', error.message);
       dismissToast(loadingToastId);
@@ -225,10 +239,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
       Nom: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
       Email: user.email,
       Rôle: user.role,
-      "Date Dernière Mise à Jour": new Date(user.updated_at).toLocaleDateString(), // Changed to updated_at
+      "Date Dernière Mise à Jour": new Date(user.updated_at).toLocaleDateString(),
     }));
 
-    const headers = ["Nom", "Email", "Rôle", "Date Dernière Mise à Jour"]; // Changed header
+    const headers = ["Nom", "Email", "Rôle", "Date Dernière Mise à Jour"];
 
     exportToXLSX(dataToExport, { fileName: 'utilisateurs', headers });
     showSuccess('Liste des utilisateurs exportée avec succès au format XLSX !');
@@ -259,8 +273,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
       dismissToast(loadingToastId);
       showSuccess(`Invitation envoyée à ${formData.email} avec succès !`);
       setShowInviteUserModal(false);
-      inviteMethods.reset(); // Clear form
-      fetchUsers(); // Re-fetch users to potentially see the new user (though they won't have a profile until they sign up)
+      inviteMethods.reset();
+      fetchUsers();
     } catch (error: any) {
       console.error('Error inviting user:', error.message);
       dismissToast(loadingToastId);
@@ -270,7 +284,44 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
     }
   };
 
+  const handleManualAddUser = async (formData: ManualUserFormData) => {
+    setIsCreatingManualUser(true);
+    const loadingToastId = showLoading(`Création de l'utilisateur ${formData.email}...`);
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      if (!token) throw new Error('No session token found.');
+
+      const response = await fetch('https://iqaymjchscdvlofvuacn.supabase.co/functions/v1/create-user-manual', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create user manually.');
+      }
+
+      dismissToast(loadingToastId);
+      showSuccess(`Utilisateur ${formData.email} créé avec succès !`);
+      setShowManualAddUserModal(false);
+      manualUserMethods.reset();
+      fetchUsers(); // Re-fetch users to update the list
+    } catch (error: any) {
+      console.error('Error creating user manually:', error.message);
+      dismissToast(loadingToastId);
+      showError(`Erreur lors de la création de l'utilisateur : ${error.message}`);
+    } finally {
+      setIsCreatingManualUser(false);
+    }
+  };
+
   const canInvite = canAccess('users', 'add');
+  const canCreateManualUser = canAccess('users', 'add'); // Same permission for now
   const canEditRole = canAccess('users', 'edit');
   const canDeleteUser = canAccess('users', 'delete');
 
@@ -290,7 +341,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
     );
   }
 
-  if (!canAccess('users', 'view')) { // Use canAccess from hook
+  if (!canAccess('users', 'view')) {
     return (
       <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
         <p className="text-red-700">Accès refusé. Vous n'avez pas les permissions pour accéder à cette page.</p>
@@ -310,6 +361,15 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
             <Download className="w-5 h-5" />
             <span>Exporter XLSX</span>
           </Button>
+          {canCreateManualUser && (
+            <Button
+              onClick={() => setShowManualAddUserModal(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300"
+            >
+              <UserCheck className="w-5 h-5" />
+              <span>Ajouter Utilisateur Manuellement</span>
+            </Button>
+          )}
           {canInvite && (
             <Button
               onClick={() => setShowInviteUserModal(true)}
@@ -470,7 +530,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
             value={itemsPerPage}
             onChange={(e) => {
               setItemsPerPage(Number(e.target.value));
-              setCurrentPage(1); // Reset to first page when items per page changes
+              setCurrentPage(1);
             }}
             className="ml-4 bg-white border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
           >
@@ -496,7 +556,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
               <select
                 id="role"
                 value={newRole}
-                onChange={(e) => setNewRole(e.target.value as UserRole)} // Use UserRole type
+                onChange={(e) => setNewRole(e.target.value as UserRole)}
                 className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="utilisateur">Utilisateur</option>
@@ -552,6 +612,56 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
                   disabled={isInviting}
                 >
                   {isInviting ? 'Envoi en cours...' : 'Envoyer l\'invitation'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </FormProvider>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manual Add User Modal */}
+      <Dialog open={showManualAddUserModal} onOpenChange={setShowManualAddUserModal}>
+        <DialogContent className="sm:max-w-[425px] bg-gray-50">
+          <DialogHeader>
+            <DialogTitle>Ajouter un Utilisateur Manuellement</DialogTitle>
+            <DialogDescription>
+              Créez un nouvel utilisateur avec un e-mail, un mot de passe et un rôle.
+            </DialogDescription>
+          </DialogHeader>
+          <FormProvider {...manualUserMethods}>
+            <form onSubmit={manualUserMethods.handleSubmit(handleManualAddUser)} className="space-y-4 py-4">
+              <FormField name="email" label="Adresse E-mail" type="email" placeholder="email@example.com" disabled={isCreatingManualUser} />
+              <FormField name="password" label="Mot de passe" type="password" placeholder="Mot de passe (min. 6 caractères)" disabled={isCreatingManualUser} />
+              <FormField name="first_name" label="Prénom" type="text" placeholder="Prénom de l'utilisateur" disabled={isCreatingManualUser} />
+              <FormField name="last_name" label="Nom" type="text" placeholder="Nom de l'utilisateur" disabled={isCreatingManualUser} />
+              <FormField
+                name="role"
+                label="Rôle"
+                type="select"
+                options={[
+                  { value: 'utilisateur', label: 'Utilisateur' },
+                  { value: 'direction', label: 'Direction' },
+                  { value: 'admin', label: 'Admin' },
+                ]}
+                disabled={isCreatingManualUser}
+              />
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowManualAddUserModal(false);
+                    manualUserMethods.reset();
+                  }}
+                  disabled={isCreatingManualUser}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isCreatingManualUser}
+                >
+                  {isCreatingManualUser ? 'Création en cours...' : 'Créer Utilisateur'}
                 </Button>
               </DialogFooter>
             </form>

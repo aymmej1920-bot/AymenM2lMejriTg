@@ -1,11 +1,21 @@
 // @ts-nocheck
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { createClient, User } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
+
+// Define an interface for the profile data fetched from the 'profiles' table
+interface DbProfile {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  role: 'admin' | 'direction' | 'utilisateur';
+  updated_at: string;
+}
 
 serve(async (req: Request) => {
   // Handle CORS OPTIONS request
@@ -22,6 +32,7 @@ serve(async (req: Request) => {
   // Verify the user's JWT from the request header
   const authHeader = req.headers.get('Authorization');
   if (!authHeader) {
+    console.log('Unauthorized: No Authorization header'); // Log
     return new Response(JSON.stringify({ error: 'Unauthorized: No Authorization header' }), {
       status: 401,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -48,39 +59,47 @@ serve(async (req: Request) => {
 
   if (profileError || profile?.role !== 'admin') {
     console.error('User is not an admin or profile not found:', profileError?.message);
-    return new Response(JSON.stringify({ error: 'Forbidden: Only administrators can invite users.' }), {
+    return new Response(JSON.stringify({ error: 'Forbidden: Only administrators can create users manually.' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
   // Parse the request body
-  const { email, first_name, last_name } = await req.json();
+  const { email, password, first_name, last_name, role } = await req.json();
 
-  if (!email) {
-    return new Response(JSON.stringify({ error: 'Email is required.' }), {
+  if (!email || !password || !first_name || !last_name || !role) {
+    return new Response(JSON.stringify({ error: 'Email, password, first name, last name, and role are required.' }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
   try {
-    // Explicitly set the redirectTo URL to your deployed application's URL
-    const redirectToUrl = `https://aymenm2lmejritg.vercel.app/login`; 
-
-    const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      data: { first_name, last_name }, // Pass first_name and last_name to user_metadata
-      redirectTo: redirectToUrl,
+    // Create user in auth.users
+    const { data: newUserAuth, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true, // Automatically confirm email
+      user_metadata: { first_name, last_name }, // Pass metadata for profile trigger
     });
 
-    if (error) throw error;
+    if (createUserError) throw createUserError;
 
-    return new Response(JSON.stringify({ message: 'Invitation sent successfully!', user: data.user }), {
+    // Update the profile with the specified role
+    const { error: updateProfileError } = await supabaseAdmin
+      .from('profiles')
+      .update({ role, first_name, last_name })
+      .eq('id', newUserAuth.user?.id);
+
+    if (updateProfileError) throw updateProfileError;
+
+    return new Response(JSON.stringify({ message: 'User created successfully!', user: newUserAuth.user }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
-    console.error('Error inviting user:', error.message);
+    console.error('Error creating user manually:', error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
