@@ -14,8 +14,9 @@ const Login: React.FC = () => {
           </div>
           <h2 className="text-3xl font-bold text-gray-800">Fleet Manager Pro</h2>
           <p className="text-gray-600 mt-2">Connectez-vous ou créez un compte</p>
+          <p className="text-gray-500 text-sm font-semibold mt-1">TG&M2L</p>
         </div>
-        <div className="supabase-auth-glass-theme"> {/* Apply the class to a wrapper div */}
+        <div className="supabase-auth-glass-theme">
           <Auth
             supabaseClient={supabase}
             providers={[]}
