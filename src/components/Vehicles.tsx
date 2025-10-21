@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { FleetData, Vehicle, DataTableColumn, VehicleImportData } from '../types';
-import { showSuccess, showError } from '../utils/toast';
+import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date';
 import {
   Dialog,
@@ -11,7 +11,7 @@ import {
   DialogFooter,
 } from './ui/dialog';
 import DataTable from './DataTable';
-import { vehicleSchema } from '../types/formSchemas';
+import { vehicleSchema, vehicleImportSchema } from '../types/formSchemas';
 import { z } from 'zod';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -95,7 +95,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
     }
   };
 
-  const vehicleColumnMapping = {
+  const vehicleColumnMapping: { [excelHeader: string]: keyof VehicleImportData } = {
     "Plaque": "plate",
     "Type": "type",
     "Statut": "status",
@@ -233,12 +233,12 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
       </Dialog>
 
       {/* XLSX Import Dialog for Vehicles */}
-      <XLSXImportDialog<typeof vehicleSchema>
+      <XLSXImportDialog<typeof vehicleImportSchema>
         open={showImportDialog}
         onOpenChange={setShowImportDialog}
         title="Importer des Véhicules depuis XLSX"
         description="Téléchargez un fichier Excel (.xlsx) contenant les données de vos véhicules. Les colonnes doivent correspondre aux en-têtes spécifiés."
-        schema={vehicleSchema}
+        schema={vehicleImportSchema}
         columnMapping={vehicleColumnMapping}
         onImport={handleImportVehicles}
         isLoading={false} // Adjust based on actual import loading state

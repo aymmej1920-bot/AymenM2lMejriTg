@@ -12,7 +12,7 @@ import {
   DialogFooter,
 } from './ui/dialog';
 import DataTable from './DataTable';
-import { driverSchema } from '../types/formSchemas';
+import { driverSchema, driverImportSchema } from '../types/formSchemas';
 import { z } from 'zod';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -93,7 +93,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
     }
   };
 
-  const driverColumnMapping = {
+  const driverColumnMapping: { [excelHeader: string]: keyof DriverImportData } = {
     "Nom": "name",
     "N° Permis": "license",
     "Expiration": "expiration",
@@ -240,12 +240,12 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
       </Dialog>
 
       {/* XLSX Import Dialog for Drivers */}
-      <XLSXImportDialog<typeof driverSchema>
+      <XLSXImportDialog<typeof driverImportSchema>
         open={showImportDialog}
         onOpenChange={setShowImportDialog}
         title="Importer des Conducteurs depuis XLSX"
         description="Téléchargez un fichier Excel (.xlsx) contenant les données de vos conducteurs. Les colonnes doivent correspondre aux en-têtes spécifiés."
-        schema={driverSchema}
+        schema={driverImportSchema}
         columnMapping={driverColumnMapping}
         onImport={handleImportDrivers}
         isLoading={false} // Adjust based on actual import loading state

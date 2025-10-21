@@ -10,8 +10,27 @@ export const vehicleSchema = z.object({
   last_service_mileage: z.number().min(0, "Le kilométrage de dernière vidange doit être positif."),
 });
 
+// Schema for importing vehicles (does not include id, user_id, created_at)
+export const vehicleImportSchema = z.object({
+  plate: z.string().min(1, "La plaque d'immatriculation est requise."),
+  type: z.string().min(1, "Le type de véhicule est requis."),
+  status: z.string().min(1, "Le statut est requis."),
+  mileage: z.number().min(0, "Le kilométrage doit être positif."),
+  last_service_date: z.string().min(1, "La date de dernière vidange est requise."),
+  last_service_mileage: z.number().min(0, "Le kilométrage de dernière vidange doit être positif."),
+});
+
 export const driverSchema = z.object({
   id: z.string().optional(), // Optional for new drivers
+  name: z.string().min(1, "Le nom est requis."),
+  license: z.string().min(1, "Le numéro de permis est requis."),
+  expiration: z.string().min(1, "La date d'expiration est requise."),
+  status: z.string().min(1, "Le statut est requis."),
+  phone: z.string().min(1, "Le numéro de téléphone est requis."),
+});
+
+// Schema for importing drivers (does not include id, user_id, created_at)
+export const driverImportSchema = z.object({
   name: z.string().min(1, "Le nom est requis."),
   license: z.string().min(1, "Le numéro de permis est requis."),
   expiration: z.string().min(1, "La date d'expiration est requise."),

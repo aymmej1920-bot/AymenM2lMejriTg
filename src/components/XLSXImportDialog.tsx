@@ -11,7 +11,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Upload, CheckCircle, XCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import { readXLSXFile } from '../utils/excelUtils';
-import { showSuccess, showError, showLoading, dismissToast, updateToast } from '../utils/toast';
+import { showError, showLoading, updateToast } from '../utils/toast';
 import { z } from 'zod';
 import { cn } from '../utils/cn';
 
@@ -89,7 +89,7 @@ const XLSXImportDialog = <T extends z.ZodTypeAny>({
           return {
             originalRow: row,
             validatedData: null,
-            errors: validation.error.errors.map(err => `${err.path.join('.')} : ${err.message}`),
+            errors: validation.error.issues.map((err: z.ZodIssue) => `${err.path.join('.')} : ${err.message}`),
             isValid: false,
           };
         }
