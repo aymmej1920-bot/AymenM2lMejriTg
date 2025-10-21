@@ -60,13 +60,13 @@ function AppContent() { // Renamed App to AppContent
         supabase.from('pre_departure_checklists').select('*').eq('user_id', userId),
       ]);
 
-      if (vehiclesError) throw vehiclesError;
-      if (driversError) throw driversError;
-      if (toursError) throw toursError;
-      if (fuelError) throw fuelError;
-      if (documentsError) throw documentsError;
-      if (maintenanceError) throw maintenanceError;
-      if (checklistsError) throw checklistsError;
+      if (vehiclesError) { console.error('Vehicles Error:', vehiclesError); throw vehiclesError; }
+      if (driversError) { console.error('Drivers Error:', driversError); throw driversError; } // Added specific log for driversError
+      if (toursError) { console.error('Tours Error:', toursError); throw toursError; }
+      if (fuelError) { console.error('Fuel Error:', fuelError); throw fuelError; }
+      if (documentsError) { console.error('Documents Error:', documentsError); throw documentsError; }
+      if (maintenanceError) { console.error('Maintenance Error:', maintenanceError); throw maintenanceError; }
+      if (checklistsError) { console.error('Checklists Error:', checklistsError); throw checklistsError; }
 
       setFleetData({
         vehicles: vehiclesData as Vehicle[],
