@@ -19,7 +19,8 @@ import FormField from './forms/FormField';
 import { Button } from './ui/button';
 import { usePermissions } from '../hooks/usePermissions';
 import XLSXImportDialog from './XLSXImportDialog'; // Import the new component
-import { Upload } from 'lucide-react'; // Import Upload icon
+import { Upload, Download } from 'lucide-react'; // Import Upload and Download icons
+import { exportTemplateToXLSX } from '../utils/templateExport'; // Import the new utility
 
 type VehicleFormData = z.infer<typeof vehicleSchema>;
 
@@ -104,6 +105,14 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
     "Km Dernière Vidange": "last_service_mileage",
   };
 
+  const handleDownloadVehicleTemplate = () => {
+    exportTemplateToXLSX({
+      headers: ["Plaque", "Type", "Statut", "Kilométrage", "Dernière Vidange", "Km Dernière Vidange"],
+      fileName: "modele_import_vehicules"
+    });
+    showSuccess('Modèle d\'importation des véhicules téléchargé !');
+  };
+
   const columns: DataTableColumn<Vehicle>[] = useMemo(() => [
     { key: 'plate', label: 'Plaque', sortable: true, defaultVisible: true },
     { key: 'type', label: 'Type', sortable: true, defaultVisible: true },
@@ -162,6 +171,15 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
 
   const renderCustomHeaderButtons = () => (
     <>
+      {canImport && (
+        <Button
+          onClick={handleDownloadVehicleTemplate}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300 hover-lift"
+        >
+          <Download className="w-5 h-5" />
+          <span>Télécharger Modèle</span>
+        </Button>
+      )}
       {canImport && (
         <Button
           onClick={() => setShowImportDialog(true)}

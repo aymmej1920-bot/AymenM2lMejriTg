@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Phone, AlertTriangle, Upload } from 'lucide-react'; // Import Upload icon
+import { Phone, AlertTriangle, Upload, Download } from 'lucide-react'; // Import Upload and Download icons
 import { FleetData, Driver, DataTableColumn, DriverImportData } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate, getDaysUntilExpiration } from '../utils/date';
@@ -20,6 +20,7 @@ import FormField from './forms/FormField';
 import { Button } from './ui/button';
 import { usePermissions } from '../hooks/usePermissions';
 import XLSXImportDialog from './XLSXImportDialog'; // Import the new component
+import { exportTemplateToXLSX } from '../utils/templateExport'; // Import the new utility
 
 type DriverFormData = z.infer<typeof driverSchema>;
 
@@ -101,6 +102,14 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
     "Téléphone": "phone",
   };
 
+  const handleDownloadDriverTemplate = () => {
+    exportTemplateToXLSX({
+      headers: ["Nom", "N° Permis", "Expiration", "Statut", "Téléphone"],
+      fileName: "modele_import_conducteurs"
+    });
+    showSuccess('Modèle d\'importation des conducteurs téléchargé !');
+  };
+
   const getStatusBadge = (status: string) => {
     const classes = {
       'Disponible': 'bg-green-100 text-green-800',
@@ -173,6 +182,15 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
 
   const renderCustomHeaderButtons = () => (
     <>
+      {canImport && (
+        <Button
+          onClick={handleDownloadDriverTemplate}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300 hover-lift"
+        >
+          <Download className="w-5 h-5" />
+          <span>Télécharger Modèle</span>
+        </Button>
+      )}
       {canImport && (
         <Button
           onClick={() => setShowImportDialog(true)}
