@@ -119,6 +119,12 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
   const onSubmit = (formData: PreDepartureChecklistFormData) => {
     if (!canAdd) return;
 
+    if (Object.keys(errors).length > 0) {
+      console.log('Form validation errors:', errors); // Log Zod validation errors
+      showError('Veuillez corriger les erreurs dans le formulaire.');
+      return;
+    }
+
     const { vehicle_id, date } = formData;
 
     const checklistDate = new Date(date);
@@ -296,7 +302,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
 
       {/* Modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="sm:max-w-2xl glass animate-scale-in">
+        <DialogContent className="sm:max-w-xl glass animate-scale-in">
           <DialogHeader>
             <DialogTitle>Nouvelle Checklist Avant Départ</DialogTitle>
             <DialogDescription>

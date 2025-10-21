@@ -133,7 +133,7 @@ function AppContent() { // Renamed App to AppContent
       
       fetchData(currentUser.id);
     } catch (error) {
-      console.error(`Error ${action}ing data in ${tableName}:`, error);
+      console.error(`Error ${action}ing data in ${tableName}:`, (error as any)?.message || error); // Log detailed error
       dismissToast(loadingToastId);
       showError(`Erreur lors de la ${action === 'add' ? 'création' : action === 'edit' ? 'mise à jour' : 'suppression'} des données.`);
     }
