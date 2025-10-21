@@ -34,7 +34,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingTour, setEditingTour] = useState<Tour | null>(null);
 
-  const { register, handleSubmit, watch, reset, formState: { errors = {} } } = useForm<TourFormData>({
+  const { register, handleSubmit, watch, reset, setValue, formState: { errors = {} } } = useForm<TourFormData>({
     resolver: zodResolver(tourSchema),
     defaultValues: {
       date: new Date().toISOString().split('T')[0],
@@ -50,6 +50,8 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
   });
 
   const status = watch('status');
+  const kmStart = watch('km_start');
+  const kmEnd = watch('km_end');
 
   useEffect(() => {
     if (editingTour) {
@@ -75,6 +77,16 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
       });
     }
   }, [editingTour, reset]);
+
+  // Effect to calculate distance automatically
+  useEffect(() => {
+    // Use != null to check for both null and undefined
+    if (status === 'Terminé' && kmStart != null && kmEnd != null && kmEnd >= kmStart) {
+      setValue('distance', kmEnd - kmStart);
+    } else if (status !== 'Terminé') {
+      setValue('distance', null); // Clear distance if not 'Terminé'
+    }
+  }, [status, kmStart, kmEnd, setValue]);
 
   // State for custom filters
   const [selectedVehicle, setSelectedVehicle] = useState<string>('');
@@ -403,7 +415,8 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                 type="number"
                 {...register('distance', { valueAsNumber: true })}
                 className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                disabled={((!canEditForm && !!editingTour) || (!canAddForm && !editingTour)) || (status !== 'Terminé')}
+                disabled={((!canEditForm && !!editingTour) || (!canAddForm && !editingTour)) || (status === 'Terminé')} // Disable if status is 'Terminé'
+                readOnly={status === 'Terminé'} // Make read-only if status is 'Terminé'
               />
               {errors.distance && <p className="text-red-500 text-sm mt-1">{errors.distance.message}</p>}
             </div>
