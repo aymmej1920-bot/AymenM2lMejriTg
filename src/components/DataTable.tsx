@@ -1,13 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Edit2, Trash2, ChevronUp, ChevronDown, Search, Download, Settings } from 'lucide-react';
 import { Button } from './ui/button';
-import ConfirmDialog from './ConfirmDialog'; // Corrected import path
+import ConfirmDialog from './ConfirmDialog';
 import { exportToXLSX } from '../utils/export';
 import { showSuccess, showError } from '../utils/toast';
-import SkeletonLoader from './SkeletonLoader'; // Corrected import path
-import { DataTableColumn, ProcessedDataTableColumn, Resource } from '../types'; // Removed Action from import
-import DataTableColumnCustomizer from './DataTableColumnCustomizer'; // Corrected import path
-import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
+import SkeletonLoader from './SkeletonLoader';
+import { DataTableColumn, ProcessedDataTableColumn, Resource } from '../types';
+import DataTableColumnCustomizer from './DataTableColumnCustomizer';
+import { usePermissions } from '../hooks/usePermissions';
 
 interface DataTableProps<T extends { id: string }> {
   title: string;
@@ -23,10 +23,10 @@ interface DataTableProps<T extends { id: string }> {
   itemsPerPageOptions?: number[];
   renderFilters?: (searchTerm: string, setSearchTerm: (term: string) => void) => React.ReactNode;
   renderAlerts?: () => React.ReactNode;
-  // Optional custom row actions, if more than just edit/delete are needed
   renderRowActions?: (item: T) => React.ReactNode;
-  customFilter?: (item: T) => boolean; // Added customFilter prop
-  resourceType: Resource; // New prop to specify the resource type for permissions
+  customFilter?: (item: T) => boolean;
+  resourceType: Resource;
+  renderCustomHeaderButtons?: () => React.ReactNode; // New prop for custom buttons
 }
 
 const DataTable = <T extends { id: string }>({
@@ -44,10 +44,11 @@ const DataTable = <T extends { id: string }>({
   renderFilters,
   renderAlerts,
   renderRowActions,
-  customFilter, // Destructure customFilter
-  resourceType, // Destructure resourceType
+  customFilter,
+  resourceType,
+  renderCustomHeaderButtons, // Destructure new prop
 }: React.PropsWithChildren<DataTableProps<T>>) => {
-  const { canAccess } = usePermissions(); // Use usePermissions hook
+  const { canAccess } = usePermissions();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [sortColumn, setSortColumn] = useState<keyof T | string>(initialColumns.find((col: DataTableColumn<T>) => col.sortable)?.key || '');
@@ -65,15 +66,13 @@ const DataTable = <T extends { id: string }>({
   const allColumns = useMemo(() => {
     return initialColumns.map((col: DataTableColumn<T>) => ({
       ...col,
-      key: col.key as string, // Ensure key is string for internal use
-      defaultVisible: col.defaultVisible !== false, // This makes it boolean
-    })) as ProcessedDataTableColumn<T>[]; // Cast to the new type
+      key: col.key as string,
+      defaultVisible: col.defaultVisible !== false,
+    })) as ProcessedDataTableColumn<T>[];
   }, [initialColumns]);
 
-  // Adjust sortColumn if the currently sorted column becomes invisible
   useEffect(() => {
     if (sortColumn && !columnVisibility[sortColumn as string] && columnOrder.length > 0) {
-      // Find the first visible column to sort by
       const firstVisibleColumnKey = columnOrder.find(key => columnVisibility[key]);
       setSortColumn(firstVisibleColumnKey || '');
     }
@@ -94,7 +93,7 @@ const DataTable = <T extends { id: string }>({
         String(value).toLowerCase().includes(lowerCaseSearchTerm)
       );
 
-      const matchesCustomFilter = customFilter ? customFilter(item) : true; // Apply custom filter
+      const matchesCustomFilter = customFilter ? customFilter(item) : true;
 
       return matchesSearch && matchesCustomFilter;
     });
@@ -121,7 +120,7 @@ const DataTable = <T extends { id: string }>({
       });
     }
     return filtered;
-  }, [data, searchTerm, sortColumn, sortDirection, customFilter]); // Add customFilter to dependencies
+  }, [data, searchTerm, sortColumn, sortDirection, customFilter]);
 
   const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
   const currentItems = useMemo(() => {
@@ -157,7 +156,6 @@ const DataTable = <T extends { id: string }>({
       const exportedRow: { [key: string]: any } = {};
       visibleColumns.forEach(col => {
         exportedRow[col.label] = col.render ? col.render(item) : (item as any)[col.key];
-        // Convert ReactNode to string for export if it's not already a primitive
         if (typeof exportedRow[col.label] === 'object' && exportedRow[col.label] !== null) {
           exportedRow[col.label] = (exportedRow[col.label] as React.ReactElement)?.props?.children?.toString() || '';
         }
@@ -186,11 +184,10 @@ const DataTable = <T extends { id: string }>({
     }
   };
 
-  // Determine if the current user can perform write actions (add, edit, delete) based on resourceType
   const canAdd = onAdd && canAccess(resourceType, 'add');
   const canEdit = onEdit && canAccess(resourceType, 'edit');
   const canDelete = onDelete && canAccess(resourceType, 'delete');
-  const canPerformAnyAction = canAdd || canEdit || canDelete || (renderRowActions && canAccess(resourceType, 'edit')); // Assuming renderRowActions implies some edit/delete capability
+  const canPerformAnyAction = canAdd || canEdit || canDelete || (renderRowActions && canAccess(resourceType, 'edit'));
 
   if (isLoading) {
     return <SkeletonLoader count={5} height="h-12" className="w-full" />;
@@ -201,6 +198,7 @@ const DataTable = <T extends { id: string }>({
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">{title}</h2>
         <div className="flex space-x-4">
+          {renderCustomHeaderButtons && renderCustomHeaderButtons()} {/* Render custom buttons here */}
           <Button
             onClick={handleExport}
             className="bg-gradient-success text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300 hover-lift"
@@ -216,7 +214,7 @@ const DataTable = <T extends { id: string }>({
             <Settings className="w-5 h-5" />
             <span>Personnaliser Colonnes</span>
           </Button>
-          {canAdd && ( // Conditionally render Add button
+          {canAdd && (
             <Button
               onClick={onAdd}
               className="bg-gradient-brand text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300 hover-lift"
@@ -230,10 +228,9 @@ const DataTable = <T extends { id: string }>({
 
       {renderAlerts && renderAlerts()}
 
-      {/* Search and Filters */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {renderFilters && renderFilters(searchTerm, setSearchTerm)}
-        {!renderFilters && ( // Only show default search if no custom filters are rendered
+        {!renderFilters && (
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
@@ -266,7 +263,7 @@ const DataTable = <T extends { id: string }>({
                     </div>
                   </th>
                 ))}
-                {canPerformAnyAction && ( // Conditionally render Actions header
+                {canPerformAnyAction && (
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-800 uppercase tracking-wider">Actions</th>
                 )}
               </tr>
@@ -286,7 +283,7 @@ const DataTable = <T extends { id: string }>({
                         {col.render ? col.render(item) : (item as any)[col.key]}
                       </td>
                     ))}
-                    {canPerformAnyAction && ( // Conditionally render action buttons
+                    {canPerformAnyAction && (
                       <td className="px-6 py-4 text-sm">
                         <div className="flex space-x-2">
                           {canEdit && (
@@ -321,7 +318,6 @@ const DataTable = <T extends { id: string }>({
         </div>
       </div>
 
-      {/* Pagination Controls */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center space-x-2 mt-4">
           <Button
@@ -356,7 +352,7 @@ const DataTable = <T extends { id: string }>({
             value={itemsPerPage}
             onChange={(e) => {
               setItemsPerPage(Number(e.target.value));
-              setCurrentPage(1); // Reset to first page when items per page changes
+              setCurrentPage(1);
             }}
             className="ml-4 bg-white/20 border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm glass"
           >
@@ -367,7 +363,6 @@ const DataTable = <T extends { id: string }>({
         </div>
       )}
 
-      {/* Column Customization Dialog */}
       <DataTableColumnCustomizer
         open={showColumnCustomizeDialog}
         onOpenChange={setShowColumnCustomizeDialog}

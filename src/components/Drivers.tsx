@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Phone, AlertTriangle } from 'lucide-react';
-import { FleetData, Driver, DataTableColumn } from '../types';
+import { Phone, AlertTriangle, Upload } from 'lucide-react'; // Import Upload icon
+import { FleetData, Driver, DataTableColumn, DriverImportData } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate, getDaysUntilExpiration } from '../utils/date';
 import {
@@ -14,11 +14,12 @@ import {
 import DataTable from './DataTable';
 import { driverSchema } from '../types/formSchemas';
 import { z } from 'zod';
-import { useForm, FormProvider } from 'react-hook-form'; // Import useForm and FormProvider
-import { zodResolver } from '@hookform/resolvers/zod'; // Import zodResolver
-import FormField from './forms/FormField'; // Import FormField
-import { Button } from './ui/button'; // Import Button for DialogFooter
-import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
+import { useForm, FormProvider } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import FormField from './forms/FormField';
+import { Button } from './ui/button';
+import { usePermissions } from '../hooks/usePermissions';
+import XLSXImportDialog from './XLSXImportDialog'; // Import the new component
 
 type DriverFormData = z.infer<typeof driverSchema>;
 
@@ -30,10 +31,11 @@ interface DriversProps {
 }
 
 const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) => {
-  const { canAccess } = usePermissions(); // Use usePermissions hook
+  const { canAccess } = usePermissions();
 
   const [showModal, setShowModal] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
+  const [showImportDialog, setShowImportDialog] = useState(false); // State for import dialog
 
   const methods = useForm<DriverFormData>({
     resolver: zodResolver(driverSchema),
@@ -81,6 +83,22 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
       showSuccess('Conducteur ajouté avec succès !');
     }
     setShowModal(false);
+  };
+
+  const handleImportDrivers = async (importedData: DriverImportData[]) => {
+    // For simplicity, we'll treat all imported data as new additions.
+    // A more complex logic could check for existing licenses and offer to update.
+    for (const driverData of importedData) {
+      await onAdd(driverData);
+    }
+  };
+
+  const driverColumnMapping = {
+    "Nom": "name",
+    "N° Permis": "license",
+    "Expiration": "expiration",
+    "Statut": "status",
+    "Téléphone": "phone",
   };
 
   const getStatusBadge = (status: string) => {
@@ -151,6 +169,21 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
 
   const canEditForm = canAccess('drivers', 'edit');
   const canAddForm = canAccess('drivers', 'add');
+  const canImport = canAccess('drivers', 'add'); // Assuming import is an 'add' action
+
+  const renderCustomHeaderButtons = () => (
+    <>
+      {canImport && (
+        <Button
+          onClick={() => setShowImportDialog(true)}
+          className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300 hover-lift"
+        >
+          <Upload className="w-5 h-5" />
+          <span>Importer XLSX</span>
+        </Button>
+      )}
+    </>
+  );
 
   return (
     <>
@@ -166,7 +199,8 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
         exportFileName="conducteurs"
         isLoading={false}
         renderAlerts={renderAlerts}
-        resourceType="drivers" // Pass resource type
+        resourceType="drivers"
+        renderCustomHeaderButtons={renderCustomHeaderButtons} // Pass the custom buttons
       />
 
       {/* Modal */}
@@ -204,6 +238,18 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
           </FormProvider>
         </DialogContent>
       </Dialog>
+
+      {/* XLSX Import Dialog for Drivers */}
+      <XLSXImportDialog<typeof driverSchema>
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
+        title="Importer des Conducteurs depuis XLSX"
+        description="Téléchargez un fichier Excel (.xlsx) contenant les données de vos conducteurs. Les colonnes doivent correspondre aux en-têtes spécifiés."
+        schema={driverSchema}
+        columnMapping={driverColumnMapping}
+        onImport={handleImportDrivers}
+        isLoading={false} // Adjust based on actual import loading state
+      />
     </>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { FleetData, Vehicle, DataTableColumn } from '../types';
-import { showSuccess } from '../utils/toast';
+import { FleetData, Vehicle, DataTableColumn, VehicleImportData } from '../types';
+import { showSuccess, showError } from '../utils/toast';
 import { formatDate } from '../utils/date';
 import {
   Dialog,
@@ -11,13 +11,15 @@ import {
   DialogFooter,
 } from './ui/dialog';
 import DataTable from './DataTable';
-import { vehicleSchema } from '../types/formSchemas'; // Import the schema
+import { vehicleSchema } from '../types/formSchemas';
 import { z } from 'zod';
-import { useForm, FormProvider } from 'react-hook-form'; // Import useForm and FormProvider
-import { zodResolver } from '@hookform/resolvers/zod'; // Import zodResolver
-import FormField from './forms/FormField'; // Import FormField
-import { Button } from './ui/button'; // Import Button for DialogFooter
-import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
+import { useForm, FormProvider } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import FormField from './forms/FormField';
+import { Button } from './ui/button';
+import { usePermissions } from '../hooks/usePermissions';
+import XLSXImportDialog from './XLSXImportDialog'; // Import the new component
+import { Upload } from 'lucide-react'; // Import Upload icon
 
 type VehicleFormData = z.infer<typeof vehicleSchema>;
 
@@ -29,10 +31,11 @@ interface VehiclesProps {
 }
 
 const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) => {
-  const { canAccess } = usePermissions(); // Use usePermissions hook
+  const { canAccess } = usePermissions();
 
   const [showModal, setShowModal] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
+  const [showImportDialog, setShowImportDialog] = useState(false); // State for import dialog
 
   const methods = useForm<VehicleFormData>({
     resolver: zodResolver(vehicleSchema),
@@ -82,6 +85,23 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
       showSuccess('Véhicule ajouté avec succès !');
     }
     setShowModal(false);
+  };
+
+  const handleImportVehicles = async (importedData: VehicleImportData[]) => {
+    // For simplicity, we'll treat all imported data as new additions.
+    // A more complex logic could check for existing plates and offer to update.
+    for (const vehicleData of importedData) {
+      await onAdd(vehicleData);
+    }
+  };
+
+  const vehicleColumnMapping = {
+    "Plaque": "plate",
+    "Type": "type",
+    "Statut": "status",
+    "Kilométrage": "mileage",
+    "Dernière Vidange": "last_service_date",
+    "Km Dernière Vidange": "last_service_mileage",
   };
 
   const columns: DataTableColumn<Vehicle>[] = useMemo(() => [
@@ -138,6 +158,21 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
 
   const canEditForm = canAccess('vehicles', 'edit');
   const canAddForm = canAccess('vehicles', 'add');
+  const canImport = canAccess('vehicles', 'add'); // Assuming import is an 'add' action
+
+  const renderCustomHeaderButtons = () => (
+    <>
+      {canImport && (
+        <Button
+          onClick={() => setShowImportDialog(true)}
+          className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300 hover-lift"
+        >
+          <Upload className="w-5 h-5" />
+          <span>Importer XLSX</span>
+        </Button>
+      )}
+    </>
+  );
 
   return (
     <>
@@ -152,7 +187,8 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
         searchPlaceholder="Rechercher par plaque, type ou statut..."
         exportFileName="vehicules"
         isLoading={false}
-        resourceType="vehicles" // Pass resource type
+        resourceType="vehicles"
+        renderCustomHeaderButtons={renderCustomHeaderButtons} // Pass the custom buttons
       />
 
       {/* Modal for Add/Edit Vehicle */}
@@ -195,6 +231,18 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
           </FormProvider>
         </DialogContent>
       </Dialog>
+
+      {/* XLSX Import Dialog for Vehicles */}
+      <XLSXImportDialog<typeof vehicleSchema>
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
+        title="Importer des Véhicules depuis XLSX"
+        description="Téléchargez un fichier Excel (.xlsx) contenant les données de vos véhicules. Les colonnes doivent correspondre aux en-têtes spécifiés."
+        schema={vehicleSchema}
+        columnMapping={vehicleColumnMapping}
+        onImport={handleImportVehicles}
+        isLoading={false} // Adjust based on actual import loading state
+      />
     </>
   );
 };

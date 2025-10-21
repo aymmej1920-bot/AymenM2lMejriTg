@@ -10,6 +10,16 @@ export interface Vehicle {
   created_at?: string;
 }
 
+// New type for vehicle data as expected from import (before adding id, user_id, created_at)
+export interface VehicleImportData {
+  plate: string;
+  type: string;
+  status: string;
+  mileage: number;
+  last_service_date: string;
+  last_service_mileage: number;
+}
+
 export interface Driver {
   id: string; // UUID from Supabase
   user_id: string; // Foreign key to auth.users
@@ -19,6 +29,15 @@ export interface Driver {
   status: string;
   phone: string;
   created_at?: string;
+}
+
+// New type for driver data as expected from import (before adding id, user_id, created_at)
+export interface DriverImportData {
+  name: string;
+  license: string;
+  expiration: string;
+  status: string;
+  phone: string;
 }
 
 export interface Tour {
