@@ -33,7 +33,19 @@ export const driverSchema = z.object({
 export const driverImportSchema = z.object({
   name: z.string().min(1, "Le nom est requis."),
   license: z.string().min(1, "Le numéro de permis est requis."),
-  expiration: z.string().min(1, "La date d'expiration est requise."),
+  expiration: z.string().min(1, "La date d'expiration est requise.")
+    .transform((str, ctx) => {
+      const date = new Date(str);
+      if (isNaN(date.getTime())) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Format de date invalide. Veuillez utiliser un format de date reconnu (ex: YYYY-MM-DD, MM/DD/YYYY, DD/MM/YYYY).",
+        });
+        return z.NEVER;
+      }
+      // Format to YYYY-MM-DD
+      return date.toISOString().split('T')[0];
+    }),
   status: z.string().min(1, "Le statut est requis."),
   phone: z.string().min(1, "Le numéro de téléphone est requis."),
 });
