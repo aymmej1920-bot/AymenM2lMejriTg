@@ -47,18 +47,22 @@ function AppContent() { // Renamed App to AppContent
   }, [session, isLoading, isProfileLoading, isLoadingPermissions, navigate, location.pathname]);
 
   const handleUpdateData = async (tableName: Resource, newData: any, action: Action): Promise<OperationResult> => {
+    console.log(`[handleUpdateData] Attempting ${action} on ${tableName} with data:`, newData);
+
     if (!currentUser?.id) {
+      console.error(`[handleUpdateData] Unauthorized: No current user for ${action} on ${tableName}.`);
       return { success: false, error: `Utilisateur non authentifié. Impossible d'effectuer l'opération sur ${tableName}.` };
     }
     if (!canAccess(tableName, action)) { // Use canAccess from hook
+      console.warn(`[handleUpdateData] Permission denied: User role '${currentUser.role}' cannot ${action} on ${tableName}.`);
       return { success: false, error: `Vous n'avez pas la permission d'effectuer cette action sur ${tableName}.` };
     }
 
     try {
       let response;
-      if (action === 'add') { // Changed 'insert' to 'add' to match Action type
+      if (action === 'add') {
         response = await supabase.from(tableName).insert({ ...newData, user_id: currentUser.id }).select();
-      } else if (action === 'edit') { // Changed 'update' to 'edit'
+      } else if (action === 'edit') {
         response = await supabase.from(tableName).update(newData).eq('id', newData.id).eq('user_id', currentUser.id).select();
       } else if (action === 'delete') {
         response = await supabase.from(tableName).delete().eq('id', newData.id).eq('user_id', currentUser.id);
@@ -66,17 +70,27 @@ function AppContent() { // Renamed App to AppContent
         throw new Error('Action non supportée.');
       }
 
+      console.log(`[handleUpdateData] Supabase response for ${action} on ${tableName}:`, response);
+
       if (response?.error) {
-        console.error(`Supabase Error during ${action} on ${tableName}:`, response.error); // Detailed error log
+        console.error(`[handleUpdateData] Supabase Error during ${action} on ${tableName}:`, response.error);
         throw response.error;
       }
       
+      // Explicitly check if data was returned for 'add' and 'edit' operations
+      if ((action === 'add' || action === 'edit') && (!response.data || response.data.length === 0)) {
+        const errorMessage = `L'opération ${action} sur ${tableName} a échoué : aucune donnée retournée par la base de données.`;
+        console.error(`[handleUpdateData] ${errorMessage}`);
+        return { success: false, error: errorMessage };
+      }
+
       // Trigger refetch for the specific table
       await refetchResource(tableName);
+      console.log(`[handleUpdateData] Refetched resource: ${tableName}`);
 
       return { success: true, message: `Données ${action === 'add' ? 'ajoutées' : action === 'edit' ? 'mises à jour' : 'supprimées'} avec succès !`, id: (response?.data?.[0] as any)?.id };
     } catch (error) {
-      console.error(`Error in handleUpdateData for ${tableName} (${action}):`, error); // Log the full error object
+      console.error(`[handleUpdateData] Error in handleUpdateData for ${tableName} (${action}):`, error);
       return { success: false, error: `Erreur lors de la ${action === 'add' ? 'création' : action === 'edit' ? 'mise à jour' : 'suppression'} des données: ${(error as any)?.message || 'Une erreur inconnue est survenue.'}` };
     }
   };

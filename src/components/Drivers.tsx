@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Phone, AlertTriangle, Upload, Download } from 'lucide-react'; // Import Upload and Download icons
 import { Driver, DataTableColumn, DriverImportData, Resource, Action, OperationResult, DbImportResult } from '../types';
-import { showSuccess, showLoading, updateToast } from '../utils/toast'; // Removed showError
+import { showSuccess, showLoading, updateToast, showError } from '../utils/toast';
 import { formatDate, getDaysUntilExpiration } from '../utils/date';
 import {
   Dialog,
@@ -127,6 +127,8 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
         result = await onAdd('drivers', formData, 'add');
       }
 
+      console.log("[Drivers.tsx] onSubmit result:", result); // Log the result
+
       if (result.success) {
         updateToast(loadingToastId, result.message || 'Opération réussie !', 'success');
       } else {
@@ -147,7 +149,9 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
   const handleImportDrivers = async (importedData: DriverImportData[]): Promise<DbImportResult[]> => {
     const results: DbImportResult[] = [];
     for (const driverData of importedData) {
+      console.log("[Drivers.tsx] Importing driver data:", driverData); // Log each driver data being imported
       const result = await onAdd('drivers', driverData, 'add');
+      console.log("[Drivers.tsx] Import result for driver:", result); // Log the result for each driver
       results.push({
         originalData: driverData,
         success: result.success,
