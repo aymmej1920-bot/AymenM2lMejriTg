@@ -628,7 +628,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole }) => 
             <DialogDescription>
               Créez un nouvel utilisateur avec un e-mail, un mot de passe et un rôle.
             </DialogDescription>
-          </DialogDescription>
+          </DialogHeader>
           <FormProvider {...manualUserMethods}>
             <form onSubmit={manualUserMethods.handleSubmit(handleManualAddUser)} className="space-y-4 py-4">
               <FormField name="email" label="Adresse E-mail" type="email" placeholder="email@example.com" disabled={isCreatingManualUser} />
