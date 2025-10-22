@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { AlertTriangle, Calendar } from 'lucide-react';
-import { FleetData, PreDepartureChecklist, DataTableColumn, Resource, Action, Vehicle, Driver } from '../types';
+import { PreDepartureChecklist, DataTableColumn, Resource, Action, Vehicle, Driver } from '../types';
 import { formatDate } from '../utils/date';
 import {
   Dialog,

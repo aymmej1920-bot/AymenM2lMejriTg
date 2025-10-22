@@ -1,13 +1,13 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Plus, Wrench, AlertTriangle, Clock, ClipboardCheck, Calendar } from 'lucide-react';
-import { MaintenanceEntry, PreDepartureChecklist, DataTableColumn, Vehicle, Resource, Action, Driver } from '../types';
+import { Wrench, AlertTriangle, Clock, ClipboardCheck } from 'lucide-react';
+import { MaintenanceEntry, PreDepartureChecklist, DataTableColumn, Vehicle, Resource, Action } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { maintenanceEntrySchema } from '../types/formSchemas';
-import { Button } from './ui/button';
 import { z } from 'zod';
+import { Button } from './ui/button';
 import {
   Dialog,
   DialogContent,
@@ -20,7 +20,7 @@ import DataTable from './DataTable';
 import { usePermissions } from '../hooks/usePermissions';
 import { LOCAL_STORAGE_KEYS } from '../utils/constants';
 import FormField from './forms/FormField';
-import { useSupabaseData } from '../hooks/useSupabaseData'; // Import useSupabaseData
+import { useSupabaseData } from '../hooks/useSupabaseData';
 
 type MaintenanceEntryFormData = z.infer<typeof maintenanceEntrySchema>;
 
@@ -37,7 +37,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete, re
   const { data: maintenanceEntries, isLoading: isLoadingMaintenance, refetch: refetchMaintenance } = useSupabaseData<MaintenanceEntry>('maintenance_entries');
   const { data: vehicles, isLoading: isLoadingVehicles, refetch: refetchVehicles } = useSupabaseData<Vehicle>('vehicles');
   const { data: preDepartureChecklists, isLoading: isLoadingChecklists } = useSupabaseData<PreDepartureChecklist>('pre_departure_checklists');
-  const { data: drivers, isLoading: isLoadingDrivers } = useSupabaseData<Driver>('drivers'); // Fetch drivers here
+  // Removed unused drivers fetch: const { data: drivers, isLoading: isLoadingDrivers } = useSupabaseData<Driver>('drivers');
 
   useEffect(() => {
     registerRefetch('maintenance_entries', refetchMaintenance);
@@ -94,7 +94,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete, re
   // Effect to save form data to localStorage whenever it changes (for new maintenance entry forms)
   useEffect(() => {
     if (showModal && !selectedVehicleId) { // Only save for new maintenance entry forms
-      const subscription = watch((value) => {
+      const subscription = watch((value: Partial<MaintenanceEntryFormData>) => {
         localStorage.setItem(LOCAL_STORAGE_KEYS.MAINTENANCE_FORM_DATA, JSON.stringify(value));
       });
       return () => subscription.unsubscribe();
@@ -142,10 +142,11 @@ const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete, re
     // setShowModal(true);
   };
 
-  const handleDeleteMaintenance = async (id: string) => {
-    await onDelete('maintenance_entries', { id }, 'delete');
-    showSuccess('Entrée de maintenance supprimée avec succès !');
-  };
+  // Removed unused handleDeleteMaintenance function
+  // const handleDeleteMaintenance = async (id: string) => {
+  //   await onDelete('maintenance_entries', { id }, 'delete');
+  //   showSuccess('Entrée de maintenance supprimée avec succès !');
+  // };
 
   const onSubmit = async (maintenanceData: MaintenanceEntryFormData) => {
     await onAdd('maintenance_entries', maintenanceData, 'add');
@@ -271,146 +272,231 @@ const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete, re
       label: 'Statut', 
       sortable: false, 
       defaultVisible: true, 
-<dyad-problem-report summary="21 problems">
-<problem file="src/components/Maintenance.tsx" line="3" column="10" code="6133">'FleetData' is declared but its value is never read.</problem>
-<problem file="src/components/Maintenance.tsx" line="412" column="34" code="2304">Cannot find name 'data'.</problem>
-<problem file="src/components/Maintenance.tsx" line="412" column="52" code="7006">Parameter 'd' implicitly has an 'any' type.</problem>
-<problem file="src/components/Summary.tsx" line="33" column="32" code="2304">Cannot find name 'useMemo'.</problem>
-<problem file="src/components/checklists/ChecklistForm.tsx" line="9" column="10" code="6133">'FleetData' is declared but its value is never read.</problem>
-<problem file="src/components/PreDepartureChecklist.tsx" line="3" column="10" code="6133">'FleetData' is declared but its value is never read.</problem>
-<problem file="src/pages/Reports.tsx" line="59" column="10" code="2678">Type '&quot;fuel_entries&quot;' is not comparable to type 'keyof FleetData'.</problem>
-<problem file="src/pages/Reports.tsx" line="79" column="10" code="2678">Type '&quot;maintenance_entries&quot;' is not comparable to type 'keyof FleetData'.</problem>
-<problem file="src/components/UserManagement.tsx" line="24" column="1" code="6133">'useSupabaseData' is declared but its value is never read.</problem>
-<problem file="src/components/UserManagement.tsx" line="45" column="9" code="6133">'currentUser' is declared but its value is never read.</problem>
-<problem file="src/components/PermissionsOverview.tsx" line="81" column="60" code="2339">Property 'resource-link' does not exist on type 'JSX.IntrinsicElements'.</problem>
-<problem file="src/components/PermissionsOverview.tsx" line="81" column="173" code="2339">Property 'resource-link' does not exist on type 'JSX.IntrinsicElements'.</problem>
-<problem file="src/App.tsx" line="19" column="10" code="6133">'FleetData' is declared but its value is never read.</problem>
-<problem file="src/App.tsx" line="19" column="21" code="6133">'Vehicle' is declared but its value is never read.</problem>
-<problem file="src/App.tsx" line="19" column="30" code="6133">'Driver' is declared but its value is never read.</problem>
-<problem file="src/App.tsx" line="19" column="38" code="6133">'Tour' is declared but its value is never read.</problem>
-<problem file="src/App.tsx" line="19" column="44" code="6133">'FuelEntry' is declared but its value is never read.</problem>
-<problem file="src/App.tsx" line="19" column="55" code="6133">'Document' is declared but its value is never read.</problem>
-<problem file="src/App.tsx" line="19" column="65" code="6133">'MaintenanceEntry' is declared but its value is never read.</problem>
-<problem file="src/App.tsx" line="19" column="83" code="6133">'PreDepartureChecklist' is declared but its value is never read.</problem>
-<problem file="src/App.tsx" line="25" column="1" code="6133">'useSupabaseData' is declared but its value is never read.</problem>
-</dyad-problem-report><think>**Resolving TypeScript Issues**
+      render: (item) => {
+        const status = getMaintenanceStatus(item);
+        const Icon = status.icon;
+        return (
+          <span className={`px-3 py-1 text-xs rounded-full font-medium flex items-center space-x-1 ${status.class}`}>
+            <Icon className="w-4 h-4" />
+            <span>{status.text}</span>
+          </span>
+        );
+      }
+    },
+  ], [getMaintenanceStatus]);
 
-I'm currently addressing TypeScript errors, specifically focusing on instances of 'FleetData' being declared but not used. I plan to handle these first, as they seem straightforward. After that, I'll tackle the remaining issues systematically, consulting the relevant documentation as needed.
+  const maintenanceHistoryColumns: DataTableColumn<MaintenanceEntry>[] = useMemo(() => [
+    { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item) => formatDate(item.date) },
+    {
+      key: 'vehicle_id',
+      label: 'Véhicule',
+      sortable: true,
+      defaultVisible: true,
+      render: (item) => vehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A',
+    },
+    { key: 'type', label: 'Type', sortable: true, defaultVisible: true },
+    { key: 'mileage', label: 'Kilométrage', sortable: true, defaultVisible: true, render: (item) => `${item.mileage.toLocaleString()} km` },
+    { key: 'cost', label: 'Coût', sortable: true, defaultVisible: true, render: (item) => `${item.cost.toFixed(2)} TND` },
+  ], [vehicles]);
 
+  const renderFilters = useCallback((searchTerm: string, setSearchTerm: (term: string) => void) => {
+    return (
+      <>
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Rechercher une entrée de maintenance..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all glass"
+          />
+        </div>
+        <div>
+          <select
+            value={selectedVehicleFilter}
+            onChange={(e) => setSelectedVehicleFilter(e.target.value)}
+            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">Tous les véhicules</option>
+            {vehicles.map(vehicle => (
+              <option key={vehicle.id} value={vehicle.id}>
+                {vehicle.plate} - {vehicle.type}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <select
+            value={selectedTypeFilter}
+            onChange={(e) => setSelectedTypeFilter(e.target.value)}
+            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">Tous les types</option>
+            {uniqueMaintenanceTypes.map(type => (
+              <option key={type} value={type}>{type}</option>
+            ))}
+          </select>
+        </div>
+        <div className="relative">
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Date de début"
+          />
+        </div>
+        <div className="relative">
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Date de fin"
+          />
+        </div>
+      </>
+    );
+  }, [vehicles, uniqueMaintenanceTypes, selectedVehicleFilter, selectedTypeFilter, startDate, endDate]);
 
-**Tackling Unused Imports**
+  const customFilter = useCallback((entry: MaintenanceEntry) => {
+    const matchesVehicle = selectedVehicleFilter ? entry.vehicle_id === selectedVehicleFilter : true;
+    const matchesType = selectedTypeFilter ? entry.type === selectedTypeFilter : true;
 
-I'm removing `FleetData` imports from several files to resolve the "declared but not used" errors. The granular fetching approach means these components no longer require that data. Specifically, I've removed the unused imports from `AlertsWidget.tsx`, `KpisWidget.tsx`, `StatsWidget.tsx`, `VehicleStatusChartWidget.tsx`, `MonthlyFuelConsumptionChartWidget.tsx`, and `RecentActivityWidget.tsx`, along with `Vehicles.tsx`, `Drivers.tsx`, `Tours.tsx`, `FuelManagement.tsx`, `Documents.tsx`, `Maintenance.tsx`, `Check listForm.tsx`, `PreDepartureChecklist.tsx`, and `App.tsx`.
+    const entryDate = new Date(entry.date);
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
 
+    const matchesDateRange = 
+      (!start || entryDate >= start) &&
+      (!end || entryDate <= end);
 
-**Updating 'getColumnConfigs'**
+    return matchesVehicle && matchesType && matchesDateRange;
+  }, [selectedVehicleFilter, selectedTypeFilter, startDate, endDate]);
 
-I've revised the `getColumnConfigs` function in `Reports.tsx` by adjusting the `dataSource` parameter's type to `Resource`. This fixes the type mismatch errors I was encountering with the string literals in the switch cases. With this change, the function now correctly handles the different data sources. I'm moving on to address the remaining issues systematically.
+  const canAddForm = canAccess('maintenance_entries', 'add');
+  const canEditForm = canAccess('maintenance_entries', 'edit');
 
-
-**Prioritizing & Addressing Errors**
-
-I'm removing unused imports and correcting type mismatches. I'm starting by removing the 'FleetData' imports from various components to resolve the numerous TS6133 errors.  I've also addressed the 'useMemo' import error in 'Summary.tsx'. Next, I'll fix the 'data.drivers' issue and then refactor 'getColumnConfigs' in Reports.tsx to use the correct data types.  Finally, I'll remove any unused imports.
-
-
-</think>Je vais corriger les erreurs de compilation TypeScript en ajustant les imports et les usages des hooks et des types.
-
-Voici les modifications :
-
-1.  **Suppression des imports `FleetData` et autres types inutilisés :** Dans plusieurs composants, ces imports ne sont plus nécessaires car les données sont maintenant chargées de manière granulaire via `useSupabaseData`.
-2.  **Import de `useMemo` :** Ajout de l'import `useMemo` dans `src/components/Dashboard.tsx` et `src/components/Summary.tsx`.
-3.  **Correction de l'accès aux données dans `Maintenance.tsx` :** Remplacement de `data.drivers` par `drivers` (qui est maintenant un état local du composant).
-4.  **Correction du type `dataSource` dans `Reports.tsx` :** Le type du paramètre `dataSource` dans `getColumnConfigs` sera ajusté à `Resource`.
-5.  **Suppression des imports `useSupabaseData` et `currentUser` inutilisés :** Ces imports seront retirés des fichiers où ils ne sont pas directement utilisés.
-6.  **Remplacement de `<resource-link>` :** La balise non standard `<resource-link>` sera remplacée par une balise `<a>` standard dans `src/components/PermissionsOverview.tsx`.
-
-Voici les fichiers mis à jour :
-
-<dyad-write path="src/components/dashboard/AlertsWidget.tsx" description="Suppression de l'import FleetData inutilisé.">
-import React from 'react';
-import { AlertTriangle, ClipboardCheck } from 'lucide-react';
-import { PreDepartureChecklist, Vehicle, Document } from '../../types';
-import { getDaysUntilExpiration } from '../../utils/date';
-import { useSupabaseData } from '../../hooks/useSupabaseData'; // Import useSupabaseData
-
-interface AlertsWidgetProps {
-  // data: FleetData; // No longer needed as data is fetched internally
-  // preDepartureChecklists: PreDepartureChecklist[]; // No longer needed
-}
-
-const AlertsWidget: React.FC<AlertsWidgetProps> = () => {
-  const { data: vehicles, isLoading: isLoadingVehicles } = useSupabaseData<Vehicle>('vehicles');
-  const { data: documents, isLoading: isLoadingDocuments } = useSupabaseData<Document>('documents');
-  const { data: preDepartureChecklists, isLoading: isLoadingChecklists } = useSupabaseData<PreDepartureChecklist>('pre_departure_checklists');
-
-  const maintenanceAlerts = vehicles.filter(vehicle => {
-    const nextService = (vehicle.last_service_mileage || 0) + 10000;
-    const kmUntilService = nextService - vehicle.mileage;
-    return kmUntilService <= 1000;
-  });
-
-  const expiringDocs = documents.filter(doc => {
-    const daysLeft = getDaysUntilExpiration(doc.expiration);
-    return daysLeft <= 30;
-  });
-
-  const checklistsWithIssues = preDepartureChecklists.filter(cl => cl.issues_to_address && cl.issues_to_address.trim() !== '');
-
-  const isLoadingCombined = isLoadingVehicles || isLoadingDocuments || isLoadingChecklists;
-
-  if (isLoadingCombined) {
-    return null; // Or a small skeleton loader if preferred
-  }
-
-  if (maintenanceAlerts.length === 0 && expiringDocs.length === 0 && checklistsWithIssues.length === 0) {
-    return null;
-  }
+  const isLoadingCombined = isLoadingMaintenance || isLoadingVehicles || isLoadingChecklists; // Removed isLoadingDrivers
 
   return (
-    <div className="space-y-4 animate-slide-up">
-      {maintenanceAlerts.length > 0 && (
-        <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-r-lg glass">
-          <div className="flex items-center">
-            <AlertTriangle className="w-5 h-5 text-orange-400 mr-3" />
-            <div>
-              <h3 className="text-orange-800 font-semibold">Maintenance Requise</h3>
-              <p className="text-orange-700">
-                {maintenanceAlerts.length} véhicule(s) nécessitent une maintenance prochainement
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {expiringDocs.length > 0 && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg glass">
-          <div className="flex items-center">
-            <AlertTriangle className="w-5 h-5 text-red-400 mr-3" />
-            <div>
-              <h3 className="text-red-800 font-semibold">Documents à Renouveler</h3>
-              <p className="text-red-700">
-                {expiringDocs.length} document(s) expirent dans moins de 30 jours
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+    <div className="space-y-6">
+      {renderMaintenanceAlerts()}
 
-      {checklistsWithIssues.length > 0 && (
-        <div className="bg-purple-50 border-l-4 border-purple-400 p-4 rounded-r-lg glass">
-          <div className="flex items-center">
-            <ClipboardCheck className="w-5 h-5 text-purple-400 mr-3" />
-            <div>
-              <h3 className="text-purple-800 font-semibold">Points à Traiter (Checklists)</h3>
-              <p className="text-purple-700">
-                {checklistsWithIssues.length} checklist(s) contiennent des problèmes à résoudre.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      <DataTable
+        title="Suivi de Maintenance des Véhicules"
+        data={vehicles}
+        columns={vehicleMaintenanceColumns}
+        onAdd={canAddForm ? handleAddMaintenance : undefined}
+        addLabel="Ajouter Maintenance"
+        searchPlaceholder="Rechercher un véhicule par plaque, type ou statut..."
+        exportFileName="maintenance_vehicules"
+        isLoading={isLoadingCombined}
+        resourceType="vehicles"
+        renderRowActions={(item) => (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleAddMaintenance(item.id)}
+            className="text-green-600 hover:text-green-900 transition-colors hover-lift"
+          >
+            <Wrench className="w-4 h-4" />
+          </Button>
+        )}
+      />
+
+      <DataTable
+        title="Historique des Entrées de Maintenance"
+        data={maintenanceEntries}
+        columns={maintenanceHistoryColumns}
+        onAdd={canAddForm ? handleAddMaintenance : undefined}
+        onEdit={canEditForm ? handleEditMaintenance : undefined} // Placeholder for future edit functionality
+        onDelete={canAccess('maintenance_entries', 'delete') ? (id) => onDelete('maintenance_entries', { id }, 'delete') : undefined}
+        addLabel="Nouvelle Entrée"
+        searchPlaceholder="Rechercher une entrée de maintenance..."
+        exportFileName="historique_maintenance"
+        isLoading={isLoadingCombined}
+        renderFilters={renderFilters}
+        customFilter={customFilter}
+        resourceType="maintenance_entries"
+      />
+
+      {/* Modal */}
+      <Dialog open={showModal} onOpenChange={handleCloseModal}>
+        <DialogContent className="sm:max-w-[425px] glass animate-scale-in">
+          <DialogHeader>
+            <DialogTitle>{selectedVehicleId ? 'Ajouter une Maintenance' : 'Ajouter une Entrée de Maintenance'}</DialogTitle>
+            <DialogDescription>
+              Remplissez les détails de l'entrée de maintenance.
+            </DialogDescription>
+          </DialogHeader>
+          <FormProvider {...methods}>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
+              <FormField
+                name="vehicle_id"
+                label="Véhicule"
+                type="select"
+                options={[{ value: '', label: 'Sélectionner un véhicule' }, ...vehicles.map(vehicle => ({ value: vehicle.id, label: `${vehicle.plate} - ${vehicle.type}` }))]}
+                placeholder="Sélectionner un véhicule"
+                disabled={(!canEditForm && !!selectedVehicleId) || (!canAddForm && !selectedVehicleId)}
+              />
+              <FormField
+                name="type"
+                label="Type de maintenance"
+                type="select"
+                options={[
+                  { value: 'Vidange', label: 'Vidange' },
+                  { value: 'Réparation', label: 'Réparation' },
+                  { value: 'Contrôle', label: 'Contrôle' },
+                  { value: 'Pneus', label: 'Pneus' },
+                  { value: 'Freins', label: 'Freins' },
+                  { value: 'Autre', label: 'Autre' },
+                ]}
+                disabled={(!canEditForm && !!selectedVehicleId) || (!canAddForm && !selectedVehicleId)}
+              />
+              <FormField
+                name="date"
+                label="Date"
+                type="date"
+                disabled={(!canEditForm && !!selectedVehicleId) || (!canAddForm && !selectedVehicleId)}
+              />
+              <FormField
+                name="mileage"
+                label="Kilométrage"
+                type="number"
+                disabled={(!canEditForm && !!selectedVehicleId) || (!canAddForm && !selectedVehicleId)}
+              />
+              <FormField
+                name="cost"
+                label="Coût (TND)"
+                type="number"
+                step="0.01"
+                disabled={(!canEditForm && !!selectedVehicleId) || (!canAddForm && !selectedVehicleId)}
+              />
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCloseModal}
+                  className="hover-lift"
+                >
+                  Annuler
+                </Button>
+                {(canAddForm && !selectedVehicleId) || (canEditForm && selectedVehicleId) ? (
+                  <Button
+                    type="submit"
+                    className="hover-lift"
+                  >
+                    Sauvegarder
+                  </Button>
+                ) : null}
+              </DialogFooter>
+            </form>
+          </FormProvider>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
-export default AlertsWidget;
+export default Maintenance;

@@ -6,7 +6,7 @@ import { Button } from '../ui/button';
 import { DialogFooter } from '../ui/dialog';
 import FormField from '../forms/FormField';
 import { preDepartureChecklistSchema } from '../../types/formSchemas';
-import { FleetData, PreDepartureChecklist, Vehicle, Driver, Resource, Action } from '../../types';
+import { PreDepartureChecklist, Vehicle, Driver, Resource, Action } from '../../types';
 import { showSuccess, showError } from '../../utils/toast';
 import { LOCAL_STORAGE_KEYS } from '../../utils/constants';
 

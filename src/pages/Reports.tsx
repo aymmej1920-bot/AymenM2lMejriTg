@@ -10,7 +10,7 @@ interface ReportsProps {
   registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void;
 }
 
-const getColumnConfigs = (dataSource: keyof FleetData, allVehicles: Vehicle[], allDrivers: Driver[]): DataTableColumn<any>[] => {
+const getColumnConfigs = (dataSource: Resource, allVehicles: Vehicle[], allDrivers: Driver[]): DataTableColumn<any>[] => {
   switch (dataSource) {
     case 'vehicles':
       return [
@@ -162,7 +162,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole, registerRefetch }) => {
 
   const columns = useMemo(() => {
     if (!selectedDataSource) return [];
-    return getColumnConfigs(selectedDataSource, vehicles, drivers);
+    return getColumnConfigs(selectedDataSource as Resource, vehicles, drivers);
   }, [selectedDataSource, vehicles, drivers]);
 
   const renderFilters = useCallback((searchTerm: string, setSearchTerm: (term: string) => void) => {

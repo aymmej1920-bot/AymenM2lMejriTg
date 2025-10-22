@@ -101,7 +101,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole, registerRefetch }) => {
       {otherWidgets.map((widget: DashboardWidgetConfig) => {
         const WidgetComponent = dashboardWidgetMap[widget.componentKey];
         return WidgetComponent ? (
-          <WidgetComponent key={widget.id} data={fleetData} preDepartureChecklists={fleetData.pre_departure_checklists} />
+          <WidgetComponent key={widget.id} preDepartureChecklists={fleetData.pre_departure_checklists} />
         ) : null;
       })}
 
@@ -110,7 +110,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole, registerRefetch }) => {
           {chartWidgets.map((widget: DashboardWidgetConfig) => {
             const WidgetComponent = dashboardWidgetMap[widget.componentKey];
             return WidgetComponent ? (
-              <WidgetComponent key={widget.id} data={fleetData} preDepartureChecklists={fleetData.pre_departure_checklists} />
+              <WidgetComponent key={widget.id} preDepartureChecklists={fleetData.pre_departure_checklists} />
             ) : null;
           })}
         </div>

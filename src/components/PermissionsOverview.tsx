@@ -78,7 +78,7 @@ const PermissionsOverview: React.FC = () => {
         <span className="font-semibold text-red-600">Important :</span> La sécurité réelle des données est gérée par les politiques RLS (Row Level Security) dans Supabase.
         **Les modifications apportées ici ne mettent PAS automatiquement à jour les politiques RLS de votre base de données.**
         Après avoir modifié les permissions ici, un administrateur doit manuellement mettre à jour les politiques RLS correspondantes dans Supabase pour que les changements soient sécurisés et effectifs au niveau de la base de données.
-        Pour plus d'informations sur les RLS, consultez la <resource-link href="https://supabase.com/docs/guides/auth/row-level-security">documentation Supabase sur les RLS</resource-link>.
+        Pour plus d'informations sur les RLS, consultez la <a href="https://supabase.com/docs/guides/auth/row-level-security" className="text-blue-600 hover:underline">documentation Supabase sur les RLS</a>.
       </p>
 
       <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg flex items-start space-x-3 glass">

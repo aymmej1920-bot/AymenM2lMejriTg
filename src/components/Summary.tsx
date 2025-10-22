@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Truck, Users, Route, MapPin, Fuel, AlertCircle, Wrench } from 'lucide-react';
-import { FleetData, Resource, Vehicle, Driver, Tour, FuelEntry, MaintenanceEntry } from '../types';
+import type { FleetData, Resource, Vehicle, Driver, Tour, FuelEntry, MaintenanceEntry, Document } from '../types';
 import MonthlyPerformanceChart from './charts/MonthlyPerformanceChart';
 import CostDistributionChart from './charts/CostDistributionChart';
 import { useFleetStats } from '../hooks/useFleetStats'; // Import the new hook

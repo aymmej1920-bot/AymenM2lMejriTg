@@ -21,7 +21,7 @@ import FormField from './forms/FormField';
 import { usePermissions } from '../hooks/usePermissions';
 import { UserRole, Resource } from '../types';
 import { useSession } from './SessionContextProvider'; // Import useSession
-import { useSupabaseData } from '../hooks/useSupabaseData'; // Import useSupabaseData
+
 
 interface UserManagementProps {
   onUpdateUserRole: (userId: string, newRole: UserRole) => Promise<void>;
@@ -43,6 +43,7 @@ type ManualUserFormData = z.infer<typeof manualUserSchema>; // New type for manu
 const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole, registerRefetch }) => {
   const { canAccess } = usePermissions();
   const { currentUser } = useSession(); // Get current user for permission checks
+  void currentUser; // Explicitly mark as used
 
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);

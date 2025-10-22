@@ -1,5 +1,5 @@
 import React from 'react';
-import { FleetData, PreDepartureChecklist } from '../../types';
+import { PreDepartureChecklist } from '../../types';
 import AlertsWidget from './AlertsWidget';
 import KpisWidget from './KpisWidget';
 import StatsWidget from './StatsWidget';
@@ -9,7 +9,7 @@ import RecentActivityWidget from './RecentActivityWidget';
 
 // Interface for widgets that need data (some now fetch internally)
 interface WidgetProps {
-  data?: FleetData; // Make optional as some widgets fetch internally
+  // data?: FleetData; // Make optional as some widgets fetch internally
   preDepartureChecklists?: PreDepartureChecklist[]; // Make optional
 }
 

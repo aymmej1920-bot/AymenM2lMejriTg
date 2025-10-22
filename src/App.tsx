@@ -16,13 +16,13 @@ import Profile from './pages/Profile'; // Import the new Profile page
 import UserManagement from './components/UserManagement';
 import PermissionsOverview from './components/PermissionsOverview'; // Import PermissionsOverview
 import ProtectedRoute from './components/ProtectedRoute'; // Import ProtectedRoute
-import { FleetData, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist, UserRole, Resource, Action } from './types'; // Import types
+import { Resource, Action, UserRole } from './types'; // Import types
 import { useSession } from './components/SessionContextProvider';
 import { supabase } from './integrations/supabase/client';
 import { showSuccess, showError, showLoading, dismissToast } from './utils/toast';
 import SkeletonLoader from './components/SkeletonLoader';
 import { PermissionsProvider, usePermissions } from './hooks/usePermissions'; // Import PermissionsProvider and usePermissions
-import { useSupabaseData } from './hooks/useSupabaseData'; // Import the new hook
+
 
 // Define a type for the refetch functions for each resource
 type RefetchFunctions = {
