@@ -21,11 +21,11 @@ import { useSession } from './components/SessionContextProvider';
 import { supabase } from './integrations/supabase/client';
 import { showSuccess, showError, showLoading, dismissToast } from './utils/toast';
 import SkeletonLoader from './components/SkeletonLoader';
-import { usePermissions } from './hooks/usePermissions';
-import { useFleetData } from './components/FleetDataProvider';
+import { PermissionsProvider, usePermissions } from './hooks/usePermissions'; // Import PermissionsProvider directly
+import { FleetDataProvider, useFleetData } from './components/FleetDataProvider'; // Import FleetDataProvider directly
 
 
-export function AppContent() { // Renamed App to AppContent and exported directly
+export default function App() {
   const { session, currentUser, isLoading, isProfileLoading, refetchCurrentUser } = useSession();
   const { canAccess, isLoadingPermissions } = usePermissions();
   const { refetchResource } = useFleetData();
@@ -244,34 +244,38 @@ export function AppContent() { // Renamed App to AppContent and exported directl
         </aside>
 
         <main className="flex-1 px-6 py-8 min-w-0 overflow-x-auto w-full">
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard key="dashboard-view" userRole={userRole} /></ProtectedRoute>} />
-            <Route path="/vehicles" element={<ProtectedRoute><Vehicles key="vehicles-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} /></ProtectedRoute>} />
-            <Route path="/drivers" element={<ProtectedRoute><Drivers key="drivers-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} /></ProtectedRoute>} />
-            <Route path="/tours" element={<ProtectedRoute><Tours key="tours-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} /></ProtectedRoute>} />
-            <Route path="/fuel" element={<ProtectedRoute><FuelManagement key="fuel-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} /></ProtectedRoute>} />
-            <Route path="/documents" element={<ProtectedRoute><Documents key="documents-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} /></ProtectedRoute>} />
-            <Route path="/maintenance" element={<ProtectedRoute><Maintenance 
-              key="maintenance-view"
-              onUpdate={handleUpdateData} 
-              onAdd={handleUpdateData} 
-              onDelete={handleUpdateData}
-            /></ProtectedRoute>} />
-            <Route path="/checklists" element={<ProtectedRoute><PreDepartureChecklistComponent 
-              key="checklists-view" 
-              onAdd={handleUpdateData} 
-            /></ProtectedRoute>} />
-            <Route path="/reports" element={<ProtectedRoute><Reports key="reports-view" userRole={userRole} /></ProtectedRoute>} />
-            <Route path="/summary" element={<ProtectedRoute><Summary key="summary-view" /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><Profile key="profile-view" /></ProtectedRoute>} />
-            <Route path="/user-management" element={<ProtectedRoute allowedRoles={['admin']}><UserManagement 
-                key="user-management-view" 
-                onUpdateUserRole={handleUpdateUserRole}
-              /></ProtectedRoute>} />
-            <Route path="/permissions-overview" element={<ProtectedRoute allowedRoles={['admin']}><PermissionsOverview key="permissions-overview-view" /></ProtectedRoute>} />
-            <Route path="*" element={<ProtectedRoute><Dashboard key="default-dashboard-view" userRole={userRole} /></ProtectedRoute>} />
-          </Routes>
+          <PermissionsProvider>
+            <FleetDataProvider>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard key="dashboard-view" userRole={userRole} /></ProtectedRoute>} />
+                <Route path="/vehicles" element={<ProtectedRoute><Vehicles key="vehicles-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} /></ProtectedRoute>} />
+                <Route path="/drivers" element={<ProtectedRoute><Drivers key="drivers-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} /></ProtectedRoute>} />
+                <Route path="/tours" element={<ProtectedRoute><Tours key="tours-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} /></ProtectedRoute>} />
+                <Route path="/fuel" element={<ProtectedRoute><FuelManagement key="fuel-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} /></ProtectedRoute>} />
+                <Route path="/documents" element={<ProtectedRoute><Documents key="documents-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} /></ProtectedRoute>} />
+                <Route path="/maintenance" element={<ProtectedRoute><Maintenance 
+                  key="maintenance-view"
+                  onUpdate={handleUpdateData} 
+                  onAdd={handleUpdateData} 
+                  onDelete={handleUpdateData}
+                /></ProtectedRoute>} />
+                <Route path="/checklists" element={<ProtectedRoute><PreDepartureChecklistComponent 
+                  key="checklists-view" 
+                  onAdd={handleUpdateData} 
+                /></ProtectedRoute>} />
+                <Route path="/reports" element={<ProtectedRoute><Reports key="reports-view" userRole={userRole} /></ProtectedRoute>} />
+                <Route path="/summary" element={<ProtectedRoute><Summary key="summary-view" /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><Profile key="profile-view" /></ProtectedRoute>} />
+                <Route path="/user-management" element={<ProtectedRoute allowedRoles={['admin']}><UserManagement 
+                    key="user-management-view" 
+                    onUpdateUserRole={handleUpdateUserRole}
+                  /></ProtectedRoute>} />
+                <Route path="/permissions-overview" element={<ProtectedRoute allowedRoles={['admin']}><PermissionsOverview key="permissions-overview-view" /></ProtectedRoute>} />
+                <Route path="*" element={<ProtectedRoute><Dashboard key="default-dashboard-view" userRole={userRole} /></ProtectedRoute>} />
+              </Routes>
+            </FleetDataProvider>
+          </PermissionsProvider>
         </main>
       </div>
     </div>
