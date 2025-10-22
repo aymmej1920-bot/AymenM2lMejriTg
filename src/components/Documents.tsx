@@ -46,7 +46,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
     }
   });
 
-  const { handleSubmit, reset, watch, formState: { errors = {} } } = methods; // Destructure from methods
+  const { handleSubmit, reset, watch } = methods; // Removed errors from destructuring
 
   // Function to reset form and clear saved data
   const resetFormAndClearStorage = useCallback(() => {

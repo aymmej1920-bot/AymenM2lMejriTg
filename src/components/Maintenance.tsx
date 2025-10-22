@@ -2,12 +2,12 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Plus, Wrench, AlertTriangle, Clock, ClipboardCheck, Calendar } from 'lucide-react';
 import { FleetData, MaintenanceEntry, PreDepartureChecklist, DataTableColumn, Vehicle } from '../types';
 import { showSuccess } from '../utils/toast';
-import { formatDate } from '../utils/date'; // Removed getDaysSinceEntry
-import { useForm, FormProvider } from 'react-hook-form'; // Import FormProvider
+import { formatDate } from '../utils/date';
+import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { maintenanceEntrySchema } from '../types/formSchemas'; // Import the schema
-import { Button } from './ui/button'; // Import shadcn Button
-import { z } from 'zod'; // Import z
+import { maintenanceEntrySchema } from '../types/formSchemas';
+import { Button } from './ui/button';
+import { z } from 'zod';
 import {
   Dialog,
   DialogContent,
@@ -15,11 +15,11 @@ import {
   DialogFooter,
   DialogTitle,
   DialogDescription,
-} from './ui/dialog'; // Import shadcn/ui Dialog components
-import DataTable from './DataTable'; // Import the new DataTable component
-import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
-import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
-import FormField from './forms/FormField'; // Import FormField
+} from './ui/dialog';
+import DataTable from './DataTable';
+import { usePermissions } from '../hooks/usePermissions';
+import { LOCAL_STORAGE_KEYS } from '../utils/constants';
+import FormField from './forms/FormField';
 
 type MaintenanceEntryFormData = z.infer<typeof maintenanceEntrySchema>;
 
@@ -27,17 +27,17 @@ interface MaintenanceProps {
   data: FleetData;
   onAdd: (maintenanceEntry: Omit<MaintenanceEntry, 'id' | 'user_id' | 'created_at'>) => void;
   onUpdate: (vehicle: { id: string; last_service_date: string; last_service_mileage: number; mileage: number }) => void;
-  onDelete: (id: string) => void; // Added onDelete prop
+  onDelete: (id: string) => void;
   preDepartureChecklists: PreDepartureChecklist[];
 }
 
 const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDelete, preDepartureChecklists }) => {
-  const { canAccess } = usePermissions(); // Use usePermissions hook
+  const { canAccess } = usePermissions();
 
   const [showModal, setShowModal] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
 
-  const methods = useForm<MaintenanceEntryFormData>({ // Use methods from useForm
+  const methods = useForm<MaintenanceEntryFormData>({
     resolver: zodResolver(maintenanceEntrySchema),
     defaultValues: {
       vehicle_id: '',
@@ -48,7 +48,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
     }
   });
 
-  const { handleSubmit, reset, watch, formState: { errors = {} } } = methods; // Destructure from methods
+  const { handleSubmit, reset, watch } = methods;
 
   // Function to reset form and clear saved data
   const resetFormAndClearStorage = useCallback(() => {
@@ -133,7 +133,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
   };
 
   const handleDeleteMaintenance = (id: string) => {
-    onDelete(id); // Call the onDelete prop
+    onDelete(id);
     showSuccess('Entrée de maintenance supprimée avec succès !');
   };
 
@@ -174,20 +174,72 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
     }
   };
 
-  const upcomingMaintenanceCount = data.vehicles.filter(vehicle => {
-    const nextService = (vehicle.last_service_mileage || 0) + 10000;
-    const kmUntilService = nextService - vehicle.mileage;
-    return kmUntilService <= 1000 && kmUntilService > 0;
-  }).length;
+  // Filter checklists with issues to address - MOVED TO COMPONENT SCOPE
+  const checklistsWithIssues = useMemo(() => {
+    return preDepartureChecklists.filter(cl => cl.issues_to_address && cl.issues_to_address.trim() !== '');
+  }, [preDepartureChecklists]);
 
-  const urgentMaintenanceCount = data.vehicles.filter(vehicle => {
-    const nextService = (vehicle.last_service_mileage || 0) + 10000;
-    const kmUntilService = nextService - vehicle.mileage;
-    return kmUntilService <= 0;
-  }).length;
+  const renderMaintenanceAlerts = useCallback(() => {
+    const upcomingMaintenanceCount = data.vehicles.filter(vehicle => {
+      const nextService = (vehicle.last_service_mileage || 0) + 10000;
+      const kmUntilService = nextService - vehicle.mileage;
+      return kmUntilService <= 1000 && kmUntilService > 0;
+    }).length;
 
-  // Filter checklists with issues to address
-  const checklistsWithIssues = preDepartureChecklists.filter(cl => cl.issues_to_address && cl.issues_to_address.trim() !== '');
+    const urgentMaintenanceCount = data.vehicles.filter(vehicle => {
+      const nextService = (vehicle.last_service_mileage || 0) + 10000;
+      const kmUntilService = nextService - vehicle.mileage;
+      return kmUntilService <= 0;
+    }).length;
+
+    if (urgentMaintenanceCount === 0 && upcomingMaintenanceCount === 0 && checklistsWithIssues.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="space-y-4 animate-slide-up">
+        {urgentMaintenanceCount > 0 && (
+          <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg glass">
+            <div className="flex items-center">
+              <AlertTriangle className="w-5 h-5 text-red-400 mr-3" />
+              <div>
+                <h3 className="text-red-800 font-semibold">Maintenance Urgente Requise</h3>
+                <p className="text-red-700">
+                  {urgentMaintenanceCount} véhicule(s) ont dépassé leur échéance de maintenance.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        {upcomingMaintenanceCount > 0 && (
+          <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-r-lg glass">
+            <div className="flex items-center">
+              <Clock className="w-5 h-5 text-orange-400 mr-3" />
+              <div>
+                <h3 className="text-orange-800 font-semibold">Maintenance à Venir</h3>
+                <p className="text-orange-700">
+                  {upcomingMaintenanceCount} véhicule(s) nécessitent une maintenance dans moins de 1000 km.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        {checklistsWithIssues.length > 0 && (
+          <div className="bg-purple-50 border-l-4 border-purple-400 p-4 rounded-r-lg glass">
+            <div className="flex items-center">
+              <ClipboardCheck className="w-5 h-5 text-purple-400 mr-3" />
+              <div>
+                <h3 className="text-purple-800 font-semibold">Points à Traiter (Checklists)</h3>
+                <p className="text-purple-700">
+                  {checklistsWithIssues.length} checklist(s) contiennent des problèmes à résoudre.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }, [data.vehicles, checklistsWithIssues]); // Added checklistsWithIssues to dependencies
 
   const vehicleMaintenanceColumns: DataTableColumn<Vehicle>[] = useMemo(() => [
     { key: 'plate', label: 'Véhicule', sortable: true, defaultVisible: true },
@@ -373,7 +425,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
         title="Suivi Maintenance & Vidanges des Véhicules"
         data={data.vehicles}
         columns={vehicleMaintenanceColumns}
-        onAdd={canAddMaintenance ? () => handleAddMaintenance() : undefined} // Re-use existing add handler
+        onAdd={canAddMaintenance ? () => handleAddMaintenance() : undefined}
         addLabel="Ajouter Maintenance"
         searchPlaceholder="Rechercher un véhicule par plaque, type ou statut..."
         exportFileName="suivi_maintenance_vehicules"
@@ -392,25 +444,25 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
             </Button>
           ) : null
         )}
-        resourceType="vehicles" // Pass resource type
+        resourceType="vehicles"
       />
 
-      {/* Historique des maintenances - Now using DataTable */}
+      {/* Historique des Maintenances - Now using DataTable */}
       {data.maintenance.length > 0 && (
         <DataTable
           title="Historique des Maintenances"
           data={data.maintenance}
           columns={maintenanceHistoryColumns}
-          onAdd={canAddMaintenance ? () => handleAddMaintenance() : undefined} // Re-use existing add handler
-          onEdit={canEditMaintenance ? handleEditMaintenance : undefined} // Placeholder for future edit functionality
-          onDelete={canDeleteMaintenance ? handleDeleteMaintenance : undefined} // Now correctly wired to the prop
+          onAdd={canAddMaintenance ? () => handleAddMaintenance() : undefined}
+          onEdit={canEditMaintenance ? handleEditMaintenance : undefined}
+          onDelete={canDeleteMaintenance ? handleDeleteMaintenance : undefined}
           addLabel="Ajouter Maintenance"
           searchPlaceholder="Rechercher dans l'historique par véhicule, type, date ou coût..."
           exportFileName="historique_maintenance"
           isLoading={false}
           renderFilters={renderMaintenanceHistoryFilters}
           customFilter={customMaintenanceHistoryFilter}
-          resourceType="maintenance_entries" // Pass resource type
+          resourceType="maintenance_entries"
         />
       )}
 
@@ -423,7 +475,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
               Ajoutez un nouvel enregistrement de maintenance pour un véhicule.
             </DialogDescription>
           </DialogHeader>
-          <FormProvider {...methods}> {/* Wrap the form with FormProvider */}
+          <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
               <FormField
                 name="vehicle_id"
