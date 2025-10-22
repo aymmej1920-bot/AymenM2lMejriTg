@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { AlertTriangle, Calendar } from 'lucide-react';
-import { PreDepartureChecklist, DataTableColumn, Resource, Action, OperationResult } from '../types'; // Added OperationResult
-import { showSuccess, showLoading, updateToast, showError } from '../utils/toast'; // Added showLoading, updateToast, showError
+import { PreDepartureChecklist, DataTableColumn, Resource, Action, OperationResult } from '../types';
 import { formatDate } from '../utils/date';
 import {
   Dialog,
@@ -17,7 +16,7 @@ import ChecklistStatusIcon from './checklists/ChecklistStatusIcon'; // Import th
 import { useFleetData } from '../components/FleetDataProvider'; // Import useFleetData
 
 interface PreDepartureChecklistProps {
-  onAdd: (tableName: Resource, checklist: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<OperationResult>; // Changed to OperationResult
+  onAdd: (tableName: Resource, checklist: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<OperationResult>;
 }
 
 const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ onAdd }) => {

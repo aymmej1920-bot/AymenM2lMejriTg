@@ -1,20 +1,20 @@
 import React, { useCallback, useEffect } from 'react';
-import { useForm, FormProvider } from 'react-hook-form'; // Import FormProvider
+import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '../ui/button';
 import { DialogFooter } from '../ui/dialog';
 import FormField from '../forms/FormField';
 import { preDepartureChecklistSchema } from '../../types/formSchemas';
-import { PreDepartureChecklist, Resource, Action, OperationResult } from '../../types'; // Import OperationResult
+import { PreDepartureChecklist, Resource, Action, OperationResult, Vehicle, Driver } from '../../types'; // Import OperationResult, Vehicle, Driver
 import { showSuccess, showError } from '../../utils/toast';
 import { LOCAL_STORAGE_KEYS } from '../../utils/constants';
-import { useFleetData } from '../components/FleetDataProvider'; // Import useFleetData
+import { useFleetData } from '../../components/FleetDataProvider'; // Corrected import path for useFleetData
 
 type PreDepartureChecklistFormData = z.infer<typeof preDepartureChecklistSchema>;
 
 interface ChecklistFormProps {
-  onAdd: (tableName: Resource, checklist: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<OperationResult>; // Changed to OperationResult
+  onAdd: (tableName: Resource, checklist: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<OperationResult>;
   onClose: () => void;
   canAdd: boolean;
   hasChecklistForMonth: (vehicleId: string, month: number, year: number) => boolean;
@@ -26,7 +26,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
   const vehicles = fleetData.vehicles;
   const drivers = fleetData.drivers;
 
-  const methods = useForm<PreDepartureChecklistFormData>({ // Use methods from useForm
+  const methods = useForm<PreDepartureChecklistFormData>({
     resolver: zodResolver(preDepartureChecklistSchema),
     defaultValues: {
       vehicle_id: '',
@@ -47,7 +47,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
     }
   });
 
-  const { handleSubmit, reset, watch, formState: { errors = {} } } = methods; // Destructure from methods
+  const { handleSubmit, reset, watch, formState: { errors = {} } } = methods;
 
   const resetFormAndClearStorage = useCallback(() => {
     reset({
@@ -147,7 +147,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
             type="radio"
             id={`${name}_ok`}
             value="true"
-            {...methods.register(name, { setValueAs: v => v === 'true' })} // Use methods.register
+            {...methods.register(name, { setValueAs: v => v === 'true' })}
             className="h-4 w-4 text-green-600 bg-white border border-gray-300 shadow-sm focus:ring-green-500"
             disabled={!canAdd}
           />
@@ -158,7 +158,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
             type="radio"
             id={`${name}_nok`}
             value="false"
-            {...methods.register(name, { setValueAs: v => v === 'true' })} // Use methods.register
+            {...methods.register(name, { setValueAs: v => v === 'true' })}
             className="h-4 w-4 text-red-600 bg-white border border-gray-300 shadow-sm focus:ring-red-500"
             disabled={!canAdd}
           />
@@ -169,7 +169,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
   );
 
   return (
-    <FormProvider {...methods}> {/* Wrap the form with FormProvider */}
+    <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
         <div className="grid grid-cols-2 gap-4">
           <FormField
@@ -182,7 +182,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
             name="vehicle_id"
             label="Véhicule"
             type="select"
-            options={vehicles.map(v => ({ value: v.id, label: `${v.plate} - ${v.type}` }))}
+            options={vehicles.map((v: Vehicle) => ({ value: v.id, label: `${v.plate} - ${v.type}` }))}
             placeholder="Sélectionner un véhicule"
             disabled={!canAdd}
           />
@@ -192,7 +192,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
           name="driver_id"
           label="Conducteur (Optionnel)"
           type="select"
-          options={[{ value: '', label: 'Sélectionner un conducteur' }, ...drivers.map(d => ({ value: d.id, label: d.name }))]}
+          options={[{ value: '', label: 'Sélectionner un conducteur' }, ...drivers.map((d: Driver) => ({ value: d.id, label: d.name }))]}
           placeholder="Sélectionner un conducteur"
           disabled={!canAdd}
         />
