@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Wrench, AlertTriangle, Clock, ClipboardCheck, Search, Calendar } from 'lucide-react';
-import { MaintenanceEntry, DataTableColumn, Vehicle, Resource, Action } from '../types';
-import { showSuccess } from '../utils/toast';
+import { MaintenanceEntry, DataTableColumn, Vehicle, Resource, Action, OperationResult } from '../types'; // Added OperationResult
+import { showSuccess, showLoading, updateToast, showError } from '../utils/toast'; // Added showLoading, updateToast, showError
 import { formatDate } from '../utils/date';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,9 +25,9 @@ import { useFleetData } from '../components/FleetDataProvider';
 type MaintenanceEntryFormData = z.infer<typeof maintenanceEntrySchema>;
 
 interface MaintenanceProps {
-  onAdd: (tableName: Resource, maintenanceEntry: Omit<MaintenanceEntry, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<void>;
-  onUpdate: (tableName: Resource, vehicle: { id: string; last_service_date: string; last_service_mileage: number; mileage: number }, action: Action) => Promise<void>;
-  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<void>;
+  onAdd: (tableName: Resource, maintenanceEntry: Omit<MaintenanceEntry, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<OperationResult>; // Changed to OperationResult
+  onUpdate: (tableName: Resource, vehicle: { id: string; last_service_date: string; last_service_mileage: number; mileage: number }, action: Action) => Promise<OperationResult>; // Changed to OperationResult
+  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<OperationResult>; // Changed to OperationResult
 }
 
 const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete }) => {
@@ -126,21 +126,35 @@ const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete }) 
   };
 
   const onSubmit = async (maintenanceData: MaintenanceEntryFormData) => {
-    await onAdd('maintenance_entries', maintenanceData, 'add');
-    showSuccess('Entrée de maintenance ajoutée avec succès !');
+    const loadingToastId = showLoading('Ajout de l\'entrée de maintenance...');
+    let result: OperationResult;
+    try {
+      result = await onAdd('maintenance_entries', maintenanceData, 'add');
+      if (result.success) {
+        updateToast(loadingToastId, result.message || 'Entrée de maintenance ajoutée avec succès !', 'success');
+      } else {
+        throw new Error(result.error || 'Erreur lors de l\'ajout de l\'entrée de maintenance.');
+      }
 
-    if (maintenanceData.type === 'Vidange') {
-      await onUpdate('vehicles', {
-        id: maintenanceData.vehicle_id,
-        last_service_date: maintenanceData.date,
-        last_service_mileage: maintenanceData.mileage,
-        mileage: maintenanceData.mileage,
-      }, 'edit');
-      showSuccess('Informations du véhicule mises à jour après la vidange !');
+      if (maintenanceData.type === 'Vidange') {
+        const updateVehicleResult = await onUpdate('vehicles', {
+          id: maintenanceData.vehicle_id,
+          last_service_date: maintenanceData.date,
+          last_service_mileage: maintenanceData.mileage,
+          mileage: maintenanceData.mileage,
+        }, 'edit');
+        if (updateVehicleResult.success) {
+          showSuccess('Informations du véhicule mises à jour après la vidange !');
+        } else {
+          showError(updateVehicleResult.error || 'Erreur lors de la mise à jour des informations du véhicule.');
+        }
+      }
+
+      setShowModal(false);
+      resetFormAndClearStorage();
+    } catch (error: any) {
+      updateToast(loadingToastId, error.message || 'Erreur lors de l\'opération.', 'error');
     }
-
-    setShowModal(false);
-    resetFormAndClearStorage();
   };
 
   const handleCloseModal = () => {
@@ -387,7 +401,15 @@ const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete }) 
         columns={maintenanceHistoryColumns}
         onAdd={canAddForm ? handleAddMaintenance : undefined}
         onEdit={canEditForm ? handleEditMaintenance : undefined}
-        onDelete={canAccess('maintenance_entries', 'delete') ? (id) => onDelete('maintenance_entries', { id }, 'delete') : undefined}
+        onDelete={canAccess('maintenance_entries', 'delete') ? async (id) => {
+          const loadingToastId = showLoading('Suppression de l\'entrée de maintenance...');
+          const result = await onDelete('maintenance_entries', { id }, 'delete');
+          if (result.success) {
+            updateToast(loadingToastId, result.message || 'Entrée de maintenance supprimée avec succès !', 'success');
+          } else {
+            updateToast(loadingToastId, result.error || 'Erreur lors de la suppression de l\'entrée de maintenance.', 'error');
+          }
+        } : undefined}
         addLabel="Nouvelle Entrée"
         searchPlaceholder="Rechercher une entrée de maintenance..."
         exportFileName="historique_maintenance"

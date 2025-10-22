@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Calendar, AlertTriangle, Search } from 'lucide-react'; // Ajout de Search pour le filtre par défaut
-import { Document, DataTableColumn, Resource, Action } from '../types';
-import { showSuccess } from '../utils/toast';
+import { Document, DataTableColumn, Resource, Action, OperationResult } from '../types'; // Added OperationResult
+import { showLoading, updateToast } from '../utils/toast'; // 'showSuccess' removed
 import { formatDate, getDaysUntilExpiration } from '../utils/date'; // Import from utils/date
 import { Button } from './ui/button';
 import { useForm, FormProvider } from 'react-hook-form'; // Import FormProvider
@@ -25,10 +25,9 @@ import { useFleetData } from '../components/FleetDataProvider'; // Import useFle
 type DocumentFormData = z.infer<typeof documentSchema>;
 
 interface DocumentsProps {
-  onAdd: (tableName: Resource, document: Omit<Document, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<void>;
-  onUpdate: (tableName: Resource, document: Document, action: Action) => Promise<void>;
-  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<void>;
-  // registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void; // Removed
+  onAdd: (tableName: Resource, document: Omit<Document, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<OperationResult>; // Changed to OperationResult
+  onUpdate: (tableName: Resource, document: Document, action: Action) => Promise<OperationResult>; // Changed to OperationResult
+  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<OperationResult>; // Changed to OperationResult
 }
 
 const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
@@ -121,15 +120,25 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
   };
 
   const onSubmit = async (formData: DocumentFormData) => {
-    if (editingDocument) {
-      await onUpdate('documents', { ...formData, id: editingDocument.id, user_id: editingDocument.user_id, created_at: editingDocument.created_at }, 'edit');
-      showSuccess('Document mis à jour avec succès !');
-    } else {
-      await onAdd('documents', formData, 'add');
-      showSuccess('Document ajouté avec succès !');
+    const loadingToastId = showLoading(editingDocument ? 'Mise à jour du document...' : 'Ajout du document...');
+    let result: OperationResult;
+    try {
+      if (editingDocument) {
+        result = await onUpdate('documents', { ...formData, id: editingDocument.id, user_id: editingDocument.user_id, created_at: editingDocument.created_at }, 'edit');
+      } else {
+        result = await onAdd('documents', formData, 'add');
+      }
+
+      if (result.success) {
+        updateToast(loadingToastId, result.message || 'Opération réussie !', 'success');
+      } else {
+        throw new Error(result.error || 'Opération échouée.');
+      }
+      setShowModal(false);
+      resetFormAndClearStorage();
+    } catch (error: any) {
+      updateToast(loadingToastId, error.message || 'Erreur lors de l\'opération.', 'error');
     }
-    setShowModal(false);
-    resetFormAndClearStorage(); // Clear saved data on successful submission
   };
 
   const handleCloseModal = () => {
@@ -318,7 +327,15 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
         columns={columns}
         onAdd={canAddForm ? handleAddDocument : undefined}
         onEdit={canEditForm ? handleEditDocument : undefined}
-        onDelete={canAccess('documents', 'delete') ? (id) => onDelete('documents', { id }, 'delete') : undefined}
+        onDelete={canAccess('documents', 'delete') ? async (id) => {
+          const loadingToastId = showLoading('Suppression du document...');
+          const result = await onDelete('documents', { id }, 'delete');
+          if (result.success) {
+            updateToast(loadingToastId, result.message || 'Document supprimé avec succès !', 'success');
+          } else {
+            updateToast(loadingToastId, result.error || 'Erreur lors de la suppression du document.', 'error');
+          }
+        } : undefined}
         addLabel="Ajouter Document"
         searchPlaceholder="Rechercher un document par véhicule, type, numéro ou expiration..."
         exportFileName="documents"

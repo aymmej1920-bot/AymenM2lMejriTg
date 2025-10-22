@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Calendar } from 'lucide-react'; // Seul Calendar est utilisé dans le formulaire
-import { Tour, DataTableColumn, Resource, Action } from '../types';
-import { showSuccess } from '../utils/toast';
+import { Tour, DataTableColumn, Resource, Action, OperationResult } from '../types'; // Added OperationResult
+import { showLoading, updateToast } from '../utils/toast'; // 'showSuccess' removed
 import { formatDate } from '../utils/date';
 import { Button } from './ui/button';
 import { useForm, FormProvider } from 'react-hook-form'; // Import FormProvider
@@ -25,10 +25,9 @@ import { useFleetData } from '../components/FleetDataProvider'; // Import useFle
 type TourFormData = z.infer<typeof tourSchema>;
 
 interface ToursProps {
-  onAdd: (tableName: Resource, tour: Omit<Tour, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<void>;
-  onUpdate: (tableName: Resource, tour: Tour, action: Action) => Promise<void>;
-  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<void>;
-  // registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void; // Removed
+  onAdd: (tableName: Resource, tour: Omit<Tour, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<OperationResult>; // Changed to OperationResult
+  onUpdate: (tableName: Resource, tour: Tour, action: Action) => Promise<OperationResult>; // Changed to OperationResult
+  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<OperationResult>; // Changed to OperationResult
 }
 
 const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
@@ -154,15 +153,25 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
   };
 
   const onSubmit = async (formData: TourFormData) => {
-    if (editingTour) {
-      await onUpdate('tours', { ...editingTour, ...formData, id: editingTour.id, user_id: editingTour.user_id, created_at: editingTour.created_at }, 'edit');
-      showSuccess('Tournée mise à jour avec succès !');
-    } else {
-      await onAdd('tours', formData, 'add');
-      showSuccess('Tournée ajoutée avec succès !');
+    const loadingToastId = showLoading(editingTour ? 'Mise à jour de la tournée...' : 'Ajout de la tournée...');
+    let result: OperationResult;
+    try {
+      if (editingTour) {
+        result = await onUpdate('tours', { ...editingTour, ...formData, id: editingTour.id, user_id: editingTour.user_id, created_at: editingTour.created_at }, 'edit');
+      } else {
+        result = await onAdd('tours', formData, 'add');
+      }
+
+      if (result.success) {
+        updateToast(loadingToastId, result.message || 'Opération réussie !', 'success');
+      } else {
+        throw new Error(result.error || 'Opération échouée.');
+      }
+      setShowModal(false);
+      resetFormAndClearStorage();
+    } catch (error: any) {
+      updateToast(loadingToastId, error.message || 'Erreur lors de l\'opération.', 'error');
     }
-    setShowModal(false);
-    resetFormAndClearStorage(); // Clear saved data on successful submission
   };
 
   const handleCloseModal = () => {
@@ -248,7 +257,7 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
           <select
             value={selectedDriver}
             onChange={(e) => setSelectedDriver(e.target.value)}
-            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Tous les conducteurs</option>
             {drivers.map(driver => (
@@ -262,7 +271,7 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Tous les statuts</option>
             {uniqueStatuses.map(status => (
@@ -285,7 +294,7 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder="Date de fin"
           />
           <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
@@ -321,7 +330,15 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
         columns={columns}
         onAdd={canAddForm ? handleAddTour : undefined}
         onEdit={canEditForm ? handleEditTour : undefined}
-        onDelete={canAccess('tours', 'delete') ? (id) => onDelete('tours', { id }, 'delete') : undefined}
+        onDelete={canAccess('tours', 'delete') ? async (id) => {
+          const loadingToastId = showLoading('Suppression de la tournée...');
+          const result = await onDelete('tours', { id }, 'delete');
+          if (result.success) {
+            updateToast(loadingToastId, result.message || 'Tournée supprimée avec succès !', 'success');
+          } else {
+            updateToast(loadingToastId, result.error || 'Erreur lors de la suppression de la tournée.', 'error');
+          }
+        } : undefined}
         addLabel="Nouvelle Tournée"
         searchPlaceholder="Rechercher par date, véhicule, conducteur ou statut..."
         exportFileName="tournees"

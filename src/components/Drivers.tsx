@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Phone, AlertTriangle, Upload, Download } from 'lucide-react'; // Import Upload and Download icons
-import { Driver, DataTableColumn, DriverImportData, Resource, Action } from '../types';
-import { showSuccess } from '../utils/toast';
+import { Driver, DataTableColumn, DriverImportData, Resource, Action, OperationResult, DbImportResult } from '../types';
+import { showSuccess, showLoading, updateToast } from '../utils/toast'; // Removed showError
 import { formatDate, getDaysUntilExpiration } from '../utils/date';
 import {
   Dialog,
@@ -27,10 +27,9 @@ import { useFleetData } from '../components/FleetDataProvider'; // Import useFle
 type DriverFormData = z.infer<typeof driverSchema>;
 
 interface DriversProps {
-  onAdd: (tableName: Resource, driver: Omit<Driver, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<void>;
-  onUpdate: (tableName: Resource, driver: Driver, action: Action) => Promise<void>;
-  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<void>;
-  // registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void; // Removed
+  onAdd: (tableName: Resource, driver: Omit<Driver, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<OperationResult>;
+  onUpdate: (tableName: Resource, driver: Driver, action: Action) => Promise<OperationResult>;
+  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<OperationResult>;
 }
 
 const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
@@ -119,15 +118,25 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
   };
 
   const onSubmit = async (formData: DriverFormData) => {
-    if (editingDriver) {
-      await onUpdate('drivers', { ...formData, id: editingDriver.id, user_id: editingDriver.user_id, created_at: editingDriver.created_at }, 'edit');
-      showSuccess('Conducteur mis à jour avec succès !');
-    } else {
-      await onAdd('drivers', formData, 'add');
-      showSuccess('Conducteur ajouté avec succès !');
+    const loadingToastId = showLoading(editingDriver ? 'Mise à jour du conducteur...' : 'Ajout du conducteur...');
+    let result: OperationResult;
+    try {
+      if (editingDriver) {
+        result = await onUpdate('drivers', { ...formData, id: editingDriver.id, user_id: editingDriver.user_id, created_at: editingDriver.created_at }, 'edit');
+      } else {
+        result = await onAdd('drivers', formData, 'add');
+      }
+
+      if (result.success) {
+        updateToast(loadingToastId, result.message || 'Opération réussie !', 'success');
+      } else {
+        throw new Error(result.error || 'Opération échouée.');
+      }
+      setShowModal(false);
+      resetFormAndClearStorage();
+    } catch (error: any) {
+      updateToast(loadingToastId, error.message || 'Erreur lors de l\'opération.', 'error');
     }
-    setShowModal(false);
-    resetFormAndClearStorage(); // Clear saved data on successful submission
   };
 
   const handleCloseModal = () => {
@@ -135,10 +144,18 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
     resetFormAndClearStorage(); // Clear saved data on modal close
   };
 
-  const handleImportDrivers = async (importedData: DriverImportData[]) => {
+  const handleImportDrivers = async (importedData: DriverImportData[]): Promise<DbImportResult[]> => {
+    const results: DbImportResult[] = [];
     for (const driverData of importedData) {
-      await onAdd('drivers', driverData, 'add');
+      const result = await onAdd('drivers', driverData, 'add');
+      results.push({
+        originalData: driverData,
+        success: result.success,
+        message: result.message,
+        error: result.error,
+      });
     }
+    return results;
   };
 
   const driverColumnMapping: { [excelHeader: string]: keyof DriverImportData } = {
@@ -258,7 +275,15 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
         columns={columns}
         onAdd={canAddForm ? handleAddDriver : undefined}
         onEdit={canEditForm ? handleEditDriver : undefined}
-        onDelete={canAccess('drivers', 'delete') ? (id) => onDelete('drivers', { id }, 'delete') : undefined}
+        onDelete={canAccess('drivers', 'delete') ? async (id) => {
+          const loadingToastId = showLoading('Suppression du conducteur...');
+          const result = await onDelete('drivers', { id }, 'delete');
+          if (result.success) {
+            updateToast(loadingToastId, result.message || 'Conducteur supprimé avec succès !', 'success');
+          } else {
+            updateToast(loadingToastId, result.error || 'Erreur lors de la suppression du conducteur.', 'error');
+          }
+        } : undefined}
         addLabel="Ajouter Conducteur"
         searchPlaceholder="Rechercher un conducteur par nom, permis, statut ou téléphone..."
         exportFileName="conducteurs"

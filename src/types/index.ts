@@ -183,3 +183,19 @@ export interface FleetContextType {
   refetchFleetData: () => Promise<void>;
   refetchResource: (resource: Resource) => Promise<void>;
 }
+
+// New interface for operation results (add, edit, delete)
+export interface OperationResult {
+  success: boolean;
+  message?: string;
+  error?: string;
+  id?: string; // For add operations, if an ID is returned
+}
+
+// New interface for results of database import operations
+export interface DbImportResult {
+  originalData: any; // The data that was attempted to be imported (e.g., a row from Excel)
+  success: boolean;
+  message?: string;
+  error?: string;
+}

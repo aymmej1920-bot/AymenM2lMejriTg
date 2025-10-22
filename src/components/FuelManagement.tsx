@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Fuel, DollarSign, TrendingUp, Calendar, Search } from 'lucide-react';
-import { FuelEntry, DataTableColumn, Resource, Action } from '../types';
-import { showSuccess } from '../utils/toast';
+import { FuelEntry, DataTableColumn, Resource, Action, OperationResult } from '../types'; // Added OperationResult
+import { showLoading, updateToast } from '../utils/toast'; // 'showSuccess' removed
 import { formatDate } from '../utils/date';
 import { Button } from './ui/button';
 import { useForm, FormProvider } from 'react-hook-form'; // Import FormProvider
@@ -25,10 +25,9 @@ import { useFleetData } from '../components/FleetDataProvider'; // Import useFle
 type FuelEntryFormData = z.infer<typeof fuelEntrySchema>;
 
 interface FuelManagementProps {
-  onAdd: (tableName: Resource, fuelEntry: Omit<FuelEntry, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<void>;
-  onUpdate: (tableName: Resource, fuelEntry: FuelEntry, action: Action) => Promise<void>;
-  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<void>;
-  // registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void; // Removed
+  onAdd: (tableName: Resource, fuelEntry: Omit<FuelEntry, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<OperationResult>; // Changed to OperationResult
+  onUpdate: (tableName: Resource, fuelEntry: FuelEntry, action: Action) => Promise<OperationResult>; // Changed to OperationResult
+  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<OperationResult>; // Changed to OperationResult
 }
 
 const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDelete }) => {
@@ -126,15 +125,25 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
   };
 
   const onSubmit = async (formData: FuelEntryFormData) => {
-    if (editingFuel) {
-      await onUpdate('fuel_entries', { ...formData, id: editingFuel.id, user_id: editingFuel.user_id, created_at: editingFuel.created_at }, 'edit');
-      showSuccess('Enregistrement de carburant mis à jour avec succès !');
-    } else {
-      await onAdd('fuel_entries', formData, 'add');
-      showSuccess('Enregistrement de carburant ajouté avec succès !');
+    const loadingToastId = showLoading(editingFuel ? 'Mise à jour du plein...' : 'Ajout du plein...');
+    let result: OperationResult;
+    try {
+      if (editingFuel) {
+        result = await onUpdate('fuel_entries', { ...formData, id: editingFuel.id, user_id: editingFuel.user_id, created_at: editingFuel.created_at }, 'edit');
+      } else {
+        result = await onAdd('fuel_entries', formData, 'add');
+      }
+
+      if (result.success) {
+        updateToast(loadingToastId, result.message || 'Opération réussie !', 'success');
+      } else {
+        throw new Error(result.error || 'Opération échouée.');
+      }
+      setShowModal(false);
+      resetFormAndClearStorage();
+    } catch (error: any) {
+      updateToast(loadingToastId, error.message || 'Erreur lors de l\'opération.', 'error');
     }
-    setShowModal(false);
-    resetFormAndClearStorage(); // Clear saved data on successful submission
   };
 
   const handleCloseModal = () => {
@@ -282,7 +291,15 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
             columns={columns}
             onAdd={canAddForm ? handleAddFuel : undefined}
             onEdit={canEditForm ? handleEditFuel : undefined}
-            onDelete={canAccess('fuel_entries', 'delete') ? (id) => onDelete('fuel_entries', { id }, 'delete') : undefined}
+            onDelete={canAccess('fuel_entries', 'delete') ? async (id) => {
+              const loadingToastId = showLoading('Suppression du plein...');
+              const result = await onDelete('fuel_entries', { id }, 'delete');
+              if (result.success) {
+                updateToast(loadingToastId, result.message || 'Plein supprimé avec succès !', 'success');
+              } else {
+                updateToast(loadingToastId, result.error || 'Erreur lors de la suppression du plein.', 'error');
+              }
+            } : undefined}
             addLabel="Ajouter Plein"
             searchPlaceholder="Rechercher par date, véhicule, litres, prix ou kilométrage..."
             exportFileName="carburant"

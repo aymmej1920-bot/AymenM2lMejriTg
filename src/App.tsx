@@ -16,13 +16,13 @@ import Profile from './pages/Profile'; // Import the new Profile page
 import UserManagement from './components/UserManagement';
 import PermissionsOverview from './components/PermissionsOverview'; // Import PermissionsOverview
 import ProtectedRoute from './components/ProtectedRoute'; // Import ProtectedRoute
-import { Resource, Action, UserRole } from './types'; // Import types
+import { Resource, Action, UserRole, OperationResult } from './types'; // Import types, including OperationResult
 import { useSession } from './components/SessionContextProvider';
 import { supabase } from './integrations/supabase/client';
 import { showSuccess, showError, showLoading, dismissToast } from './utils/toast';
 import SkeletonLoader from './components/SkeletonLoader';
 import { PermissionsProvider, usePermissions } from './hooks/usePermissions'; // Import PermissionsProvider and usePermissions
-import { FleetDataProvider, useFleetData } from './components/FleetDataProvider'; // Import FleetDataProvider and useFleetData
+import { FleetDataProvider, useFleetData } from './components/FleetDataProvider';
 
 
 function AppContent() { // Renamed App to AppContent
@@ -46,17 +46,13 @@ function AppContent() { // Renamed App to AppContent
     }
   }, [session, isLoading, isProfileLoading, isLoadingPermissions, navigate, location.pathname]);
 
-  const handleUpdateData = async (tableName: Resource, newData: any, action: Action) => {
+  const handleUpdateData = async (tableName: Resource, newData: any, action: Action): Promise<OperationResult> => {
     if (!currentUser?.id) {
-      showError(`Utilisateur non authentifié. Impossible d'effectuer l'opération sur ${tableName}.`);
-      return;
+      return { success: false, error: `Utilisateur non authentifié. Impossible d'effectuer l'opération sur ${tableName}.` };
     }
     if (!canAccess(tableName, action)) { // Use canAccess from hook
-      showError(`Vous n'avez pas la permission d'effectuer cette action sur ${tableName}.`);
-      return;
+      return { success: false, error: `Vous n'avez pas la permission d'effectuer cette action sur ${tableName}.` };
     }
-
-    const loadingToastId = showLoading(`Opération en cours sur ${tableName}...`);
 
     try {
       let response;
@@ -75,15 +71,13 @@ function AppContent() { // Renamed App to AppContent
         throw response.error;
       }
       
-      dismissToast(loadingToastId);
-      showSuccess(`Données ${action === 'add' ? 'ajoutées' : action === 'edit' ? 'mises à jour' : 'supprimées'} avec succès !`);
-      
       // Trigger refetch for the specific table
       await refetchResource(tableName);
+
+      return { success: true, message: `Données ${action === 'add' ? 'ajoutées' : action === 'edit' ? 'mises à jour' : 'supprimées'} avec succès !`, id: (response?.data?.[0] as any)?.id };
     } catch (error) {
       console.error(`Error in handleUpdateData for ${tableName} (${action}):`, error); // Log the full error object
-      dismissToast(loadingToastId);
-      showError(`Erreur lors de la ${action === 'add' ? 'création' : action === 'edit' ? 'mise à jour' : 'suppression'} des données: ${(error as any)?.message || 'Une erreur inconnue est survenue.'}`);
+      return { success: false, error: `Erreur lors de la ${action === 'add' ? 'création' : action === 'edit' ? 'mise à jour' : 'suppression'} des données: ${(error as any)?.message || 'Une erreur inconnue est survenue.'}` };
     }
   };
 

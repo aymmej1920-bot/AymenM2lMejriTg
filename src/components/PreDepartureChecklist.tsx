@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { AlertTriangle, Calendar } from 'lucide-react';
-import { PreDepartureChecklist, DataTableColumn, Resource, Action } from '../types';
+import { PreDepartureChecklist, DataTableColumn, Resource, Action, OperationResult } from '../types'; // Added OperationResult
+import { showSuccess, showLoading, updateToast, showError } from '../utils/toast'; // Added showLoading, updateToast, showError
 import { formatDate } from '../utils/date';
 import {
   Dialog,
@@ -16,8 +17,7 @@ import ChecklistStatusIcon from './checklists/ChecklistStatusIcon'; // Import th
 import { useFleetData } from '../components/FleetDataProvider'; // Import useFleetData
 
 interface PreDepartureChecklistProps {
-  onAdd: (tableName: Resource, checklist: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<void>;
-  // registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void; // Removed
+  onAdd: (tableName: Resource, checklist: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<OperationResult>; // Changed to OperationResult
 }
 
 const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ onAdd }) => {
@@ -132,7 +132,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
             onChange={(e) => {
               setSelectedVehicle(e.target.value);
             }}
-            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Tous les véhicules</option>
             {vehicles.map(vehicle => (
@@ -149,7 +149,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
             onChange={(e) => {
               setSelectedDriver(e.target.value);
             }}
-            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Tous les conducteurs</option>
             {drivers.map(driver => (
@@ -164,9 +164,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
           <input
             type="date"
             value={startDate}
-            onChange={(e) => {
-              setStartDate(e.target.value);
-            }}
+            onChange={(e) => setStartDate(e.target.value)}
             className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             placeholder="Date de début"
           />
@@ -177,9 +175,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
           <input
             type="date"
             value={endDate}
-            onChange={(e) => {
-              setEndDate(e.target.value);
-            }}
+            onChange={(e) => setEndDate(e.target.value)}
             className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder="Date de fin"
           />

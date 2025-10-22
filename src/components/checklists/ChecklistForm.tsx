@@ -6,15 +6,15 @@ import { Button } from '../ui/button';
 import { DialogFooter } from '../ui/dialog';
 import FormField from '../forms/FormField';
 import { preDepartureChecklistSchema } from '../../types/formSchemas';
-import { PreDepartureChecklist, Resource, Action } from '../../types';
+import { PreDepartureChecklist, Resource, Action, OperationResult } from '../../types'; // Import OperationResult
 import { showSuccess, showError } from '../../utils/toast';
 import { LOCAL_STORAGE_KEYS } from '../../utils/constants';
-import { useFleetData } from '../FleetDataProvider'; // Import useFleetData
+import { useFleetData } from '../components/FleetDataProvider'; // Import useFleetData
 
 type PreDepartureChecklistFormData = z.infer<typeof preDepartureChecklistSchema>;
 
 interface ChecklistFormProps {
-  onAdd: (tableName: Resource, checklist: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<void>;
+  onAdd: (tableName: Resource, checklist: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<OperationResult>; // Changed to OperationResult
   onClose: () => void;
   canAdd: boolean;
   hasChecklistForMonth: (vehicleId: string, month: number, year: number) => boolean;
@@ -124,10 +124,14 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
     };
 
     try {
-      await onAdd('pre_departure_checklists', dataToSubmit, 'add');
-      showSuccess('Checklist ajoutée avec succès !');
-      onClose();
-      resetFormAndClearStorage();
+      const result = await onAdd('pre_departure_checklists', dataToSubmit, 'add');
+      if (result.success) {
+        showSuccess('Checklist ajoutée avec succès !');
+        onClose();
+        resetFormAndClearStorage();
+      } else {
+        throw new Error(result.error || 'Erreur lors de l\'ajout de la checklist.');
+      }
     } catch (error: any) {
       console.error("Erreur lors de l'ajout de la checklist:", error);
       showError(`Erreur lors de l'ajout de la checklist: ${error.message || 'Une erreur inconnue est survenue.'}`);

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Vehicle, DataTableColumn, VehicleImportData, Resource, Action } from '../types';
-import { showSuccess } from '../utils/toast';
+import { Vehicle, DataTableColumn, VehicleImportData, Resource, Action, OperationResult, DbImportResult } from '../types';
+import { showSuccess, showLoading, updateToast } from '../utils/toast'; // Removed showError, dismissToast
 import { formatDate } from '../utils/date';
 import {
   Dialog,
@@ -27,10 +27,9 @@ import { useFleetData } from '../components/FleetDataProvider'; // Import useFle
 type VehicleFormData = z.infer<typeof vehicleSchema>;
 
 interface VehiclesProps {
-  onAdd: (tableName: Resource, vehicle: Omit<Vehicle, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<void>;
-  onUpdate: (tableName: Resource, vehicle: Vehicle, action: Action) => Promise<void>;
-  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<void>;
-  // registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void; // Removed
+  onAdd: (tableName: Resource, vehicle: Omit<Vehicle, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<OperationResult>;
+  onUpdate: (tableName: Resource, vehicle: Vehicle, action: Action) => Promise<OperationResult>;
+  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<OperationResult>;
 }
 
 const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
@@ -123,15 +122,25 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
   };
 
   const onSubmit = async (formData: VehicleFormData) => {
-    if (editingVehicle) {
-      await onUpdate('vehicles', { ...formData, id: editingVehicle.id, user_id: editingVehicle.user_id, created_at: editingVehicle.created_at }, 'edit');
-      showSuccess('Véhicule mis à jour avec succès !');
-    } else {
-      await onAdd('vehicles', formData, 'add');
-      showSuccess('Véhicule ajouté avec succès !');
+    const loadingToastId = showLoading(editingVehicle ? 'Mise à jour du véhicule...' : 'Ajout du véhicule...');
+    let result: OperationResult;
+    try {
+      if (editingVehicle) {
+        result = await onUpdate('vehicles', { ...formData, id: editingVehicle.id, user_id: editingVehicle.user_id, created_at: editingVehicle.created_at }, 'edit');
+      } else {
+        result = await onAdd('vehicles', formData, 'add');
+      }
+
+      if (result.success) {
+        updateToast(loadingToastId, result.message || 'Opération réussie !', 'success');
+      } else {
+        throw new Error(result.error || 'Opération échouée.');
+      }
+      setShowModal(false);
+      resetFormAndClearStorage();
+    } catch (error: any) {
+      updateToast(loadingToastId, error.message || 'Erreur lors de l\'opération.', 'error');
     }
-    setShowModal(false);
-    resetFormAndClearStorage(); // Clear saved data on successful submission
   };
 
   const handleCloseModal = () => {
@@ -139,12 +148,18 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
     resetFormAndClearStorage(); // Clear saved data on modal close
   };
 
-  const handleImportVehicles = async (importedData: VehicleImportData[]) => {
-    // For simplicity, we'll treat all imported data as new additions.
-    // A more complex logic could check for existing plates and offer to update.
+  const handleImportVehicles = async (importedData: VehicleImportData[]): Promise<DbImportResult[]> => {
+    const results: DbImportResult[] = [];
     for (const vehicleData of importedData) {
-      await onAdd('vehicles', vehicleData, 'add');
+      const result = await onAdd('vehicles', vehicleData, 'add');
+      results.push({
+        originalData: vehicleData,
+        success: result.success,
+        message: result.message,
+        error: result.error,
+      });
     }
+    return results;
   };
 
   const vehicleColumnMapping: { [excelHeader: string]: keyof VehicleImportData } = {
@@ -251,7 +266,15 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
         columns={columns}
         onAdd={canAddForm ? handleAddVehicle : undefined}
         onEdit={canEditForm ? handleEditVehicle : undefined}
-        onDelete={canAccess('vehicles', 'delete') ? (id) => onDelete('vehicles', { id }, 'delete') : undefined}
+        onDelete={canAccess('vehicles', 'delete') ? async (id) => {
+          const loadingToastId = showLoading('Suppression du véhicule...');
+          const result = await onDelete('vehicles', { id }, 'delete');
+          if (result.success) {
+            updateToast(loadingToastId, result.message || 'Véhicule supprimé avec succès !', 'success');
+          } else {
+            updateToast(loadingToastId, result.error || 'Erreur lors de la suppression du véhicule.', 'error');
+          }
+        } : undefined}
         addLabel="Ajouter Véhicule"
         searchPlaceholder="Rechercher par plaque, type ou statut..."
         exportFileName="vehicules"
