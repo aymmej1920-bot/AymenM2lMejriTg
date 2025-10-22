@@ -534,9 +534,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole }) => 
             }}
             className="ml-4 bg-white/20 border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm glass"
           >
-            <option value={10}>10 par page</option>
-            <option value={25}>25 par page</option>
-            <option value={50}>50 par page</option>
+            {itemsPerPageOptions.map((option: number) => (
+              <option key={option} value={option}>{option} par page</option>
+            ))}
           </select>
         </div>
       )}
@@ -628,7 +628,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole }) => 
             <DialogDescription>
               Créez un nouvel utilisateur avec un e-mail, un mot de passe et un rôle.
             </DialogDescription>
-          </DialogHeader>
+          </DialogDescription>
           <FormProvider {...manualUserMethods}>
             <form onSubmit={manualUserMethods.handleSubmit(handleManualAddUser)} className="space-y-4 py-4">
               <FormField name="email" label="Adresse E-mail" type="email" placeholder="email@example.com" disabled={isCreatingManualUser} />

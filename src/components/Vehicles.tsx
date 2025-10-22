@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Vehicle, DataTableColumn, VehicleImportData, Resource, Action, OperationResult, DbImportResult } from '../types';
-import { showSuccess, showLoading, updateToast, showError } from '../utils/toast';
+import { showSuccess, showLoading, updateToast } from '../utils/toast';
 import { formatDate } from '../utils/date';
 import {
   Dialog,
