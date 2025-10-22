@@ -1,13 +1,14 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { FleetData, Vehicle, Driver, DataTableColumn, Resource } from '../types'; // Import Resource
-import { Calendar, Search } from 'lucide-react'; // Only Calendar and Search are needed for date inputs and search icon
-import { formatDate, getDaysUntilExpiration, getDaysSinceEntry } from '../utils/date'; // Import from utils/date
-import DataTable from '../components/DataTable'; // Import the new DataTable component
-import { useFleetData } from '../components/FleetDataProvider'; // Import useFleetData
+import { FleetData, Vehicle, Driver, DataTableColumn, Resource } from '../types';
+import { Calendar, Search, Table, BarChart2 } from 'lucide-react';
+import { formatDate, getDaysUntilExpiration, getDaysSinceEntry } from '../utils/date';
+import DataTable from '../components/DataTable';
+import { useFleetData } from '../components/FleetDataProvider';
+import { Button } from '../components/ui/button'; // Import Button
+import ReportCharts from '../components/reports/ReportCharts'; // Import new component
 
 interface ReportsProps {
   userRole: 'admin' | 'direction' | 'utilisateur';
-  // registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void; // Removed
 }
 
 const getColumnConfigs = (dataSource: Resource, allVehicles: Vehicle[], allDrivers: Driver[]): DataTableColumn<any>[] => {
@@ -109,15 +110,15 @@ const getColumnConfigs = (dataSource: Resource, allVehicles: Vehicle[], allDrive
 };
 
 const Reports: React.FC<ReportsProps> = ({ userRole }) => {
-  void userRole; // userRole is not directly used here, but passed from App.tsx
+  void userRole;
 
   const [selectedDataSource, setSelectedDataSource] = useState<keyof FleetData | ''>('');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
+  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table'); // New state for view mode
 
-  // Consume data from FleetContext
   const { fleetData, isLoadingFleet } = useFleetData();
-  const { vehicles, drivers } = fleetData; // Only destructure used properties
+  const { vehicles, drivers } = fleetData;
 
   const dataSources = [
     { id: 'vehicles', name: 'Véhicules' },
@@ -138,6 +139,26 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
     if (!selectedDataSource) return [];
     return getColumnConfigs(selectedDataSource as Resource, vehicles, drivers);
   }, [selectedDataSource, vehicles, drivers]);
+
+  const customFilter = useCallback((item: any) => {
+    let matchesDateRange = true;
+    const itemDateString = (item as any).date || (item as any).expiration || (item as any).created_at;
+    
+    if (itemDateString) {
+      const itemDate = new Date(itemDateString);
+      const start = startDate ? new Date(startDate) : null;
+      const end = endDate ? new Date(endDate) : null;
+
+      matchesDateRange = 
+        (!start || itemDate >= start) &&
+        (!end || itemDate <= end);
+    }
+    return matchesDateRange;
+  }, [startDate, endDate]);
+
+  const filteredDataForDisplay = useMemo(() => {
+    return currentData.filter(customFilter);
+  }, [currentData, customFilter]);
 
   const renderFilters = useCallback((searchTerm: string, setSearchTerm: (term: string) => void) => {
     return (
@@ -179,26 +200,28 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
     );
   }, [selectedDataSource, startDate, endDate]);
 
-  const customFilter = useCallback((item: any) => {
-    let matchesDateRange = true;
-    const itemDateString = (item as any).date || (item as any).expiration || (item as any).created_at; // Common date fields
-    
-    if (itemDateString) {
-      const itemDate = new Date(itemDateString);
-      const start = startDate ? new Date(startDate) : null;
-      const end = endDate ? new Date(endDate) : null;
-
-      matchesDateRange = 
-        (!start || itemDate >= start) &&
-        (!end || itemDate <= end);
-    }
-    return matchesDateRange;
-  }, [startDate, endDate]);
-
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">Rapports Personnalisables</h2>
+        <div className="flex space-x-2">
+          <Button
+            variant={viewMode === 'table' ? 'default' : 'outline'}
+            onClick={() => setViewMode('table')}
+            disabled={!selectedDataSource}
+            className="hover-lift"
+          >
+            <Table className="w-4 h-4 mr-2" /> Vue Tableau
+          </Button>
+          <Button
+            variant={viewMode === 'chart' ? 'default' : 'outline'}
+            onClick={() => setViewMode('chart')}
+            disabled={!selectedDataSource || (selectedDataSource !== 'vehicles' && selectedDataSource !== 'fuel_entries')} // Disable if no chart available
+            className="hover-lift"
+          >
+            <BarChart2 className="w-4 h-4 mr-2" /> Vue Graphique
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -208,8 +231,9 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
             value={selectedDataSource}
             onChange={(e) => {
               setSelectedDataSource(e.target.value as keyof FleetData);
-              setStartDate(''); // Reset date filters on data source change
+              setStartDate('');
               setEndDate('');
+              setViewMode('table'); // Reset to table view on data source change
             }}
             className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
@@ -219,20 +243,28 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
             ))}
           </select>
         </div>
-        {/* The search and date filters are now rendered by DataTable's renderFilters prop */}
+        {renderFilters('', () => {})} {/* Pass empty functions as DataTable handles search internally */}
       </div>
 
       {selectedDataSource ? (
-        <DataTable
-          title={`Rapport: ${dataSources.find(ds => ds.id === selectedDataSource)?.name || ''}`}
-          data={currentData}
-          columns={columns}
-          exportFileName={`rapport_${selectedDataSource}`}
-          isLoading={isLoadingFleet} // Adjust based on actual loading state if needed
-          renderFilters={renderFilters}
-          customFilter={customFilter}
-          resourceType={selectedDataSource as Resource} // Added resourceType prop
-        />
+        viewMode === 'table' ? (
+          <DataTable
+            title={`Rapport: ${dataSources.find(ds => ds.id === selectedDataSource)?.name || ''}`}
+            data={filteredDataForDisplay}
+            columns={columns}
+            exportFileName={`rapport_${selectedDataSource}`}
+            isLoading={isLoadingFleet}
+            resourceType={selectedDataSource as Resource}
+            // Filters are now rendered above the DataTable, so we don't pass renderFilters here
+            // DataTable will still handle its internal search based on the searchTerm state if we were to pass it.
+            // For now, the search input above is the primary filter.
+          />
+        ) : (
+          <ReportCharts
+            dataSource={selectedDataSource as Resource}
+            data={filteredDataForDisplay}
+          />
+        )
       ) : (
         <div className="glass rounded-xl shadow-lg p-6 text-center text-gray-600">
           Veuillez sélectionner une source de données pour afficher le rapport.
