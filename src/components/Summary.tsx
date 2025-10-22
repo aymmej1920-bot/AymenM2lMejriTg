@@ -109,7 +109,7 @@ const Summary: React.FC<SummaryProps> = () => {
           <div className="h-64">
             <MonthlyPerformanceChart 
               tours={fleetData.tours} 
-              fuelEntries={fleetData.fuel} 
+              fuelEntries={fleetData.fuel_entries} // Updated to fuel_entries
               maintenanceEntries={fleetData.maintenance} 
             />
           </div>
@@ -119,7 +119,7 @@ const Summary: React.FC<SummaryProps> = () => {
           <h3 className="text-xl font-semibold mb-6 text-gray-800">Répartition des Coûts (TND)</h3>
           <div className="h-64">
             <CostDistributionChart 
-              fuelEntries={fleetData.fuel} 
+              fuelEntries={fleetData.fuel_entries} // Updated to fuel_entries
               maintenanceEntries={fleetData.maintenance} 
             />
           </div>

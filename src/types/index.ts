@@ -112,7 +112,7 @@ export interface FleetData {
   vehicles: Vehicle[];
   drivers: Driver[];
   tours: Tour[];
-  fuel: FuelEntry[];
+  fuel_entries: FuelEntry[]; // Renamed from 'fuel' to 'fuel_entries'
   documents: Document[];
   maintenance: MaintenanceEntry[];
   pre_departure_checklists: PreDepartureChecklist[]; // New field
@@ -150,12 +150,15 @@ export type ProcessedDataTableColumn<T> = DataTableColumn<T> & {
 };
 
 // Types for dynamic permissions
-export type UserRole = 'admin' | 'direction' | 'utilisateur';
+export type UserRole = 
+  'admin' | 
+  'direction' | 
+  'utilisateur';
 export type Resource = 
   'vehicles' | 
   'drivers' | 
   'tours' | 
-  'fuel_entries' | 
+  'fuel_entries' | // Updated resource name
   'documents' | 
   'maintenance_entries' | 
   'pre_departure_checklists' |

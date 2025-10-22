@@ -20,7 +20,7 @@ export const FleetDataProvider: React.FC<{ children: ReactNode }> = ({ children 
   const { data: vehicles, isLoading: isLoadingVehicles, refetch: refetchVehicles } = useSupabaseData<Vehicle>('vehicles', { enabled: !!currentUser, ...commonOptions });
   const { data: drivers, isLoading: isLoadingDrivers, refetch: refetchDrivers } = useSupabaseData<Driver>('drivers', { enabled: !!currentUser, ...commonOptions });
   const { data: tours, isLoading: isLoadingTours, refetch: refetchTours } = useSupabaseData<Tour>('tours', { enabled: !!currentUser, ...commonOptions });
-  const { data: fuel, isLoading: isLoadingFuel, refetch: refetchFuel } = useSupabaseData<FuelEntry>('fuel_entries', { enabled: !!currentUser, ...commonOptions });
+  const { data: fuelEntries, isLoading: isLoadingFuel, refetch: refetchFuel } = useSupabaseData<FuelEntry>('fuel_entries', { enabled: !!currentUser, ...commonOptions });
   const { data: documents, isLoading: isLoadingDocuments, refetch: refetchDocuments } = useSupabaseData<Document>('documents', { enabled: !!currentUser, ...commonOptions });
   const { data: maintenance, isLoading: isLoadingMaintenance, refetch: refetchMaintenance } = useSupabaseData<MaintenanceEntry>('maintenance_entries', { enabled: !!currentUser, ...commonOptions });
   const { data: preDepartureChecklists, isLoading: isLoadingChecklists, refetch: refetchChecklists } = useSupabaseData<PreDepartureChecklist>('pre_departure_checklists', { enabled: !!currentUser, ...commonOptions });
@@ -29,10 +29,10 @@ export const FleetDataProvider: React.FC<{ children: ReactNode }> = ({ children 
     vehicles,
     drivers,
     tours,
-    fuel,
+    fuel_entries: fuelEntries, // Corrected from 'fuel' to 'fuel_entries'
     documents,
     maintenance,
-    pre_departure_checklists: preDepartureChecklists, // Corrected typo here
+    pre_departure_checklists: preDepartureChecklists,
   };
 
   const isLoadingFleet = isLoadingVehicles || isLoadingDrivers || isLoadingTours || isLoadingFuel || isLoadingDocuments || isLoadingMaintenance || isLoadingChecklists || isSessionLoading;

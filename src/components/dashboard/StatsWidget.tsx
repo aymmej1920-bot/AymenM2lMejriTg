@@ -9,7 +9,7 @@ interface StatsWidgetProps {
 const StatsWidget: React.FC<StatsWidgetProps> = () => {
   // Consume data from FleetContext
   const { fleetData, isLoadingFleet } = useFleetData();
-  const fuelEntries = fleetData.fuel;
+  const fuelEntries = fleetData.fuel_entries; // Updated to fuel_entries
   const tours = fleetData.tours;
 
   const totalFuelCost = fuelEntries.reduce((sum, f) => sum + (f.liters * f.price_per_liter), 0);

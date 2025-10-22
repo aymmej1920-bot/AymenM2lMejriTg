@@ -34,7 +34,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
   const { canAccess } = usePermissions();
 
   const { fleetData, isLoadingFleet } = useFleetData();
-  const fuelEntries = fleetData.fuel;
+  const fuelEntries = fleetData.fuel_entries; // Updated to fuel_entries
   const vehicles = fleetData.vehicles;
 
   const [showModal, setShowModal] = useState(false);
@@ -183,7 +183,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
           <select
             value={selectedVehicle}
             onChange={(e) => setSelectedVehicle(e.target.value)}
-            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Tous les véhicules</option>
             {vehicles.map(vehicle => (

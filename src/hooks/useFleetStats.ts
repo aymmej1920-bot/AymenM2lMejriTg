@@ -8,8 +8,8 @@ export const useFleetStats = (data: FleetData) => {
     const activeDrivers = data.drivers.filter(d => d.status !== 'Congé').length;
     const toursThisMonth = data.tours.length; // Assuming 'this month' filter is applied elsewhere if needed, otherwise it's total tours
     const totalDistance = data.tours.filter(t => t.distance).reduce((sum, t) => sum + (t.distance || 0), 0);
-    const totalFuelCost = data.fuel.reduce((sum, f) => sum + (f.liters * f.price_per_liter), 0);
-    const totalLiters = data.fuel.reduce((sum, f) => sum + f.liters, 0);
+    const totalFuelCost = data.fuel_entries.reduce((sum, f) => sum + (f.liters * f.price_per_liter), 0); // Updated to fuel_entries
+    const totalLiters = data.fuel_entries.reduce((sum, f) => sum + f.liters, 0); // Updated to fuel_entries
     const avgPricePerLiter = totalLiters > 0 ? totalFuelCost / totalLiters : 0;
     const totalMaintenanceCost = data.maintenance.reduce((sum, m) => sum + m.cost, 0);
 

@@ -9,7 +9,7 @@ interface MonthlyFuelConsumptionChartWidgetProps {
 const MonthlyFuelConsumptionChartWidget: React.FC<MonthlyFuelConsumptionChartWidgetProps> = () => {
   // Consume data from FleetContext
   const { fleetData, isLoadingFleet } = useFleetData();
-  const fuelEntries = fleetData.fuel;
+  const fuelEntries = fleetData.fuel_entries; // Updated to fuel_entries
 
   if (isLoadingFleet) {
     return null; // Or a small skeleton loader if preferred
