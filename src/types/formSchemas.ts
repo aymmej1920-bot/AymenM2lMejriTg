@@ -13,8 +13,12 @@ export const vehicleSchema = z.object({
 // Schema for importing vehicles (does not include id, user_id, created_at)
 export const vehicleImportSchema = z.object({
   plate: z.string().min(1, "La plaque d'immatriculation est requise."),
-  type: z.string().min(1, "Le type de véhicule est requis."),
-  status: z.string().min(1, "Le statut est requis."),
+  type: z.enum(['Camionnette', 'Camion', 'Fourgon', 'Utilitaire'], {
+    message: `Le type de véhicule doit être l'un des suivants : Camionnette, Camion, Fourgon, Utilitaire.`,
+  }),
+  status: z.enum(['Disponible', 'En mission', 'Maintenance'], {
+    message: `Le statut du véhicule doit être l'un des suivants : Disponible, En mission, Maintenance.`,
+  }),
   mileage: z.preprocess(
     (val) => (typeof val === 'string' ? parseFloat(val.replace(/,/g, '')) : val), // Handle string with commas
     z.number().min(0, "Le kilométrage doit être positif.")
@@ -154,6 +158,6 @@ export const manualUserSchema = z.object({
   first_name: z.string().min(1, "Le prénom est requis."),
   last_name: z.string().min(1, "Le nom est requis."),
   role: z.enum(['admin', 'direction', 'utilisateur'], {
-    message: "Le rôle est requis.", // Corrected: use 'message' instead of 'errorMap'
+    message: "Le rôle est requis.",
   }),
 });
