@@ -15,11 +15,11 @@ import { supabase } from '../integrations/supabase/client';
 import { exportToXLSX } from '../utils/export';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { inviteUserSchema, manualUserSchema } from '../types/formSchemas'; // Import manualUserSchema
+import { inviteUserSchema, manualUserSchema } from '../types/formSchemas';
 import { z } from 'zod';
 import FormField from './forms/FormField';
 import { usePermissions } from '../hooks/usePermissions';
-import { UserRole, Resource } from '../types';
+import { UserRole } from '../types'; // Removed Resource
 import { useSession } from './SessionContextProvider'; // Import useSession
 
 
