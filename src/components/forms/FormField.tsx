@@ -53,17 +53,27 @@ const FormField = <TFieldValues extends FieldValues>({
         render={({ field }) => {
           switch (type) {
             case 'select':
+              // Process options to replace empty string values with a unique placeholder
+              const processedOptions = options?.map(option => ({
+                ...option,
+                value: option.value === '' ? '__placeholder__' : option.value,
+              })) || [];
+
               return (
                 <Select
-                  onValueChange={field.onChange}
-                  value={field.value || ''}
+                  onValueChange={(selectedValue) => {
+                    // Convert the unique placeholder back to null for the form's actual value
+                    field.onChange(selectedValue === '__placeholder__' ? null : selectedValue);
+                  }}
+                  // Ensure the Select component's value prop correctly handles null/undefined/empty string
+                  value={field.value === null || field.value === undefined || field.value === '' ? '__placeholder__' : String(field.value)}
                   disabled={disabled}
                 >
                   <SelectTrigger className="w-full glass border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500">
                     <SelectValue placeholder={placeholder || `Sélectionner ${label.toLowerCase()}`} />
                   </SelectTrigger>
                   <SelectContent className="glass">
-                    {options?.map((option) => (
+                    {processedOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>
