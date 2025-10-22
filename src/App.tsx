@@ -47,7 +47,10 @@ function AppContent() { // Renamed App to AppContent
   }, [session, isLoading, isProfileLoading, isLoadingPermissions, navigate, location.pathname]);
 
   const handleUpdateData = async (tableName: Resource, newData: any, action: Action) => {
-    if (!currentUser?.id) return;
+    if (!currentUser?.id) {
+      showError(`Utilisateur non authentifié. Impossible d'effectuer l'opération sur ${tableName}.`);
+      return;
+    }
     if (!canAccess(tableName, action)) { // Use canAccess from hook
       showError(`Vous n'avez pas la permission d'effectuer cette action sur ${tableName}.`);
       return;
@@ -67,7 +70,10 @@ function AppContent() { // Renamed App to AppContent
         throw new Error('Action non supportée.');
       }
 
-      if (response?.error) throw response.error;
+      if (response?.error) {
+        console.error(`Supabase Error during ${action} on ${tableName}:`, response.error); // Detailed error log
+        throw response.error;
+      }
       
       dismissToast(loadingToastId);
       showSuccess(`Données ${action === 'add' ? 'ajoutées' : action === 'edit' ? 'mises à jour' : 'supprimées'} avec succès !`);
@@ -75,9 +81,9 @@ function AppContent() { // Renamed App to AppContent
       // Trigger refetch for the specific table
       await refetchResource(tableName);
     } catch (error) {
-      console.error(`Error ${action}ing data in ${tableName}:`, (error as any)?.message || error); // Log detailed error
+      console.error(`Error in handleUpdateData for ${tableName} (${action}):`, error); // Log the full error object
       dismissToast(loadingToastId);
-      showError(`Erreur lors de la ${action === 'add' ? 'création' : action === 'edit' ? 'mise à jour' : 'suppression'} des données.`);
+      showError(`Erreur lors de la ${action === 'add' ? 'création' : action === 'edit' ? 'mise à jour' : 'suppression'} des données: ${(error as any)?.message || 'Une erreur inconnue est survenue.'}`);
     }
   };
 
