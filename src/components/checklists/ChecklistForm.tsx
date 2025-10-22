@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, FormProvider } from 'react-hook-form'; // Import FormProvider
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '../ui/button';
@@ -21,7 +21,7 @@ interface ChecklistFormProps {
 }
 
 const ChecklistForm: React.FC<ChecklistFormProps> = ({ data, onAdd, onClose, canAdd, hasChecklistForMonth }) => {
-  const { register, handleSubmit, reset, watch, formState: { errors = {} } } = useForm<PreDepartureChecklistFormData>({
+  const methods = useForm<PreDepartureChecklistFormData>({ // Use methods from useForm
     resolver: zodResolver(preDepartureChecklistSchema),
     defaultValues: {
       vehicle_id: '',
@@ -41,6 +41,8 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ data, onAdd, onClose, can
       issues_to_address: null,
     }
   });
+
+  const { handleSubmit, reset, watch, formState: { errors = {} } } = methods; // Destructure from methods
 
   const resetFormAndClearStorage = useCallback(() => {
     reset({
@@ -131,7 +133,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ data, onAdd, onClose, can
             type="radio"
             id={`${name}_ok`}
             value="true"
-            {...register(name, { setValueAs: v => v === 'true' })}
+            {...methods.register(name, { setValueAs: v => v === 'true' })} // Use methods.register
             className="h-4 w-4 text-green-600 bg-white border border-gray-300 shadow-sm focus:ring-green-500"
             disabled={!canAdd}
           />
@@ -142,7 +144,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ data, onAdd, onClose, can
             type="radio"
             id={`${name}_nok`}
             value="false"
-            {...register(name, { setValueAs: v => v === 'true' })}
+            {...methods.register(name, { setValueAs: v => v === 'true' })} // Use methods.register
             className="h-4 w-4 text-red-600 bg-white border border-gray-300 shadow-sm focus:ring-red-500"
             disabled={!canAdd}
           />
@@ -153,80 +155,82 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ data, onAdd, onClose, can
   );
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
-      <div className="grid grid-cols-2 gap-4">
+    <FormProvider {...methods}> {/* Wrap the form with FormProvider */}
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            name="date"
+            label="Date"
+            type="date"
+            disabled={!canAdd}
+          />
+          <FormField
+            name="vehicle_id"
+            label="Véhicule"
+            type="select"
+            options={data.vehicles.map(v => ({ value: v.id, label: `${v.plate} - ${v.type}` }))}
+            placeholder="Sélectionner un véhicule"
+            disabled={!canAdd}
+          />
+        </div>
+
         <FormField
-          name="date"
-          label="Date"
-          type="date"
-          disabled={!canAdd}
-        />
-        <FormField
-          name="vehicle_id"
-          label="Véhicule"
+          name="driver_id"
+          label="Conducteur (Optionnel)"
           type="select"
-          options={data.vehicles.map(v => ({ value: v.id, label: `${v.plate} - ${v.type}` }))}
-          placeholder="Sélectionner un véhicule"
+          options={[{ value: '', label: 'Sélectionner un conducteur' }, ...data.drivers.map(d => ({ value: d.id, label: d.name }))]}
+          placeholder="Sélectionner un conducteur"
           disabled={!canAdd}
         />
-      </div>
 
-      <FormField
-        name="driver_id"
-        label="Conducteur (Optionnel)"
-        type="select"
-        options={[{ value: '', label: 'Sélectionner un conducteur' }, ...data.drivers.map(d => ({ value: d.id, label: d.name }))]}
-        placeholder="Sélectionner un conducteur"
-        disabled={!canAdd}
-      />
+        <div className="grid grid-cols-2 gap-4">
+          {renderBooleanRadio('tire_pressure_ok', 'Pression des pneus')}
+          {renderBooleanRadio('lights_ok', 'Feux')}
+          {renderBooleanRadio('oil_level_ok', "Niveau d'huile")}
+          {renderBooleanRadio('fluid_levels_ok', 'Niveaux de fluides')}
+          {renderBooleanRadio('brakes_ok', 'Freins')}
+          {renderBooleanRadio('wipers_ok', 'Essuie-glaces')}
+          {renderBooleanRadio('horn_ok', 'Klaxon')}
+          {renderBooleanRadio('mirrors_ok', 'Rétroviseurs')}
+          {renderBooleanRadio('ac_working_ok', 'Climatiseur')}
+          {renderBooleanRadio('windows_working_ok', 'Vitres')}
+        </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        {renderBooleanRadio('tire_pressure_ok', 'Pression des pneus')}
-        {renderBooleanRadio('lights_ok', 'Feux')}
-        {renderBooleanRadio('oil_level_ok', "Niveau d'huile")}
-        {renderBooleanRadio('fluid_levels_ok', 'Niveaux de fluides')}
-        {renderBooleanRadio('brakes_ok', 'Freins')}
-        {renderBooleanRadio('wipers_ok', 'Essuie-glaces')}
-        {renderBooleanRadio('horn_ok', 'Klaxon')}
-        {renderBooleanRadio('mirrors_ok', 'Rétroviseurs')}
-        {renderBooleanRadio('ac_working_ok', 'Climatiseur')}
-        {renderBooleanRadio('windows_working_ok', 'Vitres')}
-      </div>
+        <FormField
+          name="observations"
+          label="Observations"
+          type="textarea"
+          placeholder="Toute observation pertinente..."
+          disabled={!canAdd}
+        />
+        <FormField
+          name="issues_to_address"
+          label="Points à traiter"
+          type="textarea"
+          placeholder="Problèmes identifiés nécessitant une action..."
+          disabled={!canAdd}
+        />
 
-      <FormField
-        name="observations"
-        label="Observations"
-        type="textarea"
-        placeholder="Toute observation pertinente..."
-        disabled={!canAdd}
-      />
-      <FormField
-        name="issues_to_address"
-        label="Points à traiter"
-        type="textarea"
-        placeholder="Problèmes identifiés nécessitant une action..."
-        disabled={!canAdd}
-      />
-
-      <DialogFooter>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onClose}
-          className="hover-lift"
-        >
-          Annuler
-        </Button>
-        {canAdd && (
+        <DialogFooter>
           <Button
-            type="submit"
+            type="button"
+            variant="outline"
+            onClick={onClose}
             className="hover-lift"
           >
-            Sauvegarder
+            Annuler
           </Button>
-        )}
-      </DialogFooter>
-    </form>
+          {canAdd && (
+            <Button
+              type="submit"
+              className="hover-lift"
+            >
+              Sauvegarder
+            </Button>
+          )}
+        </DialogFooter>
+      </form>
+    </FormProvider>
   );
 };
 
