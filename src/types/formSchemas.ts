@@ -15,9 +15,26 @@ export const vehicleImportSchema = z.object({
   plate: z.string().min(1, "La plaque d'immatriculation est requise."),
   type: z.string().min(1, "Le type de véhicule est requis."),
   status: z.string().min(1, "Le statut est requis."),
-  mileage: z.number().min(0, "Le kilométrage doit être positif."),
-  last_service_date: z.string().min(1, "La date de dernière vidange est requise."),
-  last_service_mileage: z.number().min(0, "Le kilométrage de dernière vidange doit être positif."),
+  mileage: z.preprocess(
+    (val) => (typeof val === 'string' ? parseFloat(val.replace(/,/g, '')) : val), // Handle string with commas
+    z.number().min(0, "Le kilométrage doit être positif.")
+  ),
+  last_service_date: z.string().min(1, "La date de dernière vidange est requise.")
+    .transform((str, ctx) => {
+      const date = new Date(str);
+      if (isNaN(date.getTime())) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Format de date invalide. Veuillez utiliser un format de date reconnu (ex: YYYY-MM-DD, MM/DD/YYYY, DD/MM/YYYY).",
+        });
+        return z.NEVER;
+      }
+      return date.toISOString().split('T')[0]; // Format to YYYY-MM-DD
+    }),
+  last_service_mileage: z.preprocess(
+    (val) => (typeof val === 'string' ? parseFloat(val.replace(/,/g, '')) : val), // Handle string with commas
+    z.number().min(0, "Le kilométrage de dernière vidange doit être positif.")
+  ),
 });
 
 export const driverSchema = z.object({
