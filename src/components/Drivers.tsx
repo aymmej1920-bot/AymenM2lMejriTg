@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { Phone, AlertTriangle, Upload, Download } from 'lucide-react'; // Import Upload and Download icons
+import { Phone, AlertTriangle, Upload, Download } from 'lucide-react';
 import { Driver, DataTableColumn, DriverImportData, Resource, Action, OperationResult, DbImportResult } from '../types';
-import { showSuccess, showLoading, updateToast, showError } from '../utils/toast';
+import { showSuccess, showLoading, updateToast } from '../utils/toast'; // 'showError' removed
 import { formatDate, getDaysUntilExpiration } from '../utils/date';
 import {
   Dialog,
@@ -19,10 +19,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import FormField from './forms/FormField';
 import { Button } from './ui/button';
 import { usePermissions } from '../hooks/usePermissions';
-import XLSXImportDialog from './XLSXImportDialog'; // Import the new component
-import { exportTemplateToXLSX } from '../utils/templateExport'; // Import the new utility
-import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
-import { useFleetData } from '../components/FleetDataProvider'; // Import useFleetData
+import XLSXImportDialog from './XLSXImportDialog';
+import { exportTemplateToXLSX } from '../utils/templateExport';
+import { LOCAL_STORAGE_KEYS } from '../utils/constants';
+import { useFleetData } from '../components/FleetDataProvider';
 
 type DriverFormData = z.infer<typeof driverSchema>;
 
@@ -41,7 +41,7 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
 
   const [showModal, setShowModal] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
-  const [showImportDialog, setShowImportDialog] = useState(false); // State for import dialog
+  const [showImportDialog, setShowImportDialog] = useState(false);
 
   const methods = useForm<DriverFormData>({
     resolver: zodResolver(driverSchema),
@@ -127,7 +127,7 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
         result = await onAdd('drivers', formData, 'add');
       }
 
-      console.log("[Drivers.tsx] onSubmit result:", result); // Log the result
+      console.log("[Drivers.tsx] onSubmit result:", result);
 
       if (result.success) {
         updateToast(loadingToastId, result.message || 'Opération réussie !', 'success');
@@ -149,9 +149,9 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
   const handleImportDrivers = async (importedData: DriverImportData[]): Promise<DbImportResult[]> => {
     const results: DbImportResult[] = [];
     for (const driverData of importedData) {
-      console.log("[Drivers.tsx] Importing driver data:", driverData); // Log each driver data being imported
+      console.log("[Drivers.tsx] Importing driver data:", driverData);
       const result = await onAdd('drivers', driverData, 'add');
-      console.log("[Drivers.tsx] Import result for driver:", result); // Log the result for each driver
+      console.log("[Drivers.tsx] Import result for driver:", result);
       results.push({
         originalData: driverData,
         success: result.success,
@@ -246,7 +246,7 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
 
   const canEditForm = canAccess('drivers', 'edit');
   const canAddForm = canAccess('drivers', 'add');
-  const canImport = canAccess('drivers', 'add'); // Assuming import is an 'add' action
+  const canImport = canAccess('drivers', 'add');
 
   const renderCustomHeaderButtons = () => (
     <>
@@ -294,7 +294,7 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
         isLoading={isLoadingFleet}
         renderAlerts={renderAlerts}
         resourceType="drivers"
-        renderCustomHeaderButtons={renderCustomHeaderButtons} // Pass the custom buttons
+        renderCustomHeaderButtons={renderCustomHeaderButtons}
       />
 
       {/* Modal */}
@@ -342,7 +342,7 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
         schema={driverImportSchema}
         columnMapping={driverColumnMapping}
         onImport={handleImportDrivers}
-        isLoading={false} // Adjust based on actual import loading state
+        isLoading={false}
       />
     </>
   );
