@@ -21,8 +21,8 @@ import { useSession } from './components/SessionContextProvider';
 import { supabase } from './integrations/supabase/client';
 import { showSuccess, showError, showLoading, dismissToast } from './utils/toast';
 import SkeletonLoader from './components/SkeletonLoader';
-import { PermissionsProvider, usePermissions } from './hooks/usePermissions'; // Import PermissionsProvider directly
-import { FleetDataProvider, useFleetData } from './components/FleetDataProvider'; // Import FleetDataProvider directly
+import { usePermissions } from './hooks/usePermissions';
+import { useFleetData } from './components/FleetDataProvider';
 
 
 export default function App() {
@@ -244,8 +244,6 @@ export default function App() {
         </aside>
 
         <main className="flex-1 px-6 py-8 min-w-0 overflow-x-auto w-full">
-          <PermissionsProvider>
-            <FleetDataProvider>
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard key="dashboard-view" userRole={userRole} /></ProtectedRoute>} />
@@ -274,8 +272,6 @@ export default function App() {
                 <Route path="/permissions-overview" element={<ProtectedRoute allowedRoles={['admin']}><PermissionsOverview key="permissions-overview-view" /></ProtectedRoute>} />
                 <Route path="*" element={<ProtectedRoute><Dashboard key="default-dashboard-view" userRole={userRole} /></ProtectedRoute>} />
               </Routes>
-            </FleetDataProvider>
-          </PermissionsProvider>
         </main>
       </div>
     </div>
