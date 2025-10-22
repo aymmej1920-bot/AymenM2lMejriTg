@@ -12,28 +12,28 @@ import Summary from './components/Summary';
 import PreDepartureChecklistComponent from './components/PreDepartureChecklist';
 import Reports from './pages/Reports';
 import Login from './pages/Login';
-import Profile from './pages/Profile'; // Import the new Profile page
+import Profile from './pages/Profile';
 import UserManagement from './components/UserManagement';
-import PermissionsOverview from './components/PermissionsOverview'; // Import PermissionsOverview
-import ProtectedRoute from './components/ProtectedRoute'; // Import ProtectedRoute
-import { Resource, Action, UserRole, OperationResult } from './types'; // Import types, including OperationResult
+import PermissionsOverview from './components/PermissionsOverview';
+import ProtectedRoute from './components/ProtectedRoute';
+import { Resource, Action, UserRole, OperationResult } from './types';
 import { useSession } from './components/SessionContextProvider';
 import { supabase } from './integrations/supabase/client';
 import { showSuccess, showError, showLoading, dismissToast } from './utils/toast';
 import SkeletonLoader from './components/SkeletonLoader';
-import { PermissionsProvider, usePermissions } from './hooks/usePermissions'; // Import PermissionsProvider and usePermissions
-import { FleetDataProvider, useFleetData } from './components/FleetDataProvider';
+import { usePermissions } from './hooks/usePermissions';
+import { useFleetData } from './components/FleetDataProvider';
 
 
-function AppContent() { // Renamed App to AppContent
+export function AppContent() { // Renamed App to AppContent and exported directly
   const { session, currentUser, isLoading, isProfileLoading, refetchCurrentUser } = useSession();
-  const { canAccess, isLoadingPermissions } = usePermissions(); // Use usePermissions hook
-  const { refetchResource } = useFleetData(); // Use useFleetData hook
+  const { canAccess, isLoadingPermissions } = usePermissions();
+  const { refetchResource } = useFleetData();
   const navigate = useNavigate();
   const location = useLocation();
   
   useEffect(() => {
-    if (!isLoading && !isProfileLoading && !isLoadingPermissions) { // Wait for permissions to load
+    if (!isLoading && !isProfileLoading && !isLoadingPermissions) {
       if (session?.user) {
         if (location.pathname === '/login' || location.pathname === '/') {
           navigate('/dashboard');
@@ -53,7 +53,7 @@ function AppContent() { // Renamed App to AppContent
       console.error(`[handleUpdateData] Unauthorized: No current user for ${action} on ${tableName}.`);
       return { success: false, error: `Utilisateur non authentifié. Impossible d'effectuer l'opération sur ${tableName}.` };
     }
-    if (!canAccess(tableName, action)) { // Use canAccess from hook
+    if (!canAccess(tableName, action)) {
       console.warn(`[handleUpdateData] Permission denied: User role '${currentUser.role}' cannot ${action} on ${tableName}.`);
       return { success: false, error: `Vous n'avez pas la permission d'effectuer cette action sur ${tableName}.` };
     }
@@ -77,26 +77,24 @@ function AppContent() { // Renamed App to AppContent
         throw response.error;
       }
       
-      // Explicitly check if data was returned for 'add' and 'edit' operations
       if ((action === 'add' || action === 'edit') && (!response.data || response.data.length === 0)) {
         const errorMessage = `L'opération ${action} sur ${tableName} a échoué : aucune donnée retournée par la base de données.`;
         console.error(`[handleUpdateData] ${errorMessage}`);
         return { success: false, error: errorMessage };
       }
 
-      // Trigger refetch for the specific table
       await refetchResource(tableName);
       console.log(`[handleUpdateData] Refetched resource: ${tableName}`);
 
       return { success: true, message: `Données ${action === 'add' ? 'ajoutées' : action === 'edit' ? 'mises à jour' : 'supprimées'} avec succès !`, id: (response?.data?.[0] as any)?.id };
-    } catch (error) {
-      console.error(`[handleUpdateData] Error in handleUpdateData for ${tableName} (${action}):`, error);
+    } catch (error: unknown) {
+      console.error(`[handleUpdateData] Error in handleUpdateData for ${tableName} (${action}):`, error instanceof Error ? error.message : String(error));
       return { success: false, error: `Erreur lors de la ${action === 'add' ? 'création' : action === 'edit' ? 'mise à jour' : 'suppression'} des données: ${(error as any)?.message || 'Une erreur inconnue est survenue.'}` };
     }
   };
 
-  const handleUpdateUserRole = async (userId: string, newRole: UserRole) => { // Use UserRole type
-    if (!currentUser || !canAccess('users', 'edit')) { // Use canAccess from hook
+  const handleUpdateUserRole = async (userId: string, newRole: UserRole) => {
+    if (!currentUser || !canAccess('users', 'edit')) {
       showError('Seuls les administrateurs peuvent modifier les rôles.');
       return;
     }
@@ -110,15 +108,13 @@ function AppContent() { // Renamed App to AppContent
       if (error) throw error;
       dismissToast(loadingToastId);
       showSuccess('Rôle utilisateur mis à jour avec succès !');
-      // Refetch users data after role update
-      // UserManagement will handle its own refetch, but we might need to refetch current user's profile if their role changed
       if (userId === currentUser.id) {
         await refetchCurrentUser();
       }
-    } catch (error: any) {
-      console.error('Error updating user role:', error.message);
+    } catch (error: unknown) {
+      console.error('Error updating user role:', error instanceof Error ? error.message : String(error));
       dismissToast(loadingToastId);
-      showError(`Erreur lors de la mise à jour du rôle : ${error.message}`);
+      showError(`Erreur lors de la mise à jour du rôle : ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
@@ -145,10 +141,10 @@ function AppContent() { // Renamed App to AppContent
     { id: 'summary', name: 'Résumé', icon: BarChart3, path: '/summary' },
     { id: 'profile', name: 'Mon Profil', icon: UserIcon, path: '/profile' },
     ...(canAccess('users', 'view') ? [{ id: 'user-management', name: 'Gestion Utilisateurs', icon: UserCog, path: '/user-management' }] : []),
-    ...(canAccess('permissions', 'view') ? [{ id: 'permissions-overview', name: 'Gestion Accès', icon: ShieldCheck, path: '/permissions-overview' }] : []), // Use 'permissions' resource
+    ...(canAccess('permissions', 'view') ? [{ id: 'permissions-overview', name: 'Gestion Accès', icon: ShieldCheck, path: '/permissions-overview' }] : []),
   ];
 
-  if (isLoading || isProfileLoading || isLoadingPermissions) { // Wait for permissions to load
+  if (isLoading || isProfileLoading || isLoadingPermissions) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <header className="glass rounded-b-3xl m-4 mb-0 animate-fade-in">
@@ -281,15 +277,3 @@ function AppContent() { // Renamed App to AppContent
     </div>
   );
 }
-
-function App() {
-  return (
-    <PermissionsProvider>
-      <FleetDataProvider> {/* Wrap AppContent with FleetDataProvider */}
-        <AppContent />
-      </FleetDataProvider>
-    </PermissionsProvider>
-  );
-}
-
-export default App;
