@@ -3,7 +3,7 @@ import { Plus, Wrench, AlertTriangle, Clock, ClipboardCheck, Calendar } from 'lu
 import { FleetData, MaintenanceEntry, PreDepartureChecklist, DataTableColumn, Vehicle } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date'; // Removed getDaysSinceEntry
-import { useForm } from 'react-hook-form';
+import { useForm, FormProvider } from 'react-hook-form'; // Import FormProvider
 import { zodResolver } from '@hookform/resolvers/zod';
 import { maintenanceEntrySchema } from '../types/formSchemas'; // Import the schema
 import { Button } from './ui/button'; // Import shadcn Button
@@ -19,6 +19,7 @@ import {
 import DataTable from './DataTable'; // Import the new DataTable component
 import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
 import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
+import FormField from './forms/FormField'; // Import FormField
 
 type MaintenanceEntryFormData = z.infer<typeof maintenanceEntrySchema>;
 
@@ -36,7 +37,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
   const [showModal, setShowModal] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
 
-  const { register, handleSubmit, reset, watch, formState: { errors = {} } } = useForm<MaintenanceEntryFormData>({
+  const methods = useForm<MaintenanceEntryFormData>({ // Use methods from useForm
     resolver: zodResolver(maintenanceEntrySchema),
     defaultValues: {
       vehicle_id: '',
@@ -46,6 +47,8 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
       cost: 0,
     }
   });
+
+  const { handleSubmit, reset, watch, formState: { errors = {} } } = methods; // Destructure from methods
 
   // Function to reset form and clear saved data
   const resetFormAndClearStorage = useCallback(() => {
@@ -301,50 +304,6 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
     return matchesVehicle && matchesType && matchesDateRange;
   }, [selectedVehicleFilter, selectedTypeFilter, startDate, endDate]);
 
-  const renderMaintenanceAlerts = useCallback(() => {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6 animate-slide-up">
-        <div className="bg-orange-50 border-l-4 border-orange-400 p-6 rounded-r-lg shadow-lg glass">
-          <div className="flex items-center">
-            <Clock className="w-6 h-6 text-orange-400 mr-4" />
-            <div>
-              <h3 className="text-lg font-semibold text-orange-700">Vidanges à Prévoir</h3>
-              <p className="text-orange-600">
-                {upcomingMaintenanceCount} véhicule(s) approchent des 10,000 km
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-red-50 border-l-4 border-red-400 p-6 rounded-r-lg shadow-lg glass">
-          <div className="flex items-center">
-            <AlertTriangle className="w-6 h-6 text-red-400 mr-4" />
-            <div>
-              <h3 className="text-lg font-semibold text-red-700">Maintenance Urgente</h3>
-              <p className="text-red-600">
-                {urgentMaintenanceCount} véhicule(s) dépassent les limites
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {checklistsWithIssues.length > 0 && (
-          <div className="bg-purple-50 border-l-4 border-purple-400 p-6 rounded-r-lg shadow-lg glass">
-            <div className="flex items-center">
-              <ClipboardCheck className="w-6 h-6 text-purple-400 mr-4" />
-              <div>
-                <h3 className="text-lg font-semibold text-purple-700">Points à Traiter (Checklists)</h3>
-                <p className="text-purple-600">
-                  {checklistsWithIssues.length} checklist(s) contiennent des problèmes à résoudre.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }, [upcomingMaintenanceCount, urgentMaintenanceCount, checklistsWithIssues]);
-
   const canAddMaintenance = canAccess('maintenance_entries', 'add');
   const canEditMaintenance = canAccess('maintenance_entries', 'edit');
   const canDeleteMaintenance = canAccess('maintenance_entries', 'delete');
@@ -464,95 +423,66 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
               Ajoutez un nouvel enregistrement de maintenance pour un véhicule.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
-            <div>
-              <label htmlFor="vehicle_id" className="block text-sm font-semibold mb-2 text-gray-900">Véhicule</label>
-              <select
-                id="vehicle_id"
-                {...register('vehicle_id')}
-                className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                disabled={!canAddMaintenance}
-              >
-                <option value="">Sélectionner un véhicule</option>
-                {data.vehicles.map(vehicle => (
-                  <option key={vehicle.id} value={vehicle.id}>
-                    {vehicle.plate} - {vehicle.type}
-                  </option>
-                ))}
-              </select>
-              {errors.vehicle_id && <p className="text-red-500 text-sm mt-1">{errors.vehicle_id.message}</p>}
-            </div>
-            <div>
-              <label htmlFor="type" className="block text-sm font-semibold mb-2 text-gray-900">Type de maintenance</label>
-              <select
-                id="type"
-                {...register('type')}
-                className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                disabled={!canAddMaintenance}
-              >
-                <option value="Vidange">Vidange</option>
-                <option value="Révision">Révision</option>
-                <option value="Réparation">Réparation</option>
-                <option value="Pneus">Changement pneus</option>
-              </select>
-              {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>}
-            </div>
-            <div>
-              <label htmlFor="date" className="block text-sm font-semibold mb-2 text-gray-900">Date</label>
-              <div className="relative flex items-center">
-                <input
-                  id="date"
-                  type="date"
-                  {...register('date')}
-                  className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                  disabled={!canAddMaintenance}
-                />
-                <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-              </div>
-              {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
-            </div>
-            <div>
-              <label htmlFor="mileage" className="block text-sm font-semibold mb-2 text-gray-900">Kilométrage</label>
-              <input
-                id="mileage"
-                type="number"
-                {...register('mileage', { valueAsNumber: true })}
-                className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          <FormProvider {...methods}> {/* Wrap the form with FormProvider */}
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
+              <FormField
+                name="vehicle_id"
+                label="Véhicule"
+                type="select"
+                options={[{ value: '', label: 'Sélectionner un véhicule' }, ...data.vehicles.map(vehicle => ({ value: vehicle.id, label: `${vehicle.plate} - ${vehicle.type}` }))]}
                 disabled={!canAddMaintenance}
               />
-              {errors.mileage && <p className="text-red-500 text-sm mt-1">{errors.mileage.message}</p>}
-            </div>
-            <div>
-              <label htmlFor="cost" className="block text-sm font-semibold mb-2 text-gray-900">Coût (TND)</label>
-              <input
-                id="cost"
+              <FormField
+                name="type"
+                label="Type de maintenance"
+                type="select"
+                options={[
+                  { value: 'Vidange', label: 'Vidange' },
+                  { value: 'Révision', label: 'Révision' },
+                  { value: 'Réparation', label: 'Réparation' },
+                  { value: 'Pneus', label: 'Changement pneus' },
+                ]}
+                disabled={!canAddMaintenance}
+              />
+              <FormField
+                name="date"
+                label="Date"
+                type="date"
+                disabled={!canAddMaintenance}
+              />
+              <FormField
+                name="mileage"
+                label="Kilométrage"
+                type="number"
+                disabled={!canAddMaintenance}
+              />
+              <FormField
+                name="cost"
+                label="Coût (TND)"
                 type="number"
                 step="0.01"
-                {...register('cost', { valueAsNumber: true })}
-                className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 disabled={!canAddMaintenance}
               />
-              {errors.cost && <p className="text-red-500 text-sm mt-1">{errors.cost.message}</p>}
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCloseModal}
-                className="hover-lift"
-              >
-                Annuler
-              </Button>
-              {canAddMaintenance && (
+              <DialogFooter>
                 <Button
-                  type="submit"
+                  type="button"
+                  variant="outline"
+                  onClick={handleCloseModal}
                   className="hover-lift"
                 >
-                  Sauvegarder
+                  Annuler
                 </Button>
-              )}
-            </DialogFooter>
-          </form>
+                {canAddMaintenance && (
+                  <Button
+                    type="submit"
+                    className="hover-lift"
+                  >
+                    Sauvegarder
+                  </Button>
+                )}
+              </DialogFooter>
+            </form>
+          </FormProvider>
         </DialogContent>
       </Dialog>
     </div>

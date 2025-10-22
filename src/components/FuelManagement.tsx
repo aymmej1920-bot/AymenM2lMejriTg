@@ -4,7 +4,7 @@ import { FleetData, FuelEntry, DataTableColumn } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date';
 import { Button } from './ui/button';
-import { useForm } from 'react-hook-form';
+import { useForm, FormProvider } from 'react-hook-form'; // Import FormProvider
 import { zodResolver } from '@hookform/resolvers/zod';
 import { fuelEntrySchema } from '../types/formSchemas';
 import { z } from 'zod';
@@ -19,6 +19,7 @@ import {
 import DataTable from './DataTable'; // Import the new DataTable component
 import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
 import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
+import FormField from './forms/FormField'; // Import FormField
 
 type FuelEntryFormData = z.infer<typeof fuelEntrySchema>;
 
@@ -35,7 +36,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
   const [showModal, setShowModal] = useState(false);
   const [editingFuel, setEditingFuel] = useState<FuelEntry | null>(null);
 
-  const { register, handleSubmit, reset, watch, formState: { errors = {} } } = useForm<FuelEntryFormData>({
+  const methods = useForm<FuelEntryFormData>({ // Use methods from useForm
     resolver: zodResolver(fuelEntrySchema),
     defaultValues: {
       date: new Date().toISOString().split('T')[0],
@@ -45,6 +46,8 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
       mileage: 0,
     }
   });
+
+  const { handleSubmit, reset, watch } = methods; // Removed errors from destructuring
 
   // Function to reset form and clear saved data
   const resetFormAndClearStorage = useCallback(() => {
@@ -196,7 +199,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 placeholder="Date de fin"
               />
               <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
@@ -292,92 +295,62 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                   {editingFuel ? 'Modifiez les détails du plein.' : 'Ajoutez un nouvel enregistrement de carburant.'}
                 </DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
-                <div>
-                  <label htmlFor="date" className="block text-sm font-semibold mb-2 text-gray-900">Date</label>
-                  <div className="relative flex items-center">
-                    <input
-                      id="date"
-                      type="date"
-                      {...register('date')}
-                      className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                      disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
-                    />
-                    <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                  </div>
-                  {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
-                </div>
-                <div>
-                  <label htmlFor="vehicle_id" className="block text-sm font-semibold mb-2 text-gray-900">Véhicule</label>
-                  <select
-                    id="vehicle_id"
-                    {...register('vehicle_id')}
-                    className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              <FormProvider {...methods}> {/* Wrap the form with FormProvider */}
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
+                  <FormField
+                    name="date"
+                    label="Date"
+                    type="date"
                     disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
-                  >
-                    <option value="">Sélectionner un véhicule</option>
-                    {data.vehicles.map(vehicle => (
-                      <option key={vehicle.id} value={vehicle.id}>
-                        {vehicle.plate} - {vehicle.type}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.vehicle_id && <p className="text-red-500 text-sm mt-1">{errors.vehicle_id.message}</p>}
-                </div>
-                <div>
-                  <label htmlFor="liters" className="block text-sm font-semibold mb-2 text-gray-900">Litres</label>
-                  <input
-                    id="liters"
+                  />
+                  <FormField
+                    name="vehicle_id"
+                    label="Véhicule"
+                    type="select"
+                    options={[{ value: '', label: 'Sélectionner un véhicule' }, ...data.vehicles.map(vehicle => ({ value: vehicle.id, label: `${vehicle.plate} - ${vehicle.type}` }))]}
+                    placeholder="Sélectionner un véhicule"
+                    disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
+                  />
+                  <FormField
+                    name="liters"
+                    label="Litres"
                     type="number"
                     step="0.1"
-                    {...register('liters', { valueAsNumber: true })}
-                    className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                     disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
                   />
-                  {errors.liters && <p className="text-red-500 text-sm mt-1">{errors.liters.message}</p>}
-                </div>
-                <div>
-                  <label htmlFor="price_per_liter" className="block text-sm font-semibold mb-2 text-gray-900">Prix par litre (TND)</label>
-                  <input
-                    id="price_per_liter"
+                  <FormField
+                    name="price_per_liter"
+                    label="Prix par litre (TND)"
                     type="number"
                     step="0.01"
-                    {...register('price_per_liter', { valueAsNumber: true })}
-                    className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                     disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
                   />
-                  {errors.price_per_liter && <p className="text-red-500 text-sm mt-1">{errors.price_per_liter.message}</p>}
-                </div>
-                <div>
-                  <label htmlFor="mileage" className="block text-sm font-semibold mb-2 text-gray-900">Kilométrage</label>
-                  <input
-                    id="mileage"
+                  <FormField
+                    name="mileage"
+                    label="Kilométrage"
                     type="number"
-                    {...register('mileage', { valueAsNumber: true })}
-                    className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                     disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
                   />
-                  {errors.mileage && <p className="text-red-500 text-sm mt-1">{errors.mileage.message}</p>}
-                </div>
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleCloseModal}
-                    className="hover-lift"
-                  >
-                    Annuler
-                  </Button>
-                  {(canAddForm && !editingFuel) || (canEditForm && editingFuel) ? (
+                  <DialogFooter>
                     <Button
-                      type="submit"
+                      type="button"
+                      variant="outline"
+                      onClick={handleCloseModal}
                       className="hover-lift"
                     >
-                      Sauvegarder
+                      Annuler
                     </Button>
-                  ) : null}
-                </DialogFooter>
-              </form>
+                    {(canAddForm && !editingFuel) || (canEditForm && editingFuel) ? (
+                      <Button
+                        type="submit"
+                        className="hover-lift"
+                      >
+                        Sauvegarder
+                      </Button>
+                    ) : null}
+                  </DialogFooter>
+                </form>
+              </FormProvider>
             </DialogContent>
           </Dialog>
         </div>

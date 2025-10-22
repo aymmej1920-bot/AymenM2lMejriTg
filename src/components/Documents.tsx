@@ -4,7 +4,7 @@ import { FleetData, Document, DataTableColumn } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate, getDaysUntilExpiration } from '../utils/date'; // Import from utils/date
 import { Button } from './ui/button';
-import { useForm } from 'react-hook-form';
+import { useForm, FormProvider } from 'react-hook-form'; // Import FormProvider
 import { zodResolver } from '@hookform/resolvers/zod';
 import { documentSchema } from '../types/formSchemas';
 import { z } from 'zod';
@@ -19,6 +19,7 @@ import {
 import DataTable from './DataTable'; // Import the new DataTable component
 import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
 import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
+import FormField from './forms/FormField'; // Import FormField
 
 type DocumentFormData = z.infer<typeof documentSchema>;
 
@@ -35,7 +36,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
   const [showModal, setShowModal] = useState(false);
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
 
-  const { register, handleSubmit, reset, watch, formState: { errors = {} } } = useForm<DocumentFormData>({
+  const methods = useForm<DocumentFormData>({ // Use methods from useForm
     resolver: zodResolver(documentSchema),
     defaultValues: {
       vehicle_id: '',
@@ -44,6 +45,8 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
       expiration: new Date().toISOString().split('T')[0],
     }
   });
+
+  const { handleSubmit, reset, watch, formState: { errors = {} } } = methods; // Destructure from methods
 
   // Function to reset form and clear saved data
   const resetFormAndClearStorage = useCallback(() => {
@@ -329,85 +332,62 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
               {editingDocument ? 'Modifiez les détails du document.' : 'Ajoutez un nouveau document.'}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
-            <div>
-              <label htmlFor="vehicle_id" className="block text-sm font-semibold mb-2 text-gray-900">Véhicule</label>
-              <select
-                id="vehicle_id"
-                {...register('vehicle_id')}
-                className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                disabled={(!canEditForm && !!editingDocument) || (!canAddForm && !editingDocument)}
-              >
-                <option value="">Sélectionner un véhicule</option>
-                {data.vehicles.map(vehicle => (
-                  <option key={vehicle.id} value={vehicle.id}>
-                    {vehicle.plate} - {vehicle.type}
-                  </option>
-                ))}
-              </select>
-              {errors.vehicle_id && <p className="text-red-500 text-sm mt-1">{errors.vehicle_id.message}</p>}
-            </div>
-            <div>
-              <label htmlFor="type" className="block text-sm font-semibold mb-2 text-gray-900">Type de document</label>
-              <select
-                id="type"
-                {...register('type')}
-                className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                disabled={(!canEditForm && !!editingDocument) || (!canAddForm && !editingDocument)}
-              >
-                <option value="">Sélectionner un type</option>
-                <option value="Assurance">Assurance</option>
-                <option value="Contrôle Technique">Contrôle Technique</option>
-                <option value="Taxe Véhicule">Taxe Véhicule</option>
-                <option value="Vignette">Vignette</option>
-                <option value="Permis de Circulation">Permis de Circulation</option>
-              </select>
-              {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>}
-            </div>
-            <div>
-              <label htmlFor="number" className="block text-sm font-semibold mb-2 text-gray-900">Numéro de document</label>
-              <input
-                id="number"
-                type="text"
-                {...register('number')}
-                className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          <FormProvider {...methods}> {/* Wrap the form with FormProvider */}
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
+              <FormField
+                name="vehicle_id"
+                label="Véhicule"
+                type="select"
+                options={[{ value: '', label: 'Sélectionner un véhicule' }, ...data.vehicles.map(vehicle => ({ value: vehicle.id, label: `${vehicle.plate} - ${vehicle.type}` }))]}
+                placeholder="Sélectionner un véhicule"
                 disabled={(!canEditForm && !!editingDocument) || (!canAddForm && !editingDocument)}
               />
-              {errors.number && <p className="text-red-500 text-sm mt-1">{errors.number.message}</p>}
-            </div>
-            <div>
-              <label htmlFor="expiration" className="block text-sm font-semibold mb-2 text-gray-900">Date d'expiration</label>
-              <div className="relative flex items-center">
-                <input
-                  id="expiration"
-                  type="date"
-                  {...register('expiration')}
-                  className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  disabled={(!canEditForm && !!editingDocument) || (!canAddForm && !editingDocument)}
-                />
-                <Calendar className="absolute right-3 w-5 h-5 text-gray-400 pointer-events-none" />
-              </div>
-              {errors.expiration && <p className="text-red-500 text-sm mt-1">{errors.expiration.message}</p>}
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCloseModal}
-                className="hover-lift"
-              >
-                Annuler
-              </Button>
-              {(canAddForm && !editingDocument) || (canEditForm && editingDocument) ? (
+              <FormField
+                name="type"
+                label="Type de document"
+                type="select"
+                options={[
+                  { value: '', label: 'Sélectionner un type' },
+                  { value: 'Assurance', label: 'Assurance' },
+                  { value: 'Contrôle Technique', label: 'Contrôle Technique' },
+                  { value: 'Taxe Véhicule', label: 'Taxe Véhicule' },
+                  { value: 'Vignette', label: 'Vignette' },
+                  { value: 'Permis de Circulation', label: 'Permis de Circulation' },
+                ]}
+                disabled={(!canEditForm && !!editingDocument) || (!canAddForm && !editingDocument)}
+              />
+              <FormField
+                name="number"
+                label="Numéro de document"
+                type="text"
+                disabled={(!canEditForm && !!editingDocument) || (!canAddForm && !editingDocument)}
+              />
+              <FormField
+                name="expiration"
+                label="Date d'expiration"
+                type="date"
+                disabled={(!canEditForm && !!editingDocument) || (!canAddForm && !editingDocument)}
+              />
+              <DialogFooter>
                 <Button
-                  type="submit"
+                  type="button"
+                  variant="outline"
+                  onClick={handleCloseModal}
                   className="hover-lift"
                 >
-                  Sauvegarder
+                  Annuler
                 </Button>
-              ) : null}
-            </DialogFooter>
-          </form>
+                {(canAddForm && !editingDocument) || (canEditForm && editingDocument) ? (
+                  <Button
+                    type="submit"
+                    className="hover-lift"
+                  >
+                    Sauvegarder
+                  </Button>
+                ) : null}
+              </DialogFooter>
+            </form>
+          </FormProvider>
         </DialogContent>
       </Dialog>
     </>
