@@ -1,12 +1,13 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { FleetData, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist, DataTableColumn, Resource } from '../types'; // Import Resource
 import { Calendar, Search } from 'lucide-react'; // Only Calendar and Search are needed for date inputs and search icon
 import { formatDate, getDaysUntilExpiration, getDaysSinceEntry } from '../utils/date'; // Import from utils/date
 import DataTable from '../components/DataTable'; // Import the new DataTable component
+import { useSupabaseData } from '../hooks/useSupabaseData'; // Import useSupabaseData
 
 interface ReportsProps {
-  data: FleetData;
   userRole: 'admin' | 'direction' | 'utilisateur';
+  registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void;
 }
 
 const getColumnConfigs = (dataSource: keyof FleetData, allVehicles: Vehicle[], allDrivers: Driver[]): DataTableColumn<any>[] => {
@@ -55,7 +56,7 @@ const getColumnConfigs = (dataSource: keyof FleetData, allVehicles: Vehicle[], a
           },
         },
       ];
-    case 'fuel':
+    case 'fuel_entries':
       return [
         { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item: FuelEntry) => formatDate(item.date) },
         { key: 'vehicle_id', label: 'Véhicule', sortable: true, defaultVisible: true, render: (item: FuelEntry) => allVehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A' },
@@ -75,7 +76,7 @@ const getColumnConfigs = (dataSource: keyof FleetData, allVehicles: Vehicle[], a
           return daysLeft < 0 ? 'Expiré' : `${daysLeft} jours`;
         }},
       ];
-    case 'maintenance':
+    case 'maintenance_entries':
       return [
         { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item: MaintenanceEntry) => formatDate(item.date) },
         { key: 'vehicle_id', label: 'Véhicule', sortable: true, defaultVisible: true, render: (item: MaintenanceEntry) => allVehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A' },
@@ -107,30 +108,62 @@ const getColumnConfigs = (dataSource: keyof FleetData, allVehicles: Vehicle[], a
   }
 };
 
-const Reports: React.FC<ReportsProps> = ({ data }) => {
+const Reports: React.FC<ReportsProps> = ({ userRole, registerRefetch }) => {
+  void userRole; // userRole is not directly used here, but passed from App.tsx
+
   const [selectedDataSource, setSelectedDataSource] = useState<keyof FleetData | ''>('');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
+
+  // Fetch all data types needed for reports
+  const { data: vehicles, isLoading: isLoadingVehicles, refetch: refetchVehicles } = useSupabaseData<Vehicle>('vehicles');
+  const { data: drivers, isLoading: isLoadingDrivers, refetch: refetchDrivers } = useSupabaseData<Driver>('drivers');
+  const { data: tours, isLoading: isLoadingTours, refetch: refetchTours } = useSupabaseData<Tour>('tours');
+  const { data: fuel, isLoading: isLoadingFuel, refetch: refetchFuel } = useSupabaseData<FuelEntry>('fuel_entries');
+  const { data: documents, isLoading: isLoadingDocuments, refetch: refetchDocuments } = useSupabaseData<Document>('documents');
+  const { data: maintenance, isLoading: isLoadingMaintenance, refetch: refetchMaintenance } = useSupabaseData<MaintenanceEntry>('maintenance_entries');
+  const { data: preDepartureChecklists, isLoading: isLoadingChecklists, refetch: refetchChecklists } = useSupabaseData<PreDepartureChecklist>('pre_departure_checklists');
+
+  // Register refetch functions for all resources
+  useEffect(() => {
+    registerRefetch('vehicles', refetchVehicles);
+    registerRefetch('drivers', refetchDrivers);
+    registerRefetch('tours', refetchTours);
+    registerRefetch('fuel_entries', refetchFuel);
+    registerRefetch('documents', refetchDocuments);
+    registerRefetch('maintenance_entries', refetchMaintenance);
+    registerRefetch('pre_departure_checklists', refetchChecklists);
+  }, [registerRefetch, refetchVehicles, refetchDrivers, refetchTours, refetchFuel, refetchDocuments, refetchMaintenance, refetchChecklists]);
+
+  const allFleetData: FleetData = useMemo(() => ({
+    vehicles,
+    drivers,
+    tours,
+    fuel,
+    documents,
+    maintenance,
+    pre_departure_checklists: preDepartureChecklists,
+  }), [vehicles, drivers, tours, fuel, documents, maintenance, preDepartureChecklists]);
 
   const dataSources = [
     { id: 'vehicles', name: 'Véhicules' },
     { id: 'drivers', name: 'Conducteurs' },
     { id: 'tours', name: 'Tournées' },
-    { id: 'fuel', name: 'Carburant' },
+    { id: 'fuel_entries', name: 'Carburant' },
     { id: 'documents', name: 'Documents' },
-    { id: 'maintenance', name: 'Maintenance' },
+    { id: 'maintenance_entries', name: 'Maintenance' },
     { id: 'pre_departure_checklists', name: 'Checklists Pré-départ' },
   ];
 
   const currentData = useMemo(() => {
     if (!selectedDataSource) return [];
-    return data[selectedDataSource] || [];
-  }, [data, selectedDataSource]);
+    return allFleetData[selectedDataSource] || [];
+  }, [allFleetData, selectedDataSource]);
 
   const columns = useMemo(() => {
     if (!selectedDataSource) return [];
-    return getColumnConfigs(selectedDataSource, data.vehicles, data.drivers);
-  }, [selectedDataSource, data.vehicles, data.drivers]);
+    return getColumnConfigs(selectedDataSource, vehicles, drivers);
+  }, [selectedDataSource, vehicles, drivers]);
 
   const renderFilters = useCallback((searchTerm: string, setSearchTerm: (term: string) => void) => {
     return (
@@ -188,6 +221,8 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
     return matchesDateRange;
   }, [startDate, endDate]);
 
+  const isLoadingCombined = isLoadingVehicles || isLoadingDrivers || isLoadingTours || isLoadingFuel || isLoadingDocuments || isLoadingMaintenance || isLoadingChecklists;
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
@@ -221,7 +256,7 @@ const Reports: React.FC<ReportsProps> = ({ data }) => {
           data={currentData}
           columns={columns}
           exportFileName={`rapport_${selectedDataSource}`}
-          isLoading={false} // Adjust based on actual loading state if needed
+          isLoading={isLoadingCombined} // Adjust based on actual loading state if needed
           renderFilters={renderFilters}
           customFilter={customFilter}
           resourceType={selectedDataSource as Resource} // Added resourceType prop

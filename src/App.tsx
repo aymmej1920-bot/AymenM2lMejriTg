@@ -22,74 +22,30 @@ import { supabase } from './integrations/supabase/client';
 import { showSuccess, showError, showLoading, dismissToast } from './utils/toast';
 import SkeletonLoader from './components/SkeletonLoader';
 import { PermissionsProvider, usePermissions } from './hooks/usePermissions'; // Import PermissionsProvider and usePermissions
+import { useSupabaseData } from './hooks/useSupabaseData'; // Import the new hook
+
+// Define a type for the refetch functions for each resource
+type RefetchFunctions = {
+  [key in Resource]?: () => Promise<void>;
+};
 
 function AppContent() { // Renamed App to AppContent
   const { session, currentUser, isLoading, isProfileLoading } = useSession();
   const { canAccess, isLoadingPermissions } = usePermissions(); // Use usePermissions hook
   const navigate = useNavigate();
   const location = useLocation();
-  const [fleetData, setFleetData] = useState<FleetData>({
-    vehicles: [],
-    drivers: [],
-    tours: [],
-    fuel: [],
-    documents: [],
-    maintenance: [],
-    pre_departure_checklists: [],
-  });
-  const [dataLoading, setDataLoading] = useState(true);
+  
+  // State to hold refetch functions from child components
+  const [refetchFunctions, setRefetchFunctions] = useState<RefetchFunctions>({});
 
-  const fetchData = useCallback(async (userId: string) => {
-    setDataLoading(true);
-    try {
-      const [
-        { data: vehiclesData, error: vehiclesError },
-        { data: driversData, error: driversError },
-        { data: toursData, error: toursError },
-        { data: fuelData, error: fuelError },
-        { data: documentsData, error: documentsError },
-        { data: maintenanceData, error: maintenanceError },
-        { data: checklistsData, error: checklistsError },
-      ] = await Promise.all([
-        supabase.from('vehicles').select('*').eq('user_id', userId),
-        supabase.from('drivers').select('*').eq('user_id', userId),
-        supabase.from('tours').select('*').eq('user_id', userId),
-        supabase.from('fuel_entries').select('*').eq('user_id', userId),
-        supabase.from('documents').select('*').eq('user_id', userId),
-        supabase.from('maintenance_entries').select('*').eq('user_id', userId),
-        supabase.from('pre_departure_checklists').select('*').eq('user_id', userId),
-      ]);
-
-      if (vehiclesError) { console.error('Vehicles Error:', vehiclesError); throw vehiclesError; }
-      if (driversError) { console.error('Drivers Error:', driversError); throw driversError; } // Added specific log for driversError
-      if (toursError) { console.error('Tours Error:', toursError); throw toursError; }
-      if (fuelError) { console.error('Fuel Error:', fuelError); throw fuelError; }
-      if (documentsError) { console.error('Documents Error:', documentsError); throw documentsError; }
-      if (maintenanceError) { console.error('Maintenance Error:', maintenanceError); throw maintenanceError; }
-      if (checklistsError) { console.error('Checklists Error:', checklistsError); throw checklistsError; }
-
-      setFleetData({
-        vehicles: vehiclesData as Vehicle[],
-        drivers: driversData as Driver[],
-        tours: toursData as Tour[],
-        fuel: fuelData as FuelEntry[],
-        documents: documentsData as Document[],
-        maintenance: maintenanceData as MaintenanceEntry[],
-        pre_departure_checklists: checklistsData as PreDepartureChecklist[],
-      });
-
-    } catch (error) {
-      console.error('Error fetching fleet data:', error);
-      showError('Erreur lors du chargement des données de flotte.');
-    } finally {
-      setDataLoading(false);
-    }
+  // Function to register refetch functions from child components
+  const registerRefetch = useCallback((resource: Resource, refetch: () => Promise<void>) => {
+    setRefetchFunctions(prev => ({ ...prev, [resource]: refetch }));
   }, []);
 
   useEffect(() => {
     if (!isLoading && !isProfileLoading && !isLoadingPermissions) { // Wait for permissions to load
       if (session?.user) {
-        fetchData(session.user.id);
         if (location.pathname === '/login' || location.pathname === '/') {
           navigate('/dashboard');
         }
@@ -97,13 +53,9 @@ function AppContent() { // Renamed App to AppContent
         if (location.pathname !== '/login') {
           navigate('/login');
         }
-        setFleetData({
-          vehicles: [], drivers: [], tours: [], fuel: [], documents: [], maintenance: [], pre_departure_checklists: [],
-        });
-        setDataLoading(false);
       }
     }
-  }, [session, isLoading, isProfileLoading, isLoadingPermissions, fetchData, navigate, location.pathname]);
+  }, [session, isLoading, isProfileLoading, isLoadingPermissions, navigate, location.pathname]);
 
   const handleUpdateData = async (tableName: Resource, newData: any, action: Action) => {
     if (!currentUser?.id) return;
@@ -131,7 +83,10 @@ function AppContent() { // Renamed App to AppContent
       dismissToast(loadingToastId);
       showSuccess(`Données ${action === 'add' ? 'ajoutées' : action === 'edit' ? 'mises à jour' : 'supprimées'} avec succès !`);
       
-      fetchData(currentUser.id);
+      // Trigger refetch for the specific table
+      if (refetchFunctions[tableName]) {
+        await refetchFunctions[tableName]!();
+      }
     } catch (error) {
       console.error(`Error ${action}ing data in ${tableName}:`, (error as any)?.message || error); // Log detailed error
       dismissToast(loadingToastId);
@@ -154,15 +109,16 @@ function AppContent() { // Renamed App to AppContent
       if (error) throw error;
       dismissToast(loadingToastId);
       showSuccess('Rôle utilisateur mis à jour avec succès !');
-      if (currentUser?.id) fetchData(currentUser.id);
+      // Refetch users data after role update
+      if (refetchFunctions['users']) {
+        await refetchFunctions['users']!();
+      }
     } catch (error: any) {
       console.error('Error updating user role:', error.message);
       dismissToast(loadingToastId);
       showError(`Erreur lors de la mise à jour du rôle : ${error.message}`);
     }
   };
-
-  // Removed handleDeleteUser function as it's now handled by the edge function via UserManagement component
 
   const handleLogout = async () => {
     const loadingToastId = showLoading('Déconnexion...');
@@ -190,7 +146,7 @@ function AppContent() { // Renamed App to AppContent
     ...(canAccess('permissions', 'view') ? [{ id: 'permissions-overview', name: 'Gestion Accès', icon: ShieldCheck, path: '/permissions-overview' }] : []), // Use 'permissions' resource
   ];
 
-  if (isLoading || isProfileLoading || dataLoading || isLoadingPermissions) { // Wait for permissions to load
+  if (isLoading || isProfileLoading || isLoadingPermissions) { // Wait for permissions to load
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <header className="glass rounded-b-3xl m-4 mb-0 animate-fade-in">
@@ -292,36 +248,34 @@ function AppContent() { // Renamed App to AppContent
         <main className="flex-1 px-6 py-8 min-w-0 overflow-x-auto w-full">
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard key="dashboard-view" data={fleetData} userRole={userRole} preDepartureChecklists={fleetData.pre_departure_checklists} /></ProtectedRoute>} />
-            <Route path="/vehicles" element={<ProtectedRoute><Vehicles key="vehicles-view" data={fleetData} onUpdate={(newData: Vehicle) => handleUpdateData('vehicles', newData, 'edit')} onDelete={(id: string) => handleUpdateData('vehicles', { id }, 'delete')} onAdd={(newData: Omit<Vehicle, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('vehicles', newData, 'add')} /></ProtectedRoute>} />
-            <Route path="/drivers" element={<ProtectedRoute><Drivers key="drivers-view" data={fleetData} onUpdate={(newData: Driver) => handleUpdateData('drivers', newData, 'edit')} onDelete={(id: string) => handleUpdateData('drivers', { id }, 'delete')} onAdd={(newData: Omit<Driver, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('drivers', newData, 'add')} /></ProtectedRoute>} />
-            <Route path="/tours" element={<ProtectedRoute><Tours key="tours-view" data={fleetData} onUpdate={(newData: Tour) => handleUpdateData('tours', newData, 'edit')} onDelete={(id: string) => handleUpdateData('tours', { id }, 'delete')} onAdd={(newData: Omit<Tour, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('tours', newData, 'add')} /></ProtectedRoute>} />
-            <Route path="/fuel" element={<ProtectedRoute><FuelManagement key="fuel-view" data={fleetData} onUpdate={(newData: FuelEntry) => handleUpdateData('fuel_entries', newData, 'edit')} onDelete={(id: string) => handleUpdateData('fuel_entries', { id }, 'delete')} onAdd={(newData: Omit<FuelEntry, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('fuel_entries', newData, 'add')} /></ProtectedRoute>} />
-            <Route path="/documents" element={<ProtectedRoute><Documents key="documents-view" data={fleetData} onUpdate={(newData: Document) => handleUpdateData('documents', newData, 'edit')} onDelete={(id: string) => handleUpdateData('documents', { id }, 'delete')} onAdd={(newData: Omit<Document, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('documents', newData, 'add')} /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard key="dashboard-view" userRole={userRole} registerRefetch={registerRefetch} /></ProtectedRoute>} />
+            <Route path="/vehicles" element={<ProtectedRoute><Vehicles key="vehicles-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} registerRefetch={registerRefetch} /></ProtectedRoute>} />
+            <Route path="/drivers" element={<ProtectedRoute><Drivers key="drivers-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} registerRefetch={registerRefetch} /></ProtectedRoute>} />
+            <Route path="/tours" element={<ProtectedRoute><Tours key="tours-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} registerRefetch={registerRefetch} /></ProtectedRoute>} />
+            <Route path="/fuel" element={<ProtectedRoute><FuelManagement key="fuel-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} registerRefetch={registerRefetch} /></ProtectedRoute>} />
+            <Route path="/documents" element={<ProtectedRoute><Documents key="documents-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} registerRefetch={registerRefetch} /></ProtectedRoute>} />
             <Route path="/maintenance" element={<ProtectedRoute><Maintenance 
               key="maintenance-view"
-              data={fleetData} 
-              onUpdate={(newData) => handleUpdateData('vehicles', newData, 'edit')} 
-              onAdd={(newData) => handleUpdateData('maintenance_entries', newData, 'add')} 
-              onDelete={(id: string) => handleUpdateData('maintenance_entries', { id }, 'delete')}
-              preDepartureChecklists={fleetData.pre_departure_checklists}
+              onUpdate={handleUpdateData} 
+              onAdd={handleUpdateData} 
+              onDelete={handleUpdateData}
+              registerRefetch={registerRefetch}
             /></ProtectedRoute>} />
             <Route path="/checklists" element={<ProtectedRoute><PreDepartureChecklistComponent 
               key="checklists-view" 
-              data={fleetData} 
-              onAdd={(newData: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>) => handleUpdateData('pre_departure_checklists', newData, 'add')} 
+              onAdd={handleUpdateData} 
+              registerRefetch={registerRefetch}
             /></ProtectedRoute>} />
-            <Route path="/reports" element={<ProtectedRoute><Reports key="reports-view" data={fleetData} userRole={userRole} /></ProtectedRoute>} />
-            <Route path="/summary" element={<ProtectedRoute><Summary key="summary-view" data={fleetData} /></ProtectedRoute>} />
+            <Route path="/reports" element={<ProtectedRoute><Reports key="reports-view" userRole={userRole} registerRefetch={registerRefetch} /></ProtectedRoute>} />
+            <Route path="/summary" element={<ProtectedRoute><Summary key="summary-view" registerRefetch={registerRefetch} /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile key="profile-view" /></ProtectedRoute>} />
             <Route path="/user-management" element={<ProtectedRoute allowedRoles={['admin']}><UserManagement 
                 key="user-management-view" 
-                currentUserRole={userRole} 
                 onUpdateUserRole={handleUpdateUserRole}
-                // onDeleteUser={handleDeleteUser} // Removed onDeleteUser prop
+                registerRefetch={registerRefetch}
               /></ProtectedRoute>} />
             <Route path="/permissions-overview" element={<ProtectedRoute allowedRoles={['admin']}><PermissionsOverview key="permissions-overview-view" /></ProtectedRoute>} />
-            <Route path="*" element={<ProtectedRoute><Dashboard key="default-dashboard-view" data={fleetData} userRole={userRole} preDepartureChecklists={fleetData.pre_departure_checklists} /></ProtectedRoute>} />
+            <Route path="*" element={<ProtectedRoute><Dashboard key="default-dashboard-view" userRole={userRole} registerRefetch={registerRefetch} /></ProtectedRoute>} />
           </Routes>
         </main>
       </div>

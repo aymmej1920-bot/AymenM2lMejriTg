@@ -1,14 +1,18 @@
 import React from 'react';
 import { Route, Fuel, TrendingUp } from 'lucide-react';
-import { FleetData } from '../../types';
+import { FuelEntry, Tour } from '../../types';
+import { useSupabaseData } from '../../hooks/useSupabaseData'; // Import useSupabaseData
 
 interface StatsWidgetProps {
-  data: FleetData;
+  // data: FleetData; // No longer needed as data is fetched internally
 }
 
-const StatsWidget: React.FC<StatsWidgetProps> = ({ data }) => {
-  const totalFuelCost = data.fuel.reduce((sum, f) => sum + (f.liters * f.price_per_liter), 0);
-  const totalDistance = data.tours.filter(t => t.distance).reduce((sum, t) => sum + (t.distance || 0), 0);
+const StatsWidget: React.FC<StatsWidgetProps> = () => {
+  const { data: fuelEntries, isLoading: isLoadingFuel } = useSupabaseData<FuelEntry>('fuel_entries');
+  const { data: tours, isLoading: isLoadingTours } = useSupabaseData<Tour>('tours');
+
+  const totalFuelCost = fuelEntries.reduce((sum, f) => sum + (f.liters * f.price_per_liter), 0);
+  const totalDistance = tours.filter(t => t.distance).reduce((sum, t) => sum + (t.distance || 0), 0);
 
   const stats = [
     {
@@ -27,12 +31,18 @@ const StatsWidget: React.FC<StatsWidgetProps> = ({ data }) => {
     },
     {
       title: 'Tournées ce mois',
-      value: data.tours.length,
+      value: tours.length,
       icon: TrendingUp,
       color: 'text-orange-600',
       bg: 'bg-orange-100'
     }
   ];
+
+  const isLoadingCombined = isLoadingFuel || isLoadingTours;
+
+  if (isLoadingCombined) {
+    return null; // Or a small skeleton loader if preferred
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-slide-up">

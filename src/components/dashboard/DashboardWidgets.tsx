@@ -7,9 +7,10 @@ import VehicleStatusChartWidget from './VehicleStatusChartWidget';
 import MonthlyFuelConsumptionChartWidget from './MonthlyFuelConsumptionChartWidget';
 import RecentActivityWidget from './RecentActivityWidget';
 
+// Interface for widgets that need data (some now fetch internally)
 interface WidgetProps {
-  data: FleetData;
-  preDepartureChecklists: PreDepartureChecklist[];
+  data?: FleetData; // Make optional as some widgets fetch internally
+  preDepartureChecklists?: PreDepartureChecklist[]; // Make optional
 }
 
 export const dashboardWidgetMap: Record<string, React.FC<WidgetProps>> = {

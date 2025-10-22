@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { FleetData, Vehicle, DataTableColumn, VehicleImportData } from '../types';
+import { Vehicle, DataTableColumn, VehicleImportData, Resource, Action } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date';
 import {
@@ -22,18 +22,25 @@ import XLSXImportDialog from './XLSXImportDialog'; // Import the new component
 import { Upload, Download } from 'lucide-react'; // Import Upload and Download icons
 import { exportTemplateToXLSX } from '../utils/templateExport'; // Import the new utility
 import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
+import { useSupabaseData } from '../hooks/useSupabaseData'; // Import useSupabaseData
 
 type VehicleFormData = z.infer<typeof vehicleSchema>;
 
 interface VehiclesProps {
-  data: FleetData;
-  onAdd: (vehicle: Omit<Vehicle, 'id' | 'user_id' | 'created_at'>) => void;
-  onUpdate: (vehicle: Vehicle) => void;
-  onDelete: (id: string) => void;
+  onAdd: (tableName: Resource, vehicle: Omit<Vehicle, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<void>;
+  onUpdate: (tableName: Resource, vehicle: Vehicle, action: Action) => Promise<void>;
+  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<void>;
+  registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void;
 }
 
-const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) => {
+const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete, registerRefetch }) => {
   const { canAccess } = usePermissions();
+
+  const { data: vehicles, isLoading, refetch } = useSupabaseData<Vehicle>('vehicles');
+
+  useEffect(() => {
+    registerRefetch('vehicles', refetch);
+  }, [registerRefetch, refetch]);
 
   const [showModal, setShowModal] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
@@ -119,10 +126,10 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
 
   const onSubmit = async (formData: VehicleFormData) => {
     if (editingVehicle) {
-      await onUpdate({ ...formData, id: editingVehicle.id, user_id: editingVehicle.user_id, created_at: editingVehicle.created_at });
+      await onUpdate('vehicles', { ...formData, id: editingVehicle.id, user_id: editingVehicle.user_id, created_at: editingVehicle.created_at }, 'edit');
       showSuccess('Véhicule mis à jour avec succès !');
     } else {
-      await onAdd(formData);
+      await onAdd('vehicles', formData, 'add');
       showSuccess('Véhicule ajouté avec succès !');
     }
     setShowModal(false);
@@ -138,7 +145,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
     // For simplicity, we'll treat all imported data as new additions.
     // A more complex logic could check for existing plates and offer to update.
     for (const vehicleData of importedData) {
-      await onAdd(vehicleData);
+      await onAdd('vehicles', vehicleData, 'add');
     }
   };
 
@@ -242,15 +249,15 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
     <>
       <DataTable
         title="Gestion des Véhicules"
-        data={data.vehicles}
+        data={vehicles}
         columns={columns}
         onAdd={canAddForm ? handleAddVehicle : undefined}
         onEdit={canEditForm ? handleEditVehicle : undefined}
-        onDelete={canAccess('vehicles', 'delete') ? onDelete : undefined}
+        onDelete={canAccess('vehicles', 'delete') ? (id) => onDelete('vehicles', { id }, 'delete') : undefined}
         addLabel="Ajouter Véhicule"
         searchPlaceholder="Rechercher par plaque, type ou statut..."
         exportFileName="vehicules"
-        isLoading={false}
+        isLoading={isLoading}
         resourceType="vehicles"
         renderCustomHeaderButtons={renderCustomHeaderButtons} // Pass the custom buttons
       />

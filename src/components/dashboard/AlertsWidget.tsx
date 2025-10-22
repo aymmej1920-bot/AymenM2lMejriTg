@@ -1,26 +1,37 @@
 import React from 'react';
 import { AlertTriangle, ClipboardCheck } from 'lucide-react';
-import { FleetData, PreDepartureChecklist } from '../../types';
+import { PreDepartureChecklist, Vehicle, Document } from '../../types';
 import { getDaysUntilExpiration } from '../../utils/date';
+import { useSupabaseData } from '../../hooks/useSupabaseData'; // Import useSupabaseData
 
 interface AlertsWidgetProps {
-  data: FleetData;
-  preDepartureChecklists: PreDepartureChecklist[];
+  // data: FleetData; // No longer needed as data is fetched internally
+  // preDepartureChecklists: PreDepartureChecklist[]; // No longer needed
 }
 
-const AlertsWidget: React.FC<AlertsWidgetProps> = ({ data, preDepartureChecklists }) => {
-  const maintenanceAlerts = data.vehicles.filter(vehicle => {
+const AlertsWidget: React.FC<AlertsWidgetProps> = () => {
+  const { data: vehicles, isLoading: isLoadingVehicles } = useSupabaseData<Vehicle>('vehicles');
+  const { data: documents, isLoading: isLoadingDocuments } = useSupabaseData<Document>('documents');
+  const { data: preDepartureChecklists, isLoading: isLoadingChecklists } = useSupabaseData<PreDepartureChecklist>('pre_departure_checklists');
+
+  const maintenanceAlerts = vehicles.filter(vehicle => {
     const nextService = (vehicle.last_service_mileage || 0) + 10000;
     const kmUntilService = nextService - vehicle.mileage;
     return kmUntilService <= 1000;
   });
 
-  const expiringDocs = data.documents.filter(doc => {
+  const expiringDocs = documents.filter(doc => {
     const daysLeft = getDaysUntilExpiration(doc.expiration);
     return daysLeft <= 30;
   });
 
   const checklistsWithIssues = preDepartureChecklists.filter(cl => cl.issues_to_address && cl.issues_to_address.trim() !== '');
+
+  const isLoadingCombined = isLoadingVehicles || isLoadingDocuments || isLoadingChecklists;
+
+  if (isLoadingCombined) {
+    return null; // Or a small skeleton loader if preferred
+  }
 
   if (maintenanceAlerts.length === 0 && expiringDocs.length === 0 && checklistsWithIssues.length === 0) {
     return null;

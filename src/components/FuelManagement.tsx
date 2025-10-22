@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Fuel, DollarSign, TrendingUp, Calendar, Search } from 'lucide-react';
-import { FleetData, FuelEntry, DataTableColumn } from '../types';
+import { FuelEntry, DataTableColumn, Resource, Action, Vehicle } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date';
 import { Button } from './ui/button';
@@ -20,18 +20,26 @@ import DataTable from './DataTable'; // Import the new DataTable component
 import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
 import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
 import FormField from './forms/FormField'; // Import FormField
+import { useSupabaseData } from '../hooks/useSupabaseData'; // Import useSupabaseData
 
 type FuelEntryFormData = z.infer<typeof fuelEntrySchema>;
 
 interface FuelManagementProps {
-  data: FleetData;
-  onAdd: (fuelEntry: Omit<FuelEntry, 'id' | 'user_id' | 'created_at'>) => void;
-  onUpdate: (fuelEntry: FuelEntry) => void;
-  onDelete: (id: string) => void;
+  onAdd: (tableName: Resource, fuelEntry: Omit<FuelEntry, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<void>;
+  onUpdate: (tableName: Resource, fuelEntry: FuelEntry, action: Action) => Promise<void>;
+  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<void>;
+  registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void;
 }
 
-const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, onDelete }) => {
+const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDelete, registerRefetch }) => {
   const { canAccess } = usePermissions(); // Use usePermissions hook
+
+  const { data: fuelEntries, isLoading: isLoadingFuel, refetch: refetchFuel } = useSupabaseData<FuelEntry>('fuel_entries');
+  const { data: vehicles, isLoading: isLoadingVehicles } = useSupabaseData<Vehicle>('vehicles');
+
+  useEffect(() => {
+    registerRefetch('fuel_entries', refetchFuel);
+  }, [registerRefetch, refetchFuel]);
 
   const [showModal, setShowModal] = useState(false);
   const [editingFuel, setEditingFuel] = useState<FuelEntry | null>(null);
@@ -104,8 +112,8 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
 
-  const totalLiters = data.fuel.reduce((sum, f) => sum + f.liters, 0);
-  const totalCost = data.fuel.reduce((sum, f) => sum + (f.liters * f.price_per_liter), 0);
+  const totalLiters = fuelEntries.reduce((sum, f) => sum + f.liters, 0);
+  const totalCost = fuelEntries.reduce((sum, f) => sum + (f.liters * f.price_per_liter), 0);
   const avgPrice = totalLiters > 0 ? totalCost / totalLiters : 0;
 
   const handleAddFuel = () => {
@@ -119,12 +127,12 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
     setShowModal(true);
   };
 
-  const onSubmit = (formData: FuelEntryFormData) => {
+  const onSubmit = async (formData: FuelEntryFormData) => {
     if (editingFuel) {
-      onUpdate({ ...formData, id: editingFuel.id, user_id: editingFuel.user_id, created_at: editingFuel.created_at });
+      await onUpdate('fuel_entries', { ...formData, id: editingFuel.id, user_id: editingFuel.user_id, created_at: editingFuel.created_at }, 'edit');
       showSuccess('Enregistrement de carburant mis à jour avec succès !');
     } else {
-      onAdd(formData);
+      await onAdd('fuel_entries', formData, 'add');
       showSuccess('Enregistrement de carburant ajouté avec succès !');
     }
     setShowModal(false);
@@ -143,7 +151,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
       label: 'Véhicule',
       sortable: true,
       defaultVisible: true,
-      render: (item) => data.vehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A',
+      render: (item) => vehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A',
     },
     { key: 'liters', label: 'Litres', sortable: true, defaultVisible: true, render: (item) => `${item.liters} L` },
     { key: 'price_per_liter', label: 'Prix/L', sortable: true, defaultVisible: true, render: (item) => `${item.price_per_liter.toFixed(2)} TND` },
@@ -155,7 +163,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
       render: (item) => <span className="font-bold text-green-600">{(item.liters * item.price_per_liter).toFixed(2)} TND</span>,
     },
     { key: 'mileage', label: 'Kilométrage', sortable: true, defaultVisible: true, render: (item) => `${item.mileage.toLocaleString()} km` },
-  ], [data.vehicles]);
+  ], [vehicles]);
 
   const renderFilters = useCallback((searchTerm: string, setSearchTerm: (term: string) => void) => {
     return (
@@ -177,7 +185,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
             className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Tous les véhicules</option>
-            {data.vehicles.map(vehicle => (
+            {vehicles.map(vehicle => (
                   <option key={vehicle.id} value={vehicle.id}>
                     {vehicle.plate} - {vehicle.type}
                   </option>
@@ -199,14 +207,14 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Date de fin"
               />
               <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
             </div>
           </>
         );
-      }, [data.vehicles, selectedVehicle, startDate, endDate]);
+      }, [vehicles, selectedVehicle, startDate, endDate]);
     
       const customFilter = useCallback((entry: FuelEntry) => {
         const matchesVehicle = selectedVehicle ? entry.vehicle_id === selectedVehicle : true;
@@ -224,6 +232,8 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
     
       const canAddForm = canAccess('fuel_entries', 'add');
       const canEditForm = canAccess('fuel_entries', 'edit');
+
+      const isLoadingCombined = isLoadingFuel || isLoadingVehicles;
     
       return (
         <div className="space-y-6">
@@ -272,15 +282,15 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
     
           <DataTable
             title="Historique des Pleins"
-            data={data.fuel}
+            data={fuelEntries}
             columns={columns}
             onAdd={canAddForm ? handleAddFuel : undefined}
             onEdit={canEditForm ? handleEditFuel : undefined}
-            onDelete={canAccess('fuel_entries', 'delete') ? onDelete : undefined}
+            onDelete={canAccess('fuel_entries', 'delete') ? (id) => onDelete('fuel_entries', { id }, 'delete') : undefined}
             addLabel="Ajouter Plein"
             searchPlaceholder="Rechercher par date, véhicule, litres, prix ou kilométrage..."
             exportFileName="carburant"
-            isLoading={false}
+            isLoading={isLoadingCombined}
             renderFilters={renderFilters}
             customFilter={customFilter}
             resourceType="fuel_entries" // Pass resource type
@@ -307,7 +317,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                     name="vehicle_id"
                     label="Véhicule"
                     type="select"
-                    options={[{ value: '', label: 'Sélectionner un véhicule' }, ...data.vehicles.map(vehicle => ({ value: vehicle.id, label: `${vehicle.plate} - ${vehicle.type}` }))]}
+                    options={[{ value: '', label: 'Sélectionner un véhicule' }, ...vehicles.map(vehicle => ({ value: vehicle.id, label: `${vehicle.plate} - ${vehicle.type}` }))]}
                     placeholder="Sélectionner un véhicule"
                     disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
                   />

@@ -6,21 +6,22 @@ import { Button } from '../ui/button';
 import { DialogFooter } from '../ui/dialog';
 import FormField from '../forms/FormField';
 import { preDepartureChecklistSchema } from '../../types/formSchemas';
-import { FleetData, PreDepartureChecklist } from '../../types';
+import { FleetData, PreDepartureChecklist, Vehicle, Driver, Resource, Action } from '../../types';
 import { showSuccess, showError } from '../../utils/toast';
 import { LOCAL_STORAGE_KEYS } from '../../utils/constants';
 
 type PreDepartureChecklistFormData = z.infer<typeof preDepartureChecklistSchema>;
 
 interface ChecklistFormProps {
-  data: FleetData;
-  onAdd: (checklist: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>) => void;
+  vehicles: Vehicle[];
+  drivers: Driver[];
+  onAdd: (tableName: Resource, checklist: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<void>;
   onClose: () => void;
   canAdd: boolean;
   hasChecklistForMonth: (vehicleId: string, month: number, year: number) => boolean;
 }
 
-const ChecklistForm: React.FC<ChecklistFormProps> = ({ data, onAdd, onClose, canAdd, hasChecklistForMonth }) => {
+const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicles, drivers, onAdd, onClose, canAdd, hasChecklistForMonth }) => {
   const methods = useForm<PreDepartureChecklistFormData>({ // Use methods from useForm
     resolver: zodResolver(preDepartureChecklistSchema),
     defaultValues: {
@@ -88,7 +89,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ data, onAdd, onClose, can
     return () => subscription.unsubscribe();
   }, [watch]);
 
-  const onSubmit = (formData: PreDepartureChecklistFormData) => {
+  const onSubmit = async (formData: PreDepartureChecklistFormData) => {
     if (!canAdd) {
       showError('Vous n\'avez pas la permission d\'ajouter une checklist.');
       return;
@@ -118,7 +119,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ data, onAdd, onClose, can
       issues_to_address: formData.issues_to_address === '' ? null : formData.issues_to_address,
     };
 
-    onAdd(dataToSubmit);
+    await onAdd('pre_departure_checklists', dataToSubmit, 'add');
     showSuccess('Checklist ajoutée avec succès !');
     onClose();
     resetFormAndClearStorage();
@@ -168,7 +169,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ data, onAdd, onClose, can
             name="vehicle_id"
             label="Véhicule"
             type="select"
-            options={data.vehicles.map(v => ({ value: v.id, label: `${v.plate} - ${v.type}` }))}
+            options={vehicles.map(v => ({ value: v.id, label: `${v.plate} - ${v.type}` }))}
             placeholder="Sélectionner un véhicule"
             disabled={!canAdd}
           />
@@ -178,7 +179,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ data, onAdd, onClose, can
           name="driver_id"
           label="Conducteur (Optionnel)"
           type="select"
-          options={[{ value: '', label: 'Sélectionner un conducteur' }, ...data.drivers.map(d => ({ value: d.id, label: d.name }))]}
+          options={[{ value: '', label: 'Sélectionner un conducteur' }, ...drivers.map(d => ({ value: d.id, label: d.name }))]}
           placeholder="Sélectionner un conducteur"
           disabled={!canAdd}
         />

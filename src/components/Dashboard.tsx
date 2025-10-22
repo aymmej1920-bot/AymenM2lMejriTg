@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Settings, ChevronUp, ChevronDown } from 'lucide-react';
-import { FleetData, DashboardWidgetConfig } from '../types';
+import { FleetData, DashboardWidgetConfig, Resource, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist } from '../types';
 import { formatDate } from '../utils/date';
 import { useDashboardCustomization } from '../hooks/useDashboardCustomization';
 import { Button } from './ui/button';
@@ -14,17 +14,48 @@ import {
 } from './ui/dialog';
 import { dashboardWidgetMap } from './dashboard/DashboardWidgets'; // Import the widget map
 import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
+import { useSupabaseData } from '../hooks/useSupabaseData'; // Import useSupabaseData
 
 interface DashboardProps {
-  data: FleetData;
   userRole: 'admin' | 'direction' | 'utilisateur';
-  preDepartureChecklists: any[]; // Add preDepartureChecklists prop
+  registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ data, preDepartureChecklists }) => {
+const Dashboard: React.FC<DashboardProps> = ({ userRole, registerRefetch }) => {
+  void userRole; // userRole is not directly used here, but passed from App.tsx
   const { canAccess } = usePermissions(); // Use usePermissions hook
   const { widgets, toggleWidgetVisibility, moveWidget, resetToDefault } = useDashboardCustomization();
   const [showCustomizeDialog, setShowCustomizeDialog] = useState(false);
+
+  // Fetch all data types needed for dashboard widgets
+  const { data: vehicles, isLoading: isLoadingVehicles, refetch: refetchVehicles } = useSupabaseData<Vehicle>('vehicles');
+  const { data: drivers, isLoading: isLoadingDrivers, refetch: refetchDrivers } = useSupabaseData<Driver>('drivers');
+  const { data: tours, isLoading: isLoadingTours, refetch: refetchTours } = useSupabaseData<Tour>('tours');
+  const { data: fuel, isLoading: isLoadingFuel, refetch: refetchFuel } = useSupabaseData<FuelEntry>('fuel_entries');
+  const { data: documents, isLoading: isLoadingDocuments, refetch: refetchDocuments } = useSupabaseData<Document>('documents');
+  const { data: maintenance, isLoading: isLoadingMaintenance, refetch: refetchMaintenance } = useSupabaseData<MaintenanceEntry>('maintenance_entries');
+  const { data: preDepartureChecklists, isLoading: isLoadingChecklists, refetch: refetchChecklists } = useSupabaseData<PreDepartureChecklist>('pre_departure_checklists');
+
+  // Register refetch functions for all resources
+  useEffect(() => {
+    registerRefetch('vehicles', refetchVehicles);
+    registerRefetch('drivers', refetchDrivers);
+    registerRefetch('tours', refetchTours);
+    registerRefetch('fuel_entries', refetchFuel);
+    registerRefetch('documents', refetchDocuments);
+    registerRefetch('maintenance_entries', refetchMaintenance);
+    registerRefetch('pre_departure_checklists', refetchChecklists);
+  }, [registerRefetch, refetchVehicles, refetchDrivers, refetchTours, refetchFuel, refetchDocuments, refetchMaintenance, refetchChecklists]);
+
+  const fleetData: FleetData = useMemo(() => ({
+    vehicles,
+    drivers,
+    tours,
+    fuel,
+    documents,
+    maintenance,
+    pre_departure_checklists: preDepartureChecklists,
+  }), [vehicles, drivers, tours, fuel, documents, maintenance, preDepartureChecklists]);
 
   const visibleWidgets = widgets.filter(widget => widget.isVisible);
 
@@ -35,6 +66,16 @@ const Dashboard: React.FC<DashboardProps> = ({ data, preDepartureChecklists }) =
   const otherWidgets = visibleWidgets.filter(
     widget => !(widget.componentKey === 'vehicleStatusChart' || widget.componentKey === 'monthlyFuelConsumptionChart')
   );
+
+  const isLoadingCombined = isLoadingVehicles || isLoadingDrivers || isLoadingTours || isLoadingFuel || isLoadingDocuments || isLoadingMaintenance || isLoadingChecklists;
+
+  if (isLoadingCombined) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <p className="text-gray-600">Chargement du tableau de bord...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -60,7 +101,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, preDepartureChecklists }) =
       {otherWidgets.map((widget: DashboardWidgetConfig) => {
         const WidgetComponent = dashboardWidgetMap[widget.componentKey];
         return WidgetComponent ? (
-          <WidgetComponent key={widget.id} data={data} preDepartureChecklists={preDepartureChecklists} />
+          <WidgetComponent key={widget.id} data={fleetData} preDepartureChecklists={fleetData.pre_departure_checklists} />
         ) : null;
       })}
 
@@ -69,7 +110,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, preDepartureChecklists }) =
           {chartWidgets.map((widget: DashboardWidgetConfig) => {
             const WidgetComponent = dashboardWidgetMap[widget.componentKey];
             return WidgetComponent ? (
-              <WidgetComponent key={widget.id} data={data} preDepartureChecklists={preDepartureChecklists} />
+              <WidgetComponent key={widget.id} data={fleetData} preDepartureChecklists={fleetData.pre_departure_checklists} />
             ) : null;
           })}
         </div>

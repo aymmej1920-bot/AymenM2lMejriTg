@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Phone, AlertTriangle, Upload, Download } from 'lucide-react'; // Import Upload and Download icons
-import { FleetData, Driver, DataTableColumn, DriverImportData } from '../types';
+import { Driver, DataTableColumn, DriverImportData, Resource, Action } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate, getDaysUntilExpiration } from '../utils/date';
 import {
@@ -22,18 +22,25 @@ import { usePermissions } from '../hooks/usePermissions';
 import XLSXImportDialog from './XLSXImportDialog'; // Import the new component
 import { exportTemplateToXLSX } from '../utils/templateExport'; // Import the new utility
 import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
+import { useSupabaseData } from '../hooks/useSupabaseData'; // Import useSupabaseData
 
 type DriverFormData = z.infer<typeof driverSchema>;
 
 interface DriversProps {
-  data: FleetData;
-  onAdd: (driver: Omit<Driver, 'id' | 'user_id' | 'created_at'>) => void;
-  onUpdate: (driver: Driver) => void;
-  onDelete: (id: string) => void;
+  onAdd: (tableName: Resource, driver: Omit<Driver, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<void>;
+  onUpdate: (tableName: Resource, driver: Driver, action: Action) => Promise<void>;
+  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<void>;
+  registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void;
 }
 
-const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) => {
+const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete, registerRefetch }) => {
   const { canAccess } = usePermissions();
+
+  const { data: drivers, isLoading, refetch } = useSupabaseData<Driver>('drivers');
+
+  useEffect(() => {
+    registerRefetch('drivers', refetch);
+  }, [registerRefetch, refetch]);
 
   const [showModal, setShowModal] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
@@ -113,12 +120,12 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
     setShowModal(true);
   };
 
-  const onSubmit = (formData: DriverFormData) => {
+  const onSubmit = async (formData: DriverFormData) => {
     if (editingDriver) {
-      onUpdate({ ...formData, id: editingDriver.id, user_id: editingDriver.user_id, created_at: editingDriver.created_at });
+      await onUpdate('drivers', { ...formData, id: editingDriver.id, user_id: editingDriver.user_id, created_at: editingDriver.created_at }, 'edit');
       showSuccess('Conducteur mis à jour avec succès !');
     } else {
-      onAdd(formData);
+      await onAdd('drivers', formData, 'add');
       showSuccess('Conducteur ajouté avec succès !');
     }
     setShowModal(false);
@@ -132,7 +139,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
 
   const handleImportDrivers = async (importedData: DriverImportData[]) => {
     for (const driverData of importedData) {
-      await onAdd(driverData);
+      await onAdd('drivers', driverData, 'add');
     }
   };
 
@@ -199,7 +206,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
     },
   ], []);
 
-  const expiringDrivers = data.drivers.filter(driver => getDaysUntilExpiration(driver.expiration) < 60);
+  const expiringDrivers = drivers.filter(driver => getDaysUntilExpiration(driver.expiration) < 60);
 
   const renderAlerts = useCallback(() => {
     if (expiringDrivers.length === 0) return null;
@@ -249,15 +256,15 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
     <>
       <DataTable
         title="Gestion des Conducteurs"
-        data={data.drivers}
+        data={drivers}
         columns={columns}
         onAdd={canAddForm ? handleAddDriver : undefined}
         onEdit={canEditForm ? handleEditDriver : undefined}
-        onDelete={canAccess('drivers', 'delete') ? onDelete : undefined}
+        onDelete={canAccess('drivers', 'delete') ? (id) => onDelete('drivers', { id }, 'delete') : undefined}
         addLabel="Ajouter Conducteur"
         searchPlaceholder="Rechercher un conducteur par nom, permis, statut ou téléphone..."
         exportFileName="conducteurs"
-        isLoading={false}
+        isLoading={isLoading}
         renderAlerts={renderAlerts}
         resourceType="drivers"
         renderCustomHeaderButtons={renderCustomHeaderButtons} // Pass the custom buttons

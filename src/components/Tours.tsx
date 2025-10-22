@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Calendar } from 'lucide-react'; // Seul Calendar est utilisé dans le formulaire
-import { FleetData, Tour, DataTableColumn } from '../types';
+import { Tour, DataTableColumn, Resource, Action, Vehicle, Driver } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date';
 import { Button } from './ui/button';
@@ -20,18 +20,27 @@ import DataTable from './DataTable'; // Import the new DataTable component
 import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
 import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
 import FormField from './forms/FormField'; // Import FormField
+import { useSupabaseData } from '../hooks/useSupabaseData'; // Import useSupabaseData
 
 type TourFormData = z.infer<typeof tourSchema>;
 
 interface ToursProps {
-  data: FleetData;
-  onAdd: (tour: Omit<Tour, 'id' | 'user_id' | 'created_at'>) => void;
-  onUpdate: (tour: Tour) => void;
-  onDelete: (id: string) => void;
+  onAdd: (tableName: Resource, tour: Omit<Tour, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<void>;
+  onUpdate: (tableName: Resource, tour: Tour, action: Action) => Promise<void>;
+  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<void>;
+  registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void;
 }
 
-const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
+const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete, registerRefetch }) => {
   const { canAccess } = usePermissions(); // Use usePermissions hook
+
+  const { data: tours, isLoading: isLoadingTours, refetch: refetchTours } = useSupabaseData<Tour>('tours');
+  const { data: vehicles, isLoading: isLoadingVehicles } = useSupabaseData<Vehicle>('vehicles');
+  const { data: drivers, isLoading: isLoadingDrivers } = useSupabaseData<Driver>('drivers');
+
+  useEffect(() => {
+    registerRefetch('tours', refetchTours);
+  }, [registerRefetch, refetchTours]);
 
   const [showModal, setShowModal] = useState(false);
   const [editingTour, setEditingTour] = useState<Tour | null>(null);
@@ -146,12 +155,12 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
     setShowModal(true);
   };
 
-  const onSubmit = (formData: TourFormData) => {
+  const onSubmit = async (formData: TourFormData) => {
     if (editingTour) {
-      onUpdate({ ...editingTour, ...formData, id: editingTour.id, user_id: editingTour.user_id, created_at: editingTour.created_at });
+      await onUpdate('tours', { ...editingTour, ...formData, id: editingTour.id, user_id: editingTour.user_id, created_at: editingTour.created_at }, 'edit');
       showSuccess('Tournée mise à jour avec succès !');
     } else {
-      onAdd(formData);
+      await onAdd('tours', formData, 'add');
       showSuccess('Tournée ajoutée avec succès !');
     }
     setShowModal(false);
@@ -190,14 +199,14 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
       label: 'Véhicule',
       sortable: true,
       defaultVisible: true,
-      render: (item) => data.vehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A',
+      render: (item) => vehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A',
     },
     {
       key: 'driver_id',
       label: 'Conducteur',
       sortable: true,
       defaultVisible: true,
-      render: (item) => data.drivers.find(d => d.id === item.driver_id)?.name || 'N/A',
+      render: (item) => drivers.find(d => d.id === item.driver_id)?.name || 'N/A',
     },
     { key: 'status', label: 'Statut', sortable: true, defaultVisible: true, render: (item) => getStatusBadge(item.status) },
     { key: 'fuel_start', label: 'Fuel Début (%)', sortable: true, defaultVisible: true, render: (item) => item.fuel_start != null ? `${item.fuel_start}%` : '-' },
@@ -206,10 +215,10 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
     { key: 'km_end', label: 'Km Fin', sortable: true, defaultVisible: true, render: (item) => item.km_end != null ? item.km_end.toLocaleString() : '-' },
     { key: 'distance', label: 'Distance (km)', sortable: true, defaultVisible: true, render: (item) => item.distance != null ? `${item.distance.toLocaleString()} km` : '-' },
     { key: 'consumption_per_100km', label: 'L/100km', sortable: false, defaultVisible: true, render: (item) => calculateConsumption(item) },
-  ], [data.vehicles, data.drivers]); // Dependencies for memoization
+  ], [vehicles, drivers]); // Dependencies for memoization
 
   const renderFilters = useCallback((searchTerm: string, setSearchTerm: (term: string) => void) => {
-    const uniqueStatuses = Array.from(new Set(data.tours.map(t => t.status)));
+    const uniqueStatuses = Array.from(new Set(tours.map(t => t.status)));
     return (
       <>
         <div className="relative">
@@ -228,7 +237,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
             className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Tous les véhicules</option>
-            {data.vehicles.map(vehicle => (
+            {vehicles.map(vehicle => (
               <option key={vehicle.id} value={vehicle.id}>
                 {vehicle.plate} - {vehicle.type}
               </option>
@@ -242,7 +251,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
             className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Tous les conducteurs</option>
-            {data.drivers.map(driver => (
+            {drivers.map(driver => (
               <option key={driver.id} value={driver.id}>
                 {driver.name}
               </option>
@@ -283,7 +292,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
         </div>
       </>
     );
-  }, [data.vehicles, data.drivers, data.tours, selectedVehicle, selectedDriver, selectedStatus, startDate, endDate]);
+  }, [vehicles, drivers, tours, selectedVehicle, selectedDriver, selectedStatus, startDate, endDate]);
 
   const filterData = useCallback((item: Tour) => {
     const matchesVehicle = selectedVehicle ? item.vehicle_id === selectedVehicle : true;
@@ -304,19 +313,21 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
   const canAddForm = canAccess('tours', 'add');
   const canEditForm = canAccess('tours', 'edit');
 
+  const isLoadingCombined = isLoadingTours || isLoadingVehicles || isLoadingDrivers;
+
   return (
     <>
       <DataTable
         title="Suivi des Tournées"
-        data={data.tours} // Pass all data, DataTable will handle filtering
+        data={tours} // Pass all data, DataTable will handle filtering
         columns={columns}
         onAdd={canAddForm ? handleAddTour : undefined}
         onEdit={canEditForm ? handleEditTour : undefined}
-        onDelete={canAccess('tours', 'delete') ? onDelete : undefined}
+        onDelete={canAccess('tours', 'delete') ? (id) => onDelete('tours', { id }, 'delete') : undefined}
         addLabel="Nouvelle Tournée"
         searchPlaceholder="Rechercher par date, véhicule, conducteur ou statut..."
         exportFileName="tournees"
-        isLoading={false}
+        isLoading={isLoadingCombined}
         renderFilters={renderFilters}
         customFilter={filterData} // Pass the custom filter function
         resourceType="tours" // Pass resource type
@@ -359,7 +370,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                   name="vehicle_id"
                   label="Véhicule"
                   type="select"
-                  options={[{ value: '', label: 'Sélectionner un véhicule' }, ...data.vehicles.map(vehicle => ({ value: vehicle.id, label: `${vehicle.plate} - ${vehicle.type}` }))]}
+                  options={[{ value: '', label: 'Sélectionner un véhicule' }, ...vehicles.map(vehicle => ({ value: vehicle.id, label: `${vehicle.plate} - ${vehicle.type}` }))]}
                   placeholder="Sélectionner un véhicule"
                   disabled={(!canEditForm && !!editingTour) || (!canAddForm && !editingTour)}
                 />
@@ -367,7 +378,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
                   name="driver_id"
                   label="Conducteur"
                   type="select"
-                  options={[{ value: '', label: 'Sélectionner un conducteur' }, ...data.drivers.map(driver => ({ value: driver.id, label: driver.name }))]}
+                  options={[{ value: '', label: 'Sélectionner un conducteur' }, ...drivers.map(driver => ({ value: driver.id, label: driver.name }))]}
                   placeholder="Sélectionner un conducteur"
                   disabled={(!canEditForm && !!editingTour) || (!canAddForm && !editingTour)}
                 />

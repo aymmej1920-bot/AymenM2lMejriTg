@@ -1,16 +1,19 @@
 import React from 'react';
 import { Truck, CheckCircle, Route, Wrench } from 'lucide-react';
-import { FleetData } from '../../types';
+import { Vehicle } from '../../types';
+import { useSupabaseData } from '../../hooks/useSupabaseData'; // Import useSupabaseData
 
 interface KpisWidgetProps {
-  data: FleetData;
+  // data: FleetData; // No longer needed as data is fetched internally
 }
 
-const KpisWidget: React.FC<KpisWidgetProps> = ({ data }) => {
-  const totalVehicles = data.vehicles.length;
-  const availableVehicles = data.vehicles.filter(v => v.status === 'Disponible').length;
-  const inMissionVehicles = data.vehicles.filter(v => v.status === 'En mission').length;
-  const maintenanceVehicles = data.vehicles.filter(v => v.status === 'Maintenance').length;
+const KpisWidget: React.FC<KpisWidgetProps> = () => {
+  const { data: vehicles, isLoading: isLoadingVehicles } = useSupabaseData<Vehicle>('vehicles');
+
+  const totalVehicles = vehicles.length;
+  const availableVehicles = vehicles.filter(v => v.status === 'Disponible').length;
+  const inMissionVehicles = vehicles.filter(v => v.status === 'En mission').length;
+  const maintenanceVehicles = vehicles.filter(v => v.status === 'Maintenance').length;
 
   const kpis = [
     {
@@ -42,6 +45,10 @@ const KpisWidget: React.FC<KpisWidgetProps> = ({ data }) => {
       textColor: 'text-red-100'
     }
   ];
+
+  if (isLoadingVehicles) {
+    return null; // Or a small skeleton loader if preferred
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-slide-up">

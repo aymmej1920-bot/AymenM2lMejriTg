@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Calendar, AlertTriangle, Search } from 'lucide-react'; // Ajout de Search pour le filtre par défaut
-import { FleetData, Document, DataTableColumn } from '../types';
+import { Document, DataTableColumn, Resource, Action, Vehicle } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate, getDaysUntilExpiration } from '../utils/date'; // Import from utils/date
 import { Button } from './ui/button';
@@ -20,18 +20,26 @@ import DataTable from './DataTable'; // Import the new DataTable component
 import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
 import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
 import FormField from './forms/FormField'; // Import FormField
+import { useSupabaseData } from '../hooks/useSupabaseData'; // Import useSupabaseData
 
 type DocumentFormData = z.infer<typeof documentSchema>;
 
 interface DocumentsProps {
-  data: FleetData;
-  onAdd: (document: Omit<Document, 'id' | 'user_id' | 'created_at'>) => void;
-  onUpdate: (document: Document) => void;
-  onDelete: (id: string) => void;
+  onAdd: (tableName: Resource, document: Omit<Document, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<void>;
+  onUpdate: (tableName: Resource, document: Document, action: Action) => Promise<void>;
+  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<void>;
+  registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void;
 }
 
-const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }) => {
+const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete, registerRefetch }) => {
   const { canAccess } = usePermissions(); // Use usePermissions hook
+
+  const { data: documents, isLoading: isLoadingDocuments, refetch: refetchDocuments } = useSupabaseData<Document>('documents');
+  const { data: vehicles, isLoading: isLoadingVehicles } = useSupabaseData<Vehicle>('vehicles');
+
+  useEffect(() => {
+    registerRefetch('documents', refetchDocuments);
+  }, [registerRefetch, refetchDocuments]);
 
   const [showModal, setShowModal] = useState(false);
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
@@ -114,12 +122,12 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
     setShowModal(true);
   };
 
-  const onSubmit = (formData: DocumentFormData) => {
+  const onSubmit = async (formData: DocumentFormData) => {
     if (editingDocument) {
-      onUpdate({ ...formData, id: editingDocument.id, user_id: editingDocument.user_id, created_at: editingDocument.created_at });
+      await onUpdate('documents', { ...formData, id: editingDocument.id, user_id: editingDocument.user_id, created_at: editingDocument.created_at }, 'edit');
       showSuccess('Document mis à jour avec succès !');
     } else {
-      onAdd(formData);
+      await onAdd('documents', formData, 'add');
       showSuccess('Document ajouté avec succès !');
     }
     setShowModal(false);
@@ -144,9 +152,9 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
   };
 
   const uniqueTypes = useMemo(() => {
-    const types = new Set(data.documents.map(d => d.type));
+    const types = new Set(documents.map(d => d.type));
     return Array.from(types);
-  }, [data.documents]);
+  }, [documents]);
 
   const columns: DataTableColumn<Document>[] = useMemo(() => [
     {
@@ -154,7 +162,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
       label: 'Véhicule',
       sortable: true,
       defaultVisible: true,
-      render: (item) => data.vehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A',
+      render: (item) => vehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A',
     },
     { key: 'type', label: 'Type Document', sortable: true, defaultVisible: true },
     { key: 'number', label: 'N° Document', sortable: true, defaultVisible: true },
@@ -202,9 +210,9 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
         );
       },
     },
-  ], [data.vehicles]);
+  ], [vehicles]);
 
-  const expiringDocs = data.documents.filter(doc => getDaysUntilExpiration(doc.expiration) < 30);
+  const expiringDocs = documents.filter(doc => getDaysUntilExpiration(doc.expiration) < 30);
 
   const renderAlerts = useCallback(() => {
     if (expiringDocs.length === 0) return null;
@@ -243,7 +251,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
             className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Tous les véhicules</option>
-            {data.vehicles.map(vehicle => (
+            {vehicles.map(vehicle => (
               <option key={vehicle.id} value={vehicle.id}>
                 {vehicle.plate} - {vehicle.type}
               </option>
@@ -284,7 +292,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
         </div>
       </>
     );
-  }, [data.vehicles, uniqueTypes, selectedVehicle, selectedType, startDate, endDate]);
+  }, [vehicles, uniqueTypes, selectedVehicle, selectedType, startDate, endDate]);
 
   const customFilter = useCallback((doc: Document) => {
     const matchesVehicle = selectedVehicle ? doc.vehicle_id === selectedVehicle : true;
@@ -304,19 +312,21 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
   const canAddForm = canAccess('documents', 'add');
   const canEditForm = canAccess('documents', 'edit');
 
+  const isLoadingCombined = isLoadingDocuments || isLoadingVehicles;
+
   return (
     <>
       <DataTable
         title="Suivi des Documents"
-        data={data.documents}
+        data={documents}
         columns={columns}
         onAdd={canAddForm ? handleAddDocument : undefined}
         onEdit={canEditForm ? handleEditDocument : undefined}
-        onDelete={canAccess('documents', 'delete') ? onDelete : undefined}
+        onDelete={canAccess('documents', 'delete') ? (id) => onDelete('documents', { id }, 'delete') : undefined}
         addLabel="Ajouter Document"
         searchPlaceholder="Rechercher un document par véhicule, type, numéro ou expiration..."
         exportFileName="documents"
-        isLoading={false}
+        isLoading={isLoadingCombined}
         renderFilters={renderFilters}
         renderAlerts={renderAlerts}
         customFilter={customFilter}
@@ -338,7 +348,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
                 name="vehicle_id"
                 label="Véhicule"
                 type="select"
-                options={[{ value: '', label: 'Sélectionner un véhicule' }, ...data.vehicles.map(vehicle => ({ value: vehicle.id, label: `${vehicle.plate} - ${vehicle.type}` }))]}
+                options={[{ value: '', label: 'Sélectionner un véhicule' }, ...vehicles.map(vehicle => ({ value: vehicle.id, label: `${vehicle.plate} - ${vehicle.type}` }))]}
                 placeholder="Sélectionner un véhicule"
                 disabled={(!canEditForm && !!editingDocument) || (!canAddForm && !editingDocument)}
               />

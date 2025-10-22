@@ -19,11 +19,13 @@ import { inviteUserSchema, manualUserSchema } from '../types/formSchemas'; // Im
 import { z } from 'zod';
 import FormField from './forms/FormField';
 import { usePermissions } from '../hooks/usePermissions';
-import { UserRole } from '../types';
+import { UserRole, Resource } from '../types';
+import { useSession } from './SessionContextProvider'; // Import useSession
+import { useSupabaseData } from '../hooks/useSupabaseData'; // Import useSupabaseData
 
 interface UserManagementProps {
-  currentUserRole: UserRole;
   onUpdateUserRole: (userId: string, newRole: UserRole) => Promise<void>;
+  registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void;
 }
 
 interface Profile {
@@ -38,9 +40,9 @@ interface Profile {
 type InviteUserFormData = z.infer<typeof inviteUserSchema>;
 type ManualUserFormData = z.infer<typeof manualUserSchema>; // New type for manual user form
 
-const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpdateUserRole }) => {
-  void currentUserRole;
+const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole, registerRefetch }) => {
   const { canAccess } = usePermissions();
+  const { currentUser } = useSession(); // Get current user for permission checks
 
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -121,11 +123,12 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
   useEffect(() => {
     if (canAccess('users', 'view')) {
       fetchUsers();
+      registerRefetch('users', fetchUsers); // Register the refetch function
     } else {
       setError('Vous n\'avez pas les permissions pour accéder à cette page.');
       setLoading(false);
     }
-  }, [canAccess]);
+  }, [canAccess, registerRefetch]);
 
   const filteredAndSortedUsers = useMemo(() => {
     let filtered = users.filter(user => {
@@ -171,7 +174,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUserRole, onUpda
       showSuccess(`Rôle de ${editingUser.email} mis à jour en ${newRole}.`);
       setShowEditRoleModal(false);
       setEditingUser(null);
-      fetchUsers();
+      fetchUsers(); // Re-fetch users to update the list
     }
   };
 

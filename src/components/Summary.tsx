@@ -1,15 +1,45 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Truck, Users, Route, MapPin, Fuel, AlertCircle, Wrench } from 'lucide-react';
-import { FleetData } from '../types';
+import { FleetData, Resource, Vehicle, Driver, Tour, FuelEntry, MaintenanceEntry } from '../types';
 import MonthlyPerformanceChart from './charts/MonthlyPerformanceChart';
 import CostDistributionChart from './charts/CostDistributionChart';
 import { useFleetStats } from '../hooks/useFleetStats'; // Import the new hook
+import { useSupabaseData } from '../hooks/useSupabaseData'; // Import useSupabaseData
 
 interface SummaryProps {
-  data: FleetData;
+  registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void;
 }
 
-const Summary: React.FC<SummaryProps> = ({ data }) => {
+const Summary: React.FC<SummaryProps> = ({ registerRefetch }) => {
+  const { data: vehicles, isLoading: isLoadingVehicles, refetch: refetchVehicles } = useSupabaseData<Vehicle>('vehicles');
+  const { data: drivers, isLoading: isLoadingDrivers, refetch: refetchDrivers } = useSupabaseData<Driver>('drivers');
+  const { data: tours, isLoading: isLoadingTours, refetch: refetchTours } = useSupabaseData<Tour>('tours');
+  const { data: fuel, isLoading: isLoadingFuel, refetch: refetchFuel } = useSupabaseData<FuelEntry>('fuel_entries');
+  const { data: documents, isLoading: isLoadingDocuments, refetch: refetchDocuments } = useSupabaseData<Document>('documents');
+  const { data: maintenance, isLoading: isLoadingMaintenance, refetch: refetchMaintenance } = useSupabaseData<MaintenanceEntry>('maintenance_entries');
+  const { data: preDepartureChecklists, isLoading: isLoadingChecklists, refetch: refetchChecklists } = useSupabaseData<any>('pre_departure_checklists'); // Assuming any for now
+
+  // Register refetch functions for all resources
+  useEffect(() => {
+    registerRefetch('vehicles', refetchVehicles);
+    registerRefetch('drivers', refetchDrivers);
+    registerRefetch('tours', refetchTours);
+    registerRefetch('fuel_entries', refetchFuel);
+    registerRefetch('documents', refetchDocuments);
+    registerRefetch('maintenance_entries', refetchMaintenance);
+    registerRefetch('pre_departure_checklists', refetchChecklists);
+  }, [registerRefetch, refetchVehicles, refetchDrivers, refetchTours, refetchFuel, refetchDocuments, refetchMaintenance, refetchChecklists]);
+
+  const fleetData: FleetData = useMemo(() => ({
+    vehicles,
+    drivers,
+    tours,
+    fuel,
+    documents,
+    maintenance,
+    pre_departure_checklists: preDepartureChecklists,
+  }), [vehicles, drivers, tours, fuel, documents, maintenance, preDepartureChecklists]);
+
   const {
     totalVehicles,
     activeDrivers,
@@ -26,7 +56,7 @@ const Summary: React.FC<SummaryProps> = ({ data }) => {
     avgFuelCostPerVehicle,
     avgToursPerVehicle,
     totalCostPerVehicle,
-  } = useFleetStats(data);
+  } = useFleetStats(fleetData);
 
   const kpis = [
     {
@@ -71,6 +101,16 @@ const Summary: React.FC<SummaryProps> = ({ data }) => {
     { label: 'Documents Expirant bientôt', value: `${expiringDocsCount} documents`, color: expiringDocsCount > 0 ? 'text-red-600' : 'text-gray-900' },
   ];
 
+  const isLoadingCombined = isLoadingVehicles || isLoadingDrivers || isLoadingTours || isLoadingFuel || isLoadingDocuments || isLoadingMaintenance || isLoadingChecklists;
+
+  if (isLoadingCombined) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <p className="text-gray-600">Chargement du résumé...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 animate-fade-in">
       <h2 className="text-4xl font-bold text-gray-800">Résumé Général</h2>
@@ -97,9 +137,9 @@ const Summary: React.FC<SummaryProps> = ({ data }) => {
           <h3 className="text-xl font-semibold mb-6 text-gray-800">Performance Mensuelle</h3>
           <div className="h-64">
             <MonthlyPerformanceChart 
-              tours={data.tours} 
-              fuelEntries={data.fuel} 
-              maintenanceEntries={data.maintenance} 
+              tours={fleetData.tours} 
+              fuelEntries={fleetData.fuel} 
+              maintenanceEntries={fleetData.maintenance} 
             />
           </div>
         </div>
@@ -108,8 +148,8 @@ const Summary: React.FC<SummaryProps> = ({ data }) => {
           <h3 className="text-xl font-semibold mb-6 text-gray-800">Répartition des Coûts (TND)</h3>
           <div className="h-64">
             <CostDistributionChart 
-              fuelEntries={data.fuel} 
-              maintenanceEntries={data.maintenance} 
+              fuelEntries={fleetData.fuel} 
+              maintenanceEntries={fleetData.maintenance} 
             />
           </div>
         </div>
