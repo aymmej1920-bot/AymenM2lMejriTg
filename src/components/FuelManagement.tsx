@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Fuel, DollarSign, TrendingUp, Calendar, Search } from 'lucide-react';
-import { FuelEntry, DataTableColumn, Resource, Action, OperationResult } from '../types'; // Added OperationResult
-import { showLoading, updateToast } from '../utils/toast'; // 'showSuccess' removed
+import { FuelEntry, DataTableColumn, Resource, Action, OperationResult } from '../types';
+import { showLoading, updateToast } from '../utils/toast';
 import { formatDate } from '../utils/date';
 import { Button } from './ui/button';
-import { useForm, FormProvider } from 'react-hook-form'; // Import FormProvider
+import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { fuelEntrySchema } from '../types/formSchemas';
 import { z } from 'zod';
@@ -16,24 +16,23 @@ import {
   DialogTitle,
   DialogDescription,
 } from './ui/dialog';
-import DataTable from './DataTable'; // Import the new DataTable component
-import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
-import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
-import FormField from './forms/FormField'; // Import FormField
-import { useFleetData } from '../components/FleetDataProvider'; // Import useFleetData
+import DataTable from './DataTable';
+import { usePermissions } from '../hooks/usePermissions';
+import { LOCAL_STORAGE_KEYS } from '../utils/constants';
+import FormField from './forms/FormField';
+import { useFleetData } from '../components/FleetDataProvider';
 
 type FuelEntryFormData = z.infer<typeof fuelEntrySchema>;
 
 interface FuelManagementProps {
-  onAdd: (tableName: Resource, fuelEntry: Omit<FuelEntry, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<OperationResult>; // Changed to OperationResult
-  onUpdate: (tableName: Resource, fuelEntry: FuelEntry, action: Action) => Promise<OperationResult>; // Changed to OperationResult
-  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<OperationResult>; // Changed to OperationResult
+  onAdd: (tableName: Resource, fuelEntry: Omit<FuelEntry, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<OperationResult>;
+  onUpdate: (tableName: Resource, fuelEntry: FuelEntry, action: Action) => Promise<OperationResult>;
+  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<OperationResult>;
 }
 
 const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDelete }) => {
-  const { canAccess } = usePermissions(); // Use usePermissions hook
+  const { canAccess } = usePermissions();
 
-  // Consume data from FleetContext
   const { fleetData, isLoadingFleet } = useFleetData();
   const fuelEntries = fleetData.fuel;
   const vehicles = fleetData.vehicles;
@@ -41,7 +40,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
   const [showModal, setShowModal] = useState(false);
   const [editingFuel, setEditingFuel] = useState<FuelEntry | null>(null);
 
-  const methods = useForm<FuelEntryFormData>({ // Use methods from useForm
+  const methods = useForm<FuelEntryFormData>({
     resolver: zodResolver(fuelEntrySchema),
     defaultValues: {
       date: new Date().toISOString().split('T')[0],
@@ -52,9 +51,8 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
     }
   });
 
-  const { handleSubmit, reset, watch } = methods; // Removed errors from destructuring
+  const { handleSubmit, reset, watch } = methods;
 
-  // Function to reset form and clear saved data
   const resetFormAndClearStorage = useCallback(() => {
     reset({
       date: new Date().toISOString().split('T')[0],
@@ -66,9 +64,8 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
     localStorage.removeItem(LOCAL_STORAGE_KEYS.FUEL_FORM_DATA);
   }, [reset]);
 
-  // Effect to load saved form data when modal opens for a new fuel entry
   useEffect(() => {
-    if (showModal && !editingFuel) { // Only for new fuel entry forms
+    if (showModal && !editingFuel) {
       const savedFormData = localStorage.getItem(LOCAL_STORAGE_KEYS.FUEL_FORM_DATA);
       if (savedFormData) {
         try {
@@ -77,17 +74,16 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
             parsedData.date = new Date(parsedData.date).toISOString().split('T')[0];
           }
           reset(parsedData);
-        } catch (e) {
-          console.error("Failed to parse saved fuel form data", e);
+        } catch (e: unknown) {
+          console.error("Failed to parse saved fuel form data", e instanceof Error ? e.message : String(e));
           localStorage.removeItem(LOCAL_STORAGE_KEYS.FUEL_FORM_DATA);
         }
       }
     }
   }, [showModal, editingFuel, reset]);
 
-  // Effect to save form data to localStorage whenever it changes (for new fuel entry forms)
   useEffect(() => {
-    if (showModal && !editingFuel) { // Only save for new fuel entry forms
+    if (showModal && !editingFuel) {
       const subscription = watch((value) => {
         localStorage.setItem(LOCAL_STORAGE_KEYS.FUEL_FORM_DATA, JSON.stringify(value));
       });
@@ -95,16 +91,14 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
     }
   }, [showModal, editingFuel, watch]);
 
-  // Reset form when editingFuel changes (for edit mode) or when modal closes (for new mode)
   React.useEffect(() => {
     if (editingFuel) {
       reset(editingFuel);
     } else {
-      resetFormAndClearStorage(); // Use the new reset function
+      resetFormAndClearStorage();
     }
   }, [editingFuel, resetFormAndClearStorage]);
 
-  // State for custom filters
   const [selectedVehicle, setSelectedVehicle] = useState<string>('');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
@@ -115,7 +109,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
 
   const handleAddFuel = () => {
     setEditingFuel(null);
-    resetFormAndClearStorage(); // Clear any previous unsaved data
+    resetFormAndClearStorage();
     setShowModal(true);
   };
 
@@ -141,14 +135,14 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
       }
       setShowModal(false);
       resetFormAndClearStorage();
-    } catch (error: any) {
-      updateToast(loadingToastId, error.message || 'Erreur lors de l\'opération.', 'error');
+    } catch (error: unknown) {
+      updateToast(loadingToastId, (error instanceof Error ? error.message : String(error)) || 'Erreur lors de l\'opération.', 'error');
     }
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
-    resetFormAndClearStorage(); // Clear saved data on modal close
+    resetFormAndClearStorage();
   };
 
   const columns: DataTableColumn<FuelEntry>[] = useMemo(() => [
@@ -246,7 +240,6 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
             <h2 className="text-4xl font-bold text-gray-800">Gestion du Carburant</h2>
           </div>
     
-          {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="glass rounded-xl shadow-lg p-6 hover-lift">
               <div className="flex items-center">
@@ -306,10 +299,9 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
             isLoading={isLoadingFleet}
             renderFilters={renderFilters}
             customFilter={customFilter}
-            resourceType="fuel_entries" // Pass resource type
+            resourceType="fuel_entries"
           />
     
-          {/* Modal */}
           <Dialog open={showModal} onOpenChange={handleCloseModal}>
             <DialogContent className="sm:max-w-[425px] glass animate-scale-in">
               <DialogHeader>
@@ -318,7 +310,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
                   {editingFuel ? 'Modifiez les détails du plein.' : 'Ajoutez un nouvel enregistrement de carburant.'}
                 </DialogDescription>
               </DialogHeader>
-              <FormProvider {...methods}> {/* Wrap the form with FormProvider */}
+              <FormProvider {...methods}>
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
                   <FormField
                     name="date"

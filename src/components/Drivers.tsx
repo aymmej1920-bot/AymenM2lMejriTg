@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Phone, AlertTriangle, Upload, Download } from 'lucide-react';
 import { Driver, DataTableColumn, DriverImportData, Resource, Action, OperationResult, DbImportResult } from '../types';
-import { showSuccess, showLoading, updateToast } from '../utils/toast'; // 'showError' removed
+import { showSuccess, showLoading, updateToast, showError } from '../utils/toast';
 import { formatDate, getDaysUntilExpiration } from '../utils/date';
 import {
   Dialog,
@@ -35,7 +35,6 @@ interface DriversProps {
 const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
   const { canAccess } = usePermissions();
 
-  // Consume data from FleetContext
   const { fleetData, isLoadingFleet } = useFleetData();
   const drivers = fleetData.drivers;
 
@@ -56,7 +55,6 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
 
   const { handleSubmit, reset, watch } = methods;
 
-  // Function to reset form and clear saved data
   const resetFormAndClearStorage = useCallback(() => {
     reset({
       name: '',
@@ -68,9 +66,8 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
     localStorage.removeItem(LOCAL_STORAGE_KEYS.DRIVER_FORM_DATA);
   }, [reset]);
 
-  // Effect to load saved form data when modal opens for a new driver
   useEffect(() => {
-    if (showModal && !editingDriver) { // Only for new driver forms
+    if (showModal && !editingDriver) {
       const savedFormData = localStorage.getItem(LOCAL_STORAGE_KEYS.DRIVER_FORM_DATA);
       if (savedFormData) {
         try {
@@ -79,17 +76,16 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
             parsedData.expiration = new Date(parsedData.expiration).toISOString().split('T')[0];
           }
           reset(parsedData);
-        } catch (e) {
-          console.error("Failed to parse saved driver form data", e);
+        } catch (e: unknown) {
+          console.error("Failed to parse saved driver form data", e instanceof Error ? e.message : String(e));
           localStorage.removeItem(LOCAL_STORAGE_KEYS.DRIVER_FORM_DATA);
         }
       }
     }
   }, [showModal, editingDriver, reset]);
 
-  // Effect to save form data to localStorage whenever it changes (for new driver forms)
   useEffect(() => {
-    if (showModal && !editingDriver) { // Only save for new driver forms
+    if (showModal && !editingDriver) {
       const subscription = watch((value) => {
         localStorage.setItem(LOCAL_STORAGE_KEYS.DRIVER_FORM_DATA, JSON.stringify(value));
       });
@@ -97,18 +93,17 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
     }
   }, [showModal, editingDriver, watch]);
 
-  // Reset form when editingDriver changes (for edit mode) or when modal closes (for new mode)
   React.useEffect(() => {
     if (editingDriver) {
       reset(editingDriver);
     } else {
-      resetFormAndClearStorage(); // Use the new reset function
+      resetFormAndClearStorage();
     }
   }, [editingDriver, resetFormAndClearStorage]);
 
   const handleAddDriver = () => {
     setEditingDriver(null);
-    resetFormAndClearStorage(); // Clear any previous unsaved data
+    resetFormAndClearStorage();
     setShowModal(true);
   };
 
@@ -136,14 +131,14 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
       }
       setShowModal(false);
       resetFormAndClearStorage();
-    } catch (error: any) {
-      updateToast(loadingToastId, error.message || 'Erreur lors de l\'opération.', 'error');
+    } catch (error: unknown) {
+      updateToast(loadingToastId, (error instanceof Error ? error.message : String(error)) || 'Erreur lors de l\'opération.', 'error');
     }
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
-    resetFormAndClearStorage(); // Clear saved data on modal close
+    resetFormAndClearStorage();
   };
 
   const handleImportDrivers = async (importedData: DriverImportData[]): Promise<DbImportResult[]> => {
@@ -297,7 +292,6 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
         renderCustomHeaderButtons={renderCustomHeaderButtons}
       />
 
-      {/* Modal */}
       <Dialog open={showModal} onOpenChange={handleCloseModal}>
         <DialogContent className="sm:max-w-[425px] glass animate-scale-in">
           <DialogHeader>
@@ -333,7 +327,6 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
         </DialogContent>
       </Dialog>
 
-      {/* XLSX Import Dialog for Drivers */}
       <XLSXImportDialog<typeof driverImportSchema>
         open={showImportDialog}
         onOpenChange={setShowImportDialog}

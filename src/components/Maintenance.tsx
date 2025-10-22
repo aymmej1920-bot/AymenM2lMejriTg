@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Wrench, AlertTriangle, Clock, ClipboardCheck, Search, Calendar } from 'lucide-react';
-import { MaintenanceEntry, DataTableColumn, Vehicle, Resource, Action, OperationResult } from '../types'; // Added OperationResult
-import { showSuccess, showLoading, updateToast, showError } from '../utils/toast'; // Added showLoading, updateToast, showError
+import { MaintenanceEntry, DataTableColumn, Vehicle, Resource, Action, OperationResult } from '../types';
+import { showSuccess, showLoading, updateToast, showError } from '../utils/toast';
 import { formatDate } from '../utils/date';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,9 +25,9 @@ import { useFleetData } from '../components/FleetDataProvider';
 type MaintenanceEntryFormData = z.infer<typeof maintenanceEntrySchema>;
 
 interface MaintenanceProps {
-  onAdd: (tableName: Resource, maintenanceEntry: Omit<MaintenanceEntry, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<OperationResult>; // Changed to OperationResult
-  onUpdate: (tableName: Resource, vehicle: { id: string; last_service_date: string; last_service_mileage: number; mileage: number }, action: Action) => Promise<OperationResult>; // Changed to OperationResult
-  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<OperationResult>; // Changed to OperationResult
+  onAdd: (tableName: Resource, maintenanceEntry: Omit<MaintenanceEntry, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<OperationResult>;
+  onUpdate: (tableName: Resource, vehicle: { id: string; last_service_date: string; last_service_mileage: number; mileage: number }, action: Action) => Promise<OperationResult>;
+  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<OperationResult>;
 }
 
 const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete }) => {
@@ -75,8 +75,8 @@ const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete }) 
             parsedData.date = new Date(parsedData.date).toISOString().split('T')[0];
           }
           reset(parsedData);
-        } catch (e: any) { // Explicitly type 'e' as 'any'
-          console.error("Failed to parse saved maintenance form data", e);
+        } catch (e: unknown) {
+          console.error("Failed to parse saved maintenance form data", e instanceof Error ? e.message : String(e));
           localStorage.removeItem(LOCAL_STORAGE_KEYS.MAINTENANCE_FORM_DATA);
         }
       }
@@ -152,8 +152,8 @@ const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete }) 
 
       setShowModal(false);
       resetFormAndClearStorage();
-    } catch (error: any) {
-      updateToast(loadingToastId, error.message || 'Erreur lors de l\'opération.', 'error');
+    } catch (error: unknown) {
+      updateToast(loadingToastId, (error instanceof Error ? error.message : String(error)) || 'Erreur lors de l\'opération.', 'error');
     }
   };
 

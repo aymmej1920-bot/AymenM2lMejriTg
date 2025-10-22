@@ -5,10 +5,10 @@ import { showError } from '../utils/toast';
 import { Resource } from '../types';
 
 interface UseSupabaseDataOptions {
-  enabled?: boolean; // Whether the query should run
-  filters?: (query: any) => any; // Function to apply additional filters to the Supabase query
-  skipUserIdFilter?: boolean; // New option to skip user_id filter
-  manualFetch?: boolean; // New option to prevent automatic fetching on mount/session change
+  enabled?: boolean;
+  filters?: (query: any) => any;
+  skipUserIdFilter?: boolean;
+  manualFetch?: boolean;
 }
 
 export const useSupabaseData = <T>(
@@ -23,7 +23,7 @@ export const useSupabaseData = <T>(
   const { enabled = true, filters, skipUserIdFilter = false, manualFetch = false } = options || {};
 
   const fetchData = useCallback(async () => {
-    if (!session?.user && !skipUserIdFilter) { // If not authenticated and not skipping user_id filter
+    if (!session?.user && !skipUserIdFilter) {
       setData([]);
       setIsLoading(false);
       return;
@@ -40,14 +40,12 @@ export const useSupabaseData = <T>(
     try {
       let query = supabase.from(tableName).select('*');
 
-      // Apply user_id filter by default, unless skipUserIdFilter is true AND user is admin/direction
       const shouldSkipUserIdFilter = skipUserIdFilter && (currentUser?.role === 'admin' || currentUser?.role === 'direction');
       
       if (!shouldSkipUserIdFilter) {
-        query = query.eq('user_id', session!.user.id); // session.user is guaranteed if !shouldSkipUserIdFilter
+        query = query.eq('user_id', session!.user.id);
       }
 
-      // Apply additional filters if provided
       if (filters) {
         query = filters(query);
       }
@@ -57,8 +55,8 @@ export const useSupabaseData = <T>(
       if (fetchError) throw fetchError;
 
       setData(fetchedData as T[]);
-    } catch (err: any) {
-      console.error(`Error fetching data from ${tableName}:`, err.message);
+    } catch (err: unknown) {
+      console.error(`Error fetching data from ${tableName}:`, err instanceof Error ? err.message : String(err));
       setError(`Erreur lors du chargement des données de ${tableName}.`);
       showError(`Erreur lors du chargement des données de ${tableName}.`);
       setData([]);

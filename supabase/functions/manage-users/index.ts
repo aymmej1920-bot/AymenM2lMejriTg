@@ -1,6 +1,5 @@
-// @ts-nocheck
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient, User } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { createClient, User, AuthError, PostgrestError } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,7 +7,6 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
 };
 
-// Define interfaces for profile data
 interface DbProfile {
   id: string;
   first_name: string | null;
@@ -37,7 +35,7 @@ serve(async (req: Request) => {
   }
 
   const token = authHeader.replace('Bearer ', '');
-  const { data: { user: authUser }, error: userError } = await supabaseAdmin.auth.getUser(token);
+  const { data: { user: authUser }, error: userError }: { data: { user: User | null }, error: AuthError | null } = await supabaseAdmin.auth.getUser(token);
 
   if (userError || !authUser) {
     console.error('JWT verification failed:', userError?.message);
@@ -47,8 +45,7 @@ serve(async (req: Request) => {
     });
   }
 
-  // --- Start new authorization logic using permissions table ---
-  const { data: userProfile, error: userProfileError } = await supabaseAdmin
+  const { data: userProfile, error: userProfileError }: { data: DbProfile | null, error: PostgrestError | null } = await supabaseAdmin
     .from('profiles')
     .select('role')
     .eq('id', authUser.id)
@@ -64,17 +61,15 @@ serve(async (req: Request) => {
 
   const userRole = userProfile.role;
 
-  // Admins always have full access
   if (userRole === 'admin') {
-    // Proceed, admins are implicitly allowed all actions
+    // Admins are implicitly allowed all actions
   } else {
-    // For non-admins, check the permissions table for 'users:view'
-    const { data: permissionsData, error: permissionsError } = await supabaseAdmin
+    const { data: permissionsData, error: permissionsError }: { data: { allowed: boolean } | null, error: PostgrestError | null } = await supabaseAdmin
       .from('permissions')
       .select('allowed')
       .eq('role', userRole)
-      .eq('resource', 'users') // Specific resource for this function
-      .eq('action', 'view') // Specific action for this function
+      .eq('resource', 'users')
+      .eq('action', 'view')
       .single();
 
     if (permissionsError || !permissionsData?.allowed) {
@@ -85,19 +80,18 @@ serve(async (req: Request) => {
       });
     }
   }
-  // --- End new authorization logic ---
 
   try {
     if (req.method === 'GET') {
-      const { data: authUsersData, error: authUsersError } = await supabaseAdmin.auth.admin.listUsers();
+      const { data: authUsersData, error: authUsersError }: { data: { users: User[] }, error: AuthError | null } = await supabaseAdmin.auth.admin.listUsers();
       if (authUsersError) throw authUsersError;
       const allAuthUsers = authUsersData.users;
 
-      const { data: profilesData, error: profilesError } = await supabaseAdmin
+      const { data: profilesData, error: profilesError }: { data: DbProfile[] | null, error: PostgrestError | null } = await supabaseAdmin
         .from('profiles')
         .select('id, first_name, last_name, role, updated_at');
       if (profilesError) throw profilesError;
-      const allProfiles = profilesData;
+      const allProfiles = profilesData || [];
 
       const profilesMap = new Map<string, DbProfile>();
       allProfiles.forEach((p: DbProfile) => profilesMap.set(p.id, p));
@@ -131,7 +125,7 @@ serve(async (req: Request) => {
         });
       }
 
-      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+      const { error: deleteError }: { error: AuthError | null } = await supabaseAdmin.auth.admin.deleteUser(userId);
       if (deleteError) {
         console.error('Error from supabaseAdmin.auth.admin.deleteUser:', deleteError.message);
         throw deleteError;
@@ -150,9 +144,9 @@ serve(async (req: Request) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
-  } catch (error: any) {
-    console.error('Error in manage-users edge function (catch block):', error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
+  } catch (error: unknown) {
+    console.error('Error in manage-users edge function (catch block):', error instanceof Error ? error.message : String(error));
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'An unknown error occurred' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

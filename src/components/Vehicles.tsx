@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Vehicle, DataTableColumn, VehicleImportData, Resource, Action, OperationResult, DbImportResult } from '../types';
-import { showSuccess, showLoading, updateToast } from '../utils/toast'; // Removed showError, dismissToast
+import { showSuccess, showLoading, updateToast, showError } from '../utils/toast';
 import { formatDate } from '../utils/date';
 import {
   Dialog,
@@ -18,11 +18,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import FormField from './forms/FormField';
 import { Button } from './ui/button';
 import { usePermissions } from '../hooks/usePermissions';
-import XLSXImportDialog from './XLSXImportDialog'; // Import the new component
-import { Upload, Download } from 'lucide-react'; // Import Upload and Download icons
-import { exportTemplateToXLSX } from '../utils/templateExport'; // Import the new utility
-import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
-import { useFleetData } from '../components/FleetDataProvider'; // Import useFleetData
+import XLSXImportDialog from './XLSXImportDialog';
+import { Upload, Download } from 'lucide-react';
+import { exportTemplateToXLSX } from '../utils/templateExport';
+import { LOCAL_STORAGE_KEYS } from '../utils/constants';
+import { useFleetData } from '../components/FleetDataProvider';
 
 type VehicleFormData = z.infer<typeof vehicleSchema>;
 
@@ -35,13 +35,12 @@ interface VehiclesProps {
 const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
   const { canAccess } = usePermissions();
 
-  // Consume data from FleetContext
   const { fleetData, isLoadingFleet } = useFleetData();
   const vehicles = fleetData.vehicles;
 
   const [showModal, setShowModal] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
-  const [showImportDialog, setShowImportDialog] = useState(false); // State for import dialog
+  const [showImportDialog, setShowImportDialog] = useState(false);
 
   const methods = useForm<VehicleFormData>({
     resolver: zodResolver(vehicleSchema),
@@ -56,9 +55,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
   });
 
   const { handleSubmit, reset, watch } = methods;
-  // const formValues = watch(); // Watch all form fields // Removed unused variable
 
-  // Function to reset form and clear saved data
   const resetFormAndClearStorage = useCallback(() => {
     reset({
       plate: '',
@@ -71,29 +68,26 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
     localStorage.removeItem(LOCAL_STORAGE_KEYS.VEHICLE_FORM_DATA);
   }, [reset]);
 
-  // Effect to load saved form data when modal opens for a new vehicle
   useEffect(() => {
-    if (showModal && !editingVehicle) { // Only for new vehicle forms
+    if (showModal && !editingVehicle) {
       const savedFormData = localStorage.getItem(LOCAL_STORAGE_KEYS.VEHICLE_FORM_DATA);
       if (savedFormData) {
         try {
           const parsedData = JSON.parse(savedFormData);
-          // Ensure date format is correct for input type="date"
           if (parsedData.last_service_date) {
             parsedData.last_service_date = new Date(parsedData.last_service_date).toISOString().split('T')[0];
           }
           reset(parsedData);
-        } catch (e) {
-          console.error("Failed to parse saved vehicle form data", e);
+        } catch (e: unknown) {
+          console.error("Failed to parse saved vehicle form data", e instanceof Error ? e.message : String(e));
           localStorage.removeItem(LOCAL_STORAGE_KEYS.VEHICLE_FORM_DATA);
         }
       }
     }
   }, [showModal, editingVehicle, reset]);
 
-  // Effect to save form data to localStorage whenever it changes (for new vehicle forms)
   useEffect(() => {
-    if (showModal && !editingVehicle) { // Only save for new vehicle forms
+    if (showModal && !editingVehicle) {
       const subscription = watch((value) => {
         localStorage.setItem(LOCAL_STORAGE_KEYS.VEHICLE_FORM_DATA, JSON.stringify(value));
       });
@@ -101,18 +95,17 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
     }
   }, [showModal, editingVehicle, watch]);
 
-  // Reset form when editingVehicle changes (for edit mode) or when modal closes (for new mode)
   React.useEffect(() => {
     if (editingVehicle) {
       reset(editingVehicle);
     } else {
-      resetFormAndClearStorage(); // Use the new reset function
+      resetFormAndClearStorage();
     }
   }, [editingVehicle, resetFormAndClearStorage]);
 
   const handleAddVehicle = () => {
     setEditingVehicle(null);
-    resetFormAndClearStorage(); // Clear any previous unsaved data
+    resetFormAndClearStorage();
     setShowModal(true);
   };
 
@@ -138,14 +131,14 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
       }
       setShowModal(false);
       resetFormAndClearStorage();
-    } catch (error: any) {
-      updateToast(loadingToastId, error.message || 'Erreur lors de l\'opération.', 'error');
+    } catch (error: unknown) {
+      updateToast(loadingToastId, (error instanceof Error ? error.message : String(error)) || 'Erreur lors de l\'opération.', 'error');
     }
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
-    resetFormAndClearStorage(); // Clear saved data on modal close
+    resetFormAndClearStorage();
   };
 
   const handleImportVehicles = async (importedData: VehicleImportData[]): Promise<DbImportResult[]> => {
@@ -233,7 +226,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
 
   const canEditForm = canAccess('vehicles', 'edit');
   const canAddForm = canAccess('vehicles', 'add');
-  const canImport = canAccess('vehicles', 'add'); // Assuming import is an 'add' action
+  const canImport = canAccess('vehicles', 'add');
 
   const renderCustomHeaderButtons = () => (
     <>
@@ -280,11 +273,10 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
         exportFileName="vehicules"
         isLoading={isLoadingFleet}
         resourceType="vehicles"
-        renderCustomHeaderButtons={renderCustomHeaderButtons} // Pass the custom buttons
+        renderCustomHeaderButtons={renderCustomHeaderButtons}
       />
 
-      {/* Modal for Add/Edit Vehicle */}
-      <Dialog open={showModal} onOpenChange={handleCloseModal}> {/* Use handleCloseModal here */}
+      <Dialog open={showModal} onOpenChange={handleCloseModal}>
         <DialogContent className="sm:max-w-[425px] glass animate-scale-in">
           <DialogHeader>
             <DialogTitle>{editingVehicle ? 'Modifier un Véhicule' : 'Ajouter un Véhicule'}</DialogTitle>
@@ -310,7 +302,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
               <FormField name="last_service_date" label="Date dernière vidange" type="date" disabled={(!canEditForm && !!editingVehicle) || (!canAddForm && !editingVehicle)} />
               <FormField name="last_service_mileage" label="Kilométrage dernière vidange" type="number" min={0} disabled={(!canEditForm && !!editingVehicle) || (!canAddForm && !editingVehicle)} />
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={handleCloseModal} className="hover-lift"> {/* Updated onClick */}
+                <Button type="button" variant="outline" onClick={handleCloseModal} className="hover-lift">
                   Annuler
                 </Button>
                 {(canAddForm && !editingVehicle) || (canEditForm && editingVehicle) ? (
@@ -324,7 +316,6 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
         </DialogContent>
       </Dialog>
 
-      {/* XLSX Import Dialog for Vehicles */}
       <XLSXImportDialog<typeof vehicleImportSchema>
         open={showImportDialog}
         onOpenChange={setShowImportDialog}
@@ -333,7 +324,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
         schema={vehicleImportSchema}
         columnMapping={vehicleColumnMapping}
         onImport={handleImportVehicles}
-        isLoading={false} // Adjust based on actual import loading state
+        isLoading={false}
       />
     </>
   );

@@ -27,8 +27,8 @@ export const PermissionsProvider: React.FC<{ children: ReactNode }> = ({ childre
 
       if (error) throw error;
       setPermissions(data as Permission[]);
-    } catch (error: any) {
-      console.error('Error fetching permissions:', error.message);
+    } catch (error: unknown) {
+      console.error('Error fetching permissions:', error instanceof Error ? error.message : String(error));
       showError('Erreur lors du chargement des permissions.');
     } finally {
       setIsLoadingPermissions(false);
@@ -84,8 +84,8 @@ export const PermissionsProvider: React.FC<{ children: ReactNode }> = ({ childre
         }
       });
       showSuccess('Permission mise à jour avec succès !');
-    } catch (error: any) {
-      console.error('Error updating permission:', error.message);
+    } catch (error: unknown) {
+      console.error('Error updating permission:', error instanceof Error ? error.message : String(error));
       showError('Erreur lors de la mise à jour de la permission.');
     }
   }, [currentUser]);

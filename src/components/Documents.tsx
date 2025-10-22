@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Calendar, AlertTriangle, Search } from 'lucide-react'; // Ajout de Search pour le filtre par défaut
-import { Document, DataTableColumn, Resource, Action, OperationResult } from '../types'; // Added OperationResult
-import { showLoading, updateToast } from '../utils/toast'; // 'showSuccess' removed
-import { formatDate, getDaysUntilExpiration } from '../utils/date'; // Import from utils/date
+import { Calendar, AlertTriangle, Search } from 'lucide-react';
+import { Document, DataTableColumn, Resource, Action, OperationResult } from '../types';
+import { showLoading, updateToast } from '../utils/toast';
+import { formatDate, getDaysUntilExpiration } from '../utils/date';
 import { Button } from './ui/button';
-import { useForm, FormProvider } from 'react-hook-form'; // Import FormProvider
+import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { documentSchema } from '../types/formSchemas';
 import { z } from 'zod';
@@ -16,24 +16,23 @@ import {
   DialogTitle,
   DialogDescription,
 } from './ui/dialog';
-import DataTable from './DataTable'; // Import the new DataTable component
-import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
-import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
-import FormField from './forms/FormField'; // Import FormField
-import { useFleetData } from '../components/FleetDataProvider'; // Import useFleetData
+import DataTable from './DataTable';
+import { usePermissions } from '../hooks/usePermissions';
+import { LOCAL_STORAGE_KEYS } from '../utils/constants';
+import FormField from './forms/FormField';
+import { useFleetData } from '../components/FleetDataProvider';
 
 type DocumentFormData = z.infer<typeof documentSchema>;
 
 interface DocumentsProps {
-  onAdd: (tableName: Resource, document: Omit<Document, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<OperationResult>; // Changed to OperationResult
-  onUpdate: (tableName: Resource, document: Document, action: Action) => Promise<OperationResult>; // Changed to OperationResult
-  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<OperationResult>; // Changed to OperationResult
+  onAdd: (tableName: Resource, document: Omit<Document, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<OperationResult>;
+  onUpdate: (tableName: Resource, document: Document, action: Action) => Promise<OperationResult>;
+  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<OperationResult>;
 }
 
 const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
-  const { canAccess } = usePermissions(); // Use usePermissions hook
+  const { canAccess } = usePermissions();
 
-  // Consume data from FleetContext
   const { fleetData, isLoadingFleet } = useFleetData();
   const documents = fleetData.documents;
   const vehicles = fleetData.vehicles;
@@ -41,7 +40,7 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
 
-  const methods = useForm<DocumentFormData>({ // Use methods from useForm
+  const methods = useForm<DocumentFormData>({
     resolver: zodResolver(documentSchema),
     defaultValues: {
       vehicle_id: '',
@@ -51,9 +50,8 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
     }
   });
 
-  const { handleSubmit, reset, watch } = methods; // Removed errors from destructuring
+  const { handleSubmit, reset, watch } = methods;
 
-  // Function to reset form and clear saved data
   const resetFormAndClearStorage = useCallback(() => {
     reset({
       vehicle_id: '',
@@ -64,9 +62,8 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
     localStorage.removeItem(LOCAL_STORAGE_KEYS.DOCUMENT_FORM_DATA);
   }, [reset]);
 
-  // Effect to load saved form data when modal opens for a new document
   useEffect(() => {
-    if (showModal && !editingDocument) { // Only for new document forms
+    if (showModal && !editingDocument) {
       const savedFormData = localStorage.getItem(LOCAL_STORAGE_KEYS.DOCUMENT_FORM_DATA);
       if (savedFormData) {
         try {
@@ -75,17 +72,16 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
             parsedData.expiration = new Date(parsedData.expiration).toISOString().split('T')[0];
           }
           reset(parsedData);
-        } catch (e) {
-          console.error("Failed to parse saved document form data", e);
+        } catch (e: unknown) {
+          console.error("Failed to parse saved document form data", e instanceof Error ? e.message : String(e));
           localStorage.removeItem(LOCAL_STORAGE_KEYS.DOCUMENT_FORM_DATA);
         }
       }
     }
   }, [showModal, editingDocument, reset]);
 
-  // Effect to save form data to localStorage whenever it changes (for new document forms)
   useEffect(() => {
-    if (showModal && !editingDocument) { // Only save for new document forms
+    if (showModal && !editingDocument) {
       const subscription = watch((value) => {
         localStorage.setItem(LOCAL_STORAGE_KEYS.DOCUMENT_FORM_DATA, JSON.stringify(value));
       });
@@ -93,16 +89,14 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
     }
   }, [showModal, editingDocument, watch]);
 
-  // Reset form when editingDocument changes (for edit mode) or when modal closes (for new mode)
   React.useEffect(() => {
     if (editingDocument) {
       reset(editingDocument);
     } else {
-      resetFormAndClearStorage(); // Use the new reset function
+      resetFormAndClearStorage();
     }
   }, [editingDocument, resetFormAndClearStorage]);
 
-  // State for custom filters
   const [selectedVehicle, setSelectedVehicle] = useState<string>('');
   const [selectedType, setSelectedType] = useState<string>('');
   const [startDate, setStartDate] = useState<string>('');
@@ -110,7 +104,7 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
 
   const handleAddDocument = () => {
     setEditingDocument(null);
-    resetFormAndClearStorage(); // Clear any previous unsaved data
+    resetFormAndClearStorage();
     setShowModal(true);
   };
 
@@ -136,14 +130,14 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
       }
       setShowModal(false);
       resetFormAndClearStorage();
-    } catch (error: any) {
-      updateToast(loadingToastId, error.message || 'Erreur lors de l\'opération.', 'error');
+    } catch (error: unknown) {
+      updateToast(loadingToastId, (error instanceof Error ? error.message : String(error)) || 'Erreur lors de l\'opération.', 'error');
     }
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
-    resetFormAndClearStorage(); // Clear saved data on modal close
+    resetFormAndClearStorage();
   };
 
   const getDocumentStatusBadge = (daysLeft: number) => {
@@ -190,7 +184,7 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
     {
       key: 'days_left',
       label: 'Jours Restants',
-      sortable: false, // Derived value, sorting might be complex
+      sortable: false,
       defaultVisible: true,
       render: (item) => {
         const daysLeft = getDaysUntilExpiration(item.expiration);
@@ -205,7 +199,7 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
     {
       key: 'status_badge',
       label: 'Statut',
-      sortable: false, // Derived value
+      sortable: false,
       defaultVisible: true,
       render: (item) => {
         const daysLeft = getDaysUntilExpiration(item.expiration);
@@ -255,7 +249,7 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
           <select
             value={selectedVehicle}
             onChange={(e) => setSelectedVehicle(e.target.value)}
-            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Tous les véhicules</option>
             {vehicles.map(vehicle => (
@@ -269,7 +263,7 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
           <select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value)}
-            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Tous les types</option>
             {uniqueTypes.map(type => (
@@ -343,10 +337,9 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
         renderFilters={renderFilters}
         renderAlerts={renderAlerts}
         customFilter={customFilter}
-        resourceType="documents" // Pass resource type
+        resourceType="documents"
       />
 
-      {/* Modal */}
       <Dialog open={showModal} onOpenChange={handleCloseModal}>
         <DialogContent className="sm:max-w-[425px] glass animate-scale-in">
           <DialogHeader>
@@ -355,7 +348,7 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
               {editingDocument ? 'Modifiez les détails du document.' : 'Ajoutez un nouveau document.'}
             </DialogDescription>
           </DialogHeader>
-          <FormProvider {...methods}> {/* Wrap the form with FormProvider */}
+          <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
               <FormField
                 name="vehicle_id"

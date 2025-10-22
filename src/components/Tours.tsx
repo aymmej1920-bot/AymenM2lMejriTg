@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Calendar } from 'lucide-react'; // Seul Calendar est utilisé dans le formulaire
-import { Tour, DataTableColumn, Resource, Action, OperationResult } from '../types'; // Added OperationResult
-import { showLoading, updateToast } from '../utils/toast'; // 'showSuccess' removed
+import { Calendar } from 'lucide-react';
+import { Tour, DataTableColumn, Resource, Action, OperationResult } from '../types';
+import { showLoading, updateToast } from '../utils/toast';
 import { formatDate } from '../utils/date';
 import { Button } from './ui/button';
-import { useForm, FormProvider } from 'react-hook-form'; // Import FormProvider
+import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { tourSchema } from '../types/formSchemas';
 import { z } from 'zod';
@@ -16,24 +16,23 @@ import {
   DialogTitle,
   DialogDescription,
 } from './ui/dialog';
-import DataTable from './DataTable'; // Import the new DataTable component
-import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
-import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
-import FormField from './forms/FormField'; // Import FormField
-import { useFleetData } from '../components/FleetDataProvider'; // Import useFleetData
+import DataTable from './DataTable';
+import { usePermissions } from '../hooks/usePermissions';
+import { LOCAL_STORAGE_KEYS } from '../utils/constants';
+import FormField from './forms/FormField';
+import { useFleetData } from '../components/FleetDataProvider';
 
 type TourFormData = z.infer<typeof tourSchema>;
 
 interface ToursProps {
-  onAdd: (tableName: Resource, tour: Omit<Tour, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<OperationResult>; // Changed to OperationResult
-  onUpdate: (tableName: Resource, tour: Tour, action: Action) => Promise<OperationResult>; // Changed to OperationResult
-  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<OperationResult>; // Changed to OperationResult
+  onAdd: (tableName: Resource, tour: Omit<Tour, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<OperationResult>;
+  onUpdate: (tableName: Resource, tour: Tour, action: Action) => Promise<OperationResult>;
+  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<OperationResult>;
 }
 
 const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
-  const { canAccess } = usePermissions(); // Use usePermissions hook
+  const { canAccess } = usePermissions();
 
-  // Consume data from FleetContext
   const { fleetData, isLoadingFleet } = useFleetData();
   const tours = fleetData.tours;
   const vehicles = fleetData.vehicles;
@@ -42,7 +41,7 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingTour, setEditingTour] = useState<Tour | null>(null);
 
-  const methods = useForm<TourFormData>({ // Use methods from useForm
+  const methods = useForm<TourFormData>({
     resolver: zodResolver(tourSchema),
     defaultValues: {
       date: new Date().toISOString().split('T')[0],
@@ -57,13 +56,12 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
     }
   });
 
-  const { handleSubmit, watch, reset, setValue, formState: { errors = {} } } = methods; // Destructure from methods
+  const { handleSubmit, watch, reset, setValue, formState: { errors = {} } } = methods;
 
   const status = watch('status');
   const kmStart = watch('km_start');
   const kmEnd = watch('km_end');
 
-  // Function to reset form and clear saved data
   const resetFormAndClearStorage = useCallback(() => {
     reset({
       date: new Date().toISOString().split('T')[0],
@@ -79,9 +77,8 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
     localStorage.removeItem(LOCAL_STORAGE_KEYS.TOUR_FORM_DATA);
   }, [reset]);
 
-  // Effect to load saved form data when modal opens for a new tour
   useEffect(() => {
-    if (showModal && !editingTour) { // Only for new tour forms
+    if (showModal && !editingTour) {
       const savedFormData = localStorage.getItem(LOCAL_STORAGE_KEYS.TOUR_FORM_DATA);
       if (savedFormData) {
         try {
@@ -90,17 +87,16 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
             parsedData.date = new Date(parsedData.date).toISOString().split('T')[0];
           }
           reset(parsedData);
-        } catch (e) {
-          console.error("Failed to parse saved tour form data", e);
+        } catch (e: unknown) {
+          console.error("Failed to parse saved tour form data", e instanceof Error ? e.message : String(e));
           localStorage.removeItem(LOCAL_STORAGE_KEYS.TOUR_FORM_DATA);
         }
       }
     }
   }, [showModal, editingTour, reset]);
 
-  // Effect to save form data to localStorage whenever it changes (for new tour forms)
   useEffect(() => {
-    if (showModal && !editingTour) { // Only save for new tour forms
+    if (showModal && !editingTour) {
       const subscription = watch((value) => {
         localStorage.setItem(LOCAL_STORAGE_KEYS.TOUR_FORM_DATA, JSON.stringify(value));
       });
@@ -108,7 +104,6 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
     }
   }, [showModal, editingTour, watch]);
 
-  // Reset form when editingTour changes (for edit mode) or when modal closes (for new mode)
   React.useEffect(() => {
     if (editingTour) {
       reset({
@@ -120,21 +115,18 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
         distance: editingTour.distance ?? null,
       });
     } else {
-      resetFormAndClearStorage(); // Use the new reset function
+      resetFormAndClearStorage();
     }
   }, [editingTour, resetFormAndClearStorage]);
 
-  // Effect to calculate distance automatically
   useEffect(() => {
-    // Use != null to check for both null and undefined
     if (status === 'Terminé' && kmStart != null && kmEnd != null && kmEnd >= kmStart) {
       setValue('distance', kmEnd - kmStart);
     } else if (status !== 'Terminé') {
-      setValue('distance', null); // Clear distance if not 'Terminé'
+      setValue('distance', null);
     }
   }, [status, kmStart, kmEnd, setValue]);
 
-  // State for custom filters
   const [selectedVehicle, setSelectedVehicle] = useState<string>('');
   const [selectedDriver, setSelectedDriver] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
@@ -143,7 +135,7 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
 
   const handleAddTour = () => {
     setEditingTour(null);
-    resetFormAndClearStorage(); // Clear any previous unsaved data
+    resetFormAndClearStorage();
     setShowModal(true);
   };
 
@@ -169,14 +161,14 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
       }
       setShowModal(false);
       resetFormAndClearStorage();
-    } catch (error: any) {
-      updateToast(loadingToastId, error.message || 'Erreur lors de l\'opération.', 'error');
+    } catch (error: unknown) {
+      updateToast(loadingToastId, (error instanceof Error ? error.message : String(error)) || 'Erreur lors de l\'opération.', 'error');
     }
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
-    resetFormAndClearStorage(); // Clear saved data on modal close
+    resetFormAndClearStorage();
   };
 
   const getStatusBadge = (status: string) => {
@@ -222,7 +214,7 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
     { key: 'km_end', label: 'Km Fin', sortable: true, defaultVisible: true, render: (item) => item.km_end != null ? item.km_end.toLocaleString() : '-' },
     { key: 'distance', label: 'Distance (km)', sortable: true, defaultVisible: true, render: (item) => item.distance != null ? `${item.distance.toLocaleString()} km` : '-' },
     { key: 'consumption_per_100km', label: 'L/100km', sortable: false, defaultVisible: true, render: (item) => calculateConsumption(item) },
-  ], [vehicles, drivers]); // Dependencies for memoization
+  ], [vehicles, drivers]);
 
   const renderFilters = useCallback((searchTerm: string, setSearchTerm: (term: string) => void) => {
     const uniqueStatuses = Array.from(new Set(tours.map(t => t.status)));
@@ -243,7 +235,7 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
             onChange={(e) => {
               setSelectedVehicle(e.target.value);
             }}
-            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Tous les véhicules</option>
             {vehicles.map(vehicle => (
@@ -326,7 +318,7 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
     <>
       <DataTable
         title="Suivi des Tournées"
-        data={tours} // Pass all data, DataTable will handle filtering
+        data={tours}
         columns={columns}
         onAdd={canAddForm ? handleAddTour : undefined}
         onEdit={canEditForm ? handleEditTour : undefined}
@@ -344,11 +336,10 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
         exportFileName="tournees"
         isLoading={isLoadingFleet}
         renderFilters={renderFilters}
-        customFilter={filterData} // Pass the custom filter function
-        resourceType="tours" // Pass resource type
+        customFilter={filterData}
+        resourceType="tours"
       />
 
-      {/* Modal */}
       <Dialog open={showModal} onOpenChange={handleCloseModal}>
         <DialogContent className="sm:max-w-[600px] glass animate-scale-in">
           <DialogHeader>
@@ -357,7 +348,7 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
               {editingTour ? 'Modifiez les détails de la tournée.' : 'Ajoutez une nouvelle tournée.'}
             </DialogDescription>
           </DialogHeader>
-          <FormProvider {...methods}> {/* Wrap the form with FormProvider */}
+          <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <FormField
@@ -441,7 +432,6 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
                 type="number"
                 min={0}
                 disabled={((!canEditForm && !!editingTour) || (!canAddForm && !editingTour)) || (status === 'Terminé')}
-                // readOnly={status === 'Terminé'} // FormField handles readOnly via disabled prop
               />
 
               {errors.status && errors.status.message && (

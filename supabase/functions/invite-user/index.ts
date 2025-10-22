@@ -1,13 +1,11 @@
-// @ts-nocheck
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { createClient, User, AuthError, PostgrestError } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Define interfaces for profile data
 interface DbProfile {
   id: string;
   first_name: string | null;
@@ -17,7 +15,6 @@ interface DbProfile {
 }
 
 serve(async (req: Request) => {
-  // Handle CORS OPTIONS request
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -27,7 +24,6 @@ serve(async (req: Request) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   );
 
-  // Verify the user's JWT from the request header
   const authHeader = req.headers.get('Authorization');
   if (!authHeader) {
     return new Response(JSON.stringify({ error: 'Unauthorized: No Authorization header' }), {
@@ -37,7 +33,7 @@ serve(async (req: Request) => {
   }
 
   const token = authHeader.replace('Bearer ', '');
-  const { data: { user: authUser }, error: userError } = await supabaseAdmin.auth.getUser(token);
+  const { data: { user: authUser }, error: userError }: { data: { user: User | null }, error: AuthError | null } = await supabaseAdmin.auth.getUser(token);
 
   if (userError || !authUser) {
     console.error('JWT verification failed:', userError?.message);
@@ -47,8 +43,7 @@ serve(async (req: Request) => {
     });
   }
 
-  // --- Start new authorization logic using permissions table ---
-  const { data: userProfile, error: userProfileError } = await supabaseAdmin
+  const { data: userProfile, error: userProfileError }: { data: DbProfile | null, error: PostgrestError | null } = await supabaseAdmin
     .from('profiles')
     .select('role')
     .eq('id', authUser.id)
@@ -64,17 +59,15 @@ serve(async (req: Request) => {
 
   const userRole = userProfile.role;
 
-  // Admins always have full access
   if (userRole === 'admin') {
-    // Proceed, admins are implicitly allowed all actions
+    // Admins are implicitly allowed all actions
   } else {
-    // For non-admins, check the permissions table for 'users:add'
-    const { data: permissionsData, error: permissionsError } = await supabaseAdmin
+    const { data: permissionsData, error: permissionsError }: { data: { allowed: boolean } | null, error: PostgrestError | null } = await supabaseAdmin
       .from('permissions')
       .select('allowed')
       .eq('role', userRole)
-      .eq('resource', 'users') // Specific resource for this function
-      .eq('action', 'add') // Specific action for this function (inviting users)
+      .eq('resource', 'users')
+      .eq('action', 'add')
       .single();
 
     if (permissionsError || !permissionsData?.allowed) {
@@ -85,9 +78,7 @@ serve(async (req: Request) => {
       });
     }
   }
-  // --- End new authorization logic ---
 
-  // Parse the request body
   const { email, first_name, last_name } = await req.json();
 
   if (!email) {
@@ -98,11 +89,10 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Explicitly set the redirectTo URL to your deployed application's URL
     const redirectToUrl = `https://aymenm2lmejritg.vercel.app/login`; 
 
-    const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      data: { first_name, last_name }, // Pass first_name and last_name to user_metadata
+    const { data, error }: { data: { user: User | null }, error: AuthError | null } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+      data: { first_name, last_name },
       redirectTo: redirectToUrl,
     });
 
@@ -112,9 +102,9 @@ serve(async (req: Request) => {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-  } catch (error: any) {
-    console.error('Error inviting user:', error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
+  } catch (error: unknown) {
+    console.error('Error inviting user:', error instanceof Error ? error.message : String(error));
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'An unknown error occurred' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

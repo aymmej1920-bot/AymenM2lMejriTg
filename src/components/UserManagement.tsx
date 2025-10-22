@@ -19,13 +19,12 @@ import { inviteUserSchema, manualUserSchema } from '../types/formSchemas';
 import { z } from 'zod';
 import FormField from './forms/FormField';
 import { usePermissions } from '../hooks/usePermissions';
-import { UserRole } from '../types'; // Removed Resource
-import { useSession } from './SessionContextProvider'; // Import useSession
+import { UserRole } from '../types';
+import { useSession } from './SessionContextProvider';
 
 
 interface UserManagementProps {
   onUpdateUserRole: (userId: string, newRole: UserRole) => Promise<void>;
-  // registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void; // Removed
 }
 
 interface Profile {
@@ -38,12 +37,12 @@ interface Profile {
 }
 
 type InviteUserFormData = z.infer<typeof inviteUserSchema>;
-type ManualUserFormData = z.infer<typeof manualUserSchema>; // New type for manual user form
+type ManualUserFormData = z.infer<typeof manualUserSchema>;
 
-const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole }) => { // Removed registerRefetch from props
+const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole }) => {
   const { canAccess } = usePermissions();
-  const { currentUser } = useSession(); // Get current user for permission checks
-  void currentUser; // Explicitly mark as used
+  const { currentUser } = useSession();
+  void currentUser;
 
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,7 +55,6 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole }) => 
   const [showInviteUserModal, setShowInviteUserModal] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
 
-  // New states for manual user creation
   const [showManualAddUserModal, setShowManualAddUserModal] = useState(false);
   const [isCreatingManualUser, setIsCreatingManualUser] = useState(false);
 
@@ -75,7 +73,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole }) => 
     },
   });
 
-  const manualUserMethods = useForm<ManualUserFormData>({ // New form methods for manual user
+  const manualUserMethods = useForm<ManualUserFormData>({
     resolver: zodResolver(manualUserSchema),
     defaultValues: {
       email: '',
@@ -112,9 +110,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole }) => 
       }
 
       setUsers(result as Profile[]);
-    } catch (err: any) {
-      console.error('Error fetching users:', err.message);
-      setError('Erreur lors du chargement des utilisateurs: ' + err.message);
+    } catch (err: unknown) {
+      console.error('Error fetching users:', err instanceof Error ? err.message : String(err));
+      setError('Erreur lors du chargement des utilisateurs: ' + (err instanceof Error ? err.message : String(err)));
       showError('Erreur lors du chargement des utilisateurs.');
     } finally {
       setLoading(false);
@@ -124,20 +122,20 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole }) => 
   useEffect(() => {
     if (canAccess('users', 'view')) {
       fetchUsers();
-      // registerRefetch('users', fetchUsers); // Removed
     } else {
       setError('Vous n\'avez pas les permissions pour accéder à cette page.');
       setLoading(false);
     }
-  }, [canAccess]); // Removed registerRefetch from dependencies
+  }, [canAccess]);
 
   const filteredAndSortedUsers = useMemo(() => {
     let filtered = users.filter(user => {
+      const lowerCaseSearchTerm = searchTerm.toLowerCase();
       const matchesSearch =
-        (user.first_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (user.last_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.role.toLowerCase().includes(searchTerm.toLowerCase());
+        (user.first_name || '').toLowerCase().includes(lowerCaseSearchTerm) ||
+        (user.last_name || '').toLowerCase().includes(lowerCaseSearchTerm) ||
+        user.email.toLowerCase().includes(lowerCaseSearchTerm) ||
+        user.role.toLowerCase().includes(lowerCaseSearchTerm);
 
       const matchesRole = selectedRoleFilter ? user.role === selectedRoleFilter : true;
 
@@ -175,7 +173,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole }) => 
       showSuccess(`Rôle de ${editingUser.email} mis à jour en ${newRole}.`);
       setShowEditRoleModal(false);
       setEditingUser(null);
-      fetchUsers(); // Re-fetch users to update the list
+      fetchUsers();
     }
   };
 
@@ -215,10 +213,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole }) => 
       showSuccess('Utilisateur supprimé avec succès !');
       setUserToDelete(null);
       fetchUsers();
-    } catch (error: any) {
-      console.error('Error deleting user:', error.message);
+    } catch (error: unknown) {
+      console.error('Error deleting user:', error instanceof Error ? error.message : String(error));
       dismissToast(loadingToastId);
-      showError(`Erreur lors de la suppression de l'utilisateur : ${error.message}`);
+      showError(`Erreur lors de la suppression de l'utilisateur : ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
@@ -279,10 +277,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole }) => 
       setShowInviteUserModal(false);
       inviteMethods.reset();
       fetchUsers();
-    } catch (error: any) {
-      console.error('Error inviting user:', error.message);
+    } catch (error: unknown) {
+      console.error('Error inviting user:', error instanceof Error ? error.message : String(error));
       dismissToast(loadingToastId);
-      showError(`Erreur lors de l'invitation : ${error.message}`);
+      showError(`Erreur lors de l'invitation : ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsInviting(false);
     }
@@ -314,18 +312,18 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole }) => 
       showSuccess(`Utilisateur ${formData.email} créé avec succès !`);
       setShowManualAddUserModal(false);
       manualUserMethods.reset();
-      fetchUsers(); // Re-fetch users to update the list
-    } catch (error: any) {
-      console.error('Error creating user manually:', error.message);
+      fetchUsers();
+    } catch (error: unknown) {
+      console.error('Error creating user manually:', error instanceof Error ? error.message : String(error));
       dismissToast(loadingToastId);
-      showError(`Erreur lors de la création de l'utilisateur : ${error.message}`);
+      showError(`Erreur lors de la création de l'utilisateur : ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsCreatingManualUser(false);
     }
   };
 
   const canInvite = canAccess('users', 'add');
-  const canCreateManualUser = canAccess('users', 'add'); // Same permission for now
+  const canCreateManualUser = canAccess('users', 'add');
   const canEditRole = canAccess('users', 'edit');
   const canDeleteUser = canAccess('users', 'delete');
 
@@ -386,7 +384,6 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole }) => 
         </div>
       </div>
 
-      {/* Search and Filter Inputs */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -499,7 +496,6 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole }) => 
         </table>
       </div>
 
-      {/* Pagination Controls */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center space-x-2 mt-4">
           <Button
@@ -538,14 +534,13 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole }) => 
             }}
             className="ml-4 bg-white/20 border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm glass"
           >
-            {itemsPerPageOptions.map((option: number) => (
-              <option key={option} value={option}>{option} par page</option>
-            ))}
+            <option value={10}>10 par page</option>
+            <option value={25}>25 par page</option>
+            <option value={50}>50 par page</option>
           </select>
         </div>
       )}
 
-      {/* Edit Role Modal */}
       <Dialog open={showEditRoleModal} onOpenChange={setShowEditRoleModal}>
         <DialogContent className="sm:max-w-[425px] glass animate-scale-in">
           <DialogHeader>
@@ -589,7 +584,6 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole }) => 
         </DialogContent>
       </Dialog>
 
-      {/* Invite User Modal */}
       <Dialog open={showInviteUserModal} onOpenChange={setShowInviteUserModal}>
         <DialogContent className="sm:max-w-[425px] glass animate-scale-in">
           <DialogHeader>
@@ -627,7 +621,6 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole }) => 
         </DialogContent>
       </Dialog>
 
-      {/* Manual Add User Modal */}
       <Dialog open={showManualAddUserModal} onOpenChange={setShowManualAddUserModal}>
         <DialogContent className="sm:max-w-[425px] glass animate-scale-in">
           <DialogHeader>

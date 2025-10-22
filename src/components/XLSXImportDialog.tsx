@@ -11,10 +11,10 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Upload, CheckCircle, XCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import { readXLSXFile } from '../utils/excelUtils';
-import { showError, showLoading, updateToast } from '../utils/toast'; // Removed dismissToast
+import { showError, showLoading, updateToast } from '../utils/toast';
 import { z } from 'zod';
 import { cn } from '../utils/cn';
-import { DbImportResult } from '../types'; // Import DbImportResult
+import { DbImportResult } from '../types';
 
 interface RowValidationResult<T> {
   originalRow: any;
@@ -48,16 +48,15 @@ const XLSXImportDialog = <T extends z.ZodTypeAny>({
   const [parsedData, setParsedData] = useState<any[]>([]);
   const [validationResults, setValidationResults] = useState<RowValidationResult<z.infer<T>>[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [dbImportResults, setDbImportResults] = useState<DbImportResult[]>([]); // New state for DB import results
+  const [dbImportResults, setDbImportResults] = useState<DbImportResult[]>([]);
 
-  // Reset state when dialog opens or closes
   React.useEffect(() => {
     if (!open) {
       setFile(null);
       setParsedData([]);
       setValidationResults([]);
       setIsProcessing(false);
-      setDbImportResults([]); // Reset DB import results
+      setDbImportResults([]);
     }
   }, [open]);
 
@@ -66,7 +65,7 @@ const XLSXImportDialog = <T extends z.ZodTypeAny>({
       setFile(event.target.files[0]);
       setParsedData([]);
       setValidationResults([]);
-      setDbImportResults([]); // Clear previous DB import results on new file selection
+      setDbImportResults([]);
     }
   };
 
@@ -78,7 +77,7 @@ const XLSXImportDialog = <T extends z.ZodTypeAny>({
 
     setIsProcessing(true);
     const loadingToastId = showLoading('Lecture et validation du fichier...');
-    setDbImportResults([]); // Clear previous DB import results before new processing
+    setDbImportResults([]);
 
     try {
       const rawData = await readXLSXFile(file);
@@ -111,10 +110,10 @@ const XLSXImportDialog = <T extends z.ZodTypeAny>({
       });
       setValidationResults(results);
       updateToast(loadingToastId, 'Fichier traité et validé.', 'success');
-    } catch (error: any) {
-      console.error('Error processing file:', error);
-      showError(`Erreur lors du traitement du fichier: ${error.message}`);
-      updateToast(loadingToastId, `Erreur lors du traitement du fichier: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      console.error('Error processing file:', error instanceof Error ? error.message : String(error));
+      showError(`Erreur lors du traitement du fichier: ${error instanceof Error ? error.message : String(error)}`);
+      updateToast(loadingToastId, `Erreur lors du traitement du fichier: ${error instanceof Error ? error.message : String(error)}`, 'error');
     } finally {
       setIsProcessing(false);
     }
@@ -129,24 +128,23 @@ const XLSXImportDialog = <T extends z.ZodTypeAny>({
 
     const importToastId = showLoading(`Importation de ${validData.length} enregistrement(s)...`);
     try {
-      const results = await onImport(validData); // Call the prop function
-      setDbImportResults(results); // Store the results
+      const results = await onImport(validData);
+      setDbImportResults(results);
 
       const successfulCount = results.filter(r => r.success).length;
       const failedCount = results.filter(r => !r.success).length;
 
       if (failedCount === 0) {
         updateToast(importToastId, 'Importation terminée avec succès !', 'success');
-        onOpenChange(false); // Close dialog only on full success
+        onOpenChange(false);
       } else if (successfulCount === 0) {
         updateToast(importToastId, `Importation échouée : ${failedCount} enregistrement(s) n'ont pas pu être ajoutés.`, 'error');
       } else {
         updateToast(importToastId, `Importation terminée avec des erreurs : ${successfulCount} ajoutés, ${failedCount} échoués.`, 'error');
       }
-      // Do not close the dialog if there are failures, let the user see the detailed results
-    } catch (error: any) {
-      console.error('Error during import:', error);
-      updateToast(importToastId, `Erreur lors de l'importation: ${error.message}`, 'error');
+    } catch (error: unknown) {
+      console.error('Error during import:', error instanceof Error ? error.message : String(error));
+      updateToast(importToastId, `Erreur lors de l'importation: ${error instanceof Error ? error.message : String(error)}`, 'error');
     }
   };
 

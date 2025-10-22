@@ -24,12 +24,12 @@ export const readXLSXFile = (file: File, sheetName?: string): Promise<any[]> => 
 
         const json = XLSX.utils.sheet_to_json(worksheet);
         resolve(json);
-      } catch (error: any) {
-        reject(new Error(`Failed to read XLSX file: ${error.message}`));
+      } catch (error: unknown) {
+        reject(new Error(`Failed to read XLSX file: ${error instanceof Error ? error.message : String(error)}`));
       }
     };
 
-    reader.onerror = (error) => {
+    reader.onerror = (error: ProgressEvent<FileReader>) => {
       reject(new Error(`FileReader error: ${error.type}`));
     };
 

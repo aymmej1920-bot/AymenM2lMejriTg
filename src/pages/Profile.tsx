@@ -75,9 +75,9 @@ const Profile: React.FC = () => {
       dismissToast(loadingToastId);
       showSuccess('Avatar téléchargé avec succès !');
       return data.publicUrl;
-    } catch (error: any) {
+    } catch (error: unknown) {
       dismissToast(loadingToastId);
-      showError(`Erreur lors du téléchargement de l'avatar: ${error.message}`);
+      showError(`Erreur lors du téléchargement de l'avatar: ${error instanceof Error ? error.message : String(error)}`);
       return null;
     }
   }, []);
@@ -122,9 +122,9 @@ const Profile: React.FC = () => {
       dismissToast(loadingToastId);
       showSuccess('Profil mis à jour avec succès !');
       await refetchCurrentUser(); // Appel de la fonction de rafraîchissement
-    } catch (error: any) {
+    } catch (error: unknown) {
       dismissToast(loadingToastId);
-      showError(`Erreur lors de la mise à jour du profil: ${error.message}`);
+      showError(`Erreur lors de la mise à jour du profil: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsSubmitting(false);
     }

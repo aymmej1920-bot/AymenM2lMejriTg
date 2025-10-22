@@ -1,6 +1,5 @@
-// @ts-nocheck
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient, User } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { createClient, User, AuthError, PostgrestError } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,7 +7,6 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-// Define interfaces for profile data
 interface DbProfile {
   id: string;
   first_name: string | null;
@@ -37,7 +35,7 @@ serve(async (req: Request) => {
   }
 
   const token = authHeader.replace('Bearer ', '');
-  const { data: { user: authUser }, error: userError } = await supabaseAdmin.auth.getUser(token);
+  const { data: { user: authUser }, error: userError }: { data: { user: User | null }, error: AuthError | null } = await supabaseAdmin.auth.getUser(token);
 
   if (userError || !authUser) {
     console.error('JWT verification failed:', userError?.message);
@@ -47,8 +45,7 @@ serve(async (req: Request) => {
     });
   }
 
-  // --- Start new authorization logic using permissions table ---
-  const { data: userProfile, error: userProfileError } = await supabaseAdmin
+  const { data: userProfile, error: userProfileError }: { data: DbProfile | null, error: PostgrestError | null } = await supabaseAdmin
     .from('profiles')
     .select('role')
     .eq('id', authUser.id)
@@ -64,17 +61,15 @@ serve(async (req: Request) => {
 
   const userRole = userProfile.role;
 
-  // Admins always have full access
   if (userRole === 'admin') {
-    // Proceed, admins are implicitly allowed all actions
+    // Admins are implicitly allowed all actions
   } else {
-    // For non-admins, check the permissions table for 'users:add'
-    const { data: permissionsData, error: permissionsError } = await supabaseAdmin
+    const { data: permissionsData, error: permissionsError }: { data: { allowed: boolean } | null, error: PostgrestError | null } = await supabaseAdmin
       .from('permissions')
       .select('allowed')
       .eq('role', userRole)
-      .eq('resource', 'users') // Specific resource for this function
-      .eq('action', 'add') // Specific action for this function (creating users)
+      .eq('resource', 'users')
+      .eq('action', 'add')
       .single();
 
     if (permissionsError || !permissionsData?.allowed) {
@@ -85,9 +80,7 @@ serve(async (req: Request) => {
       });
     }
   }
-  // --- End new authorization logic ---
 
-  // Parse the request body
   const { email, password, first_name, last_name, role } = await req.json();
 
   if (!email || !password || !first_name || !last_name || !role) {
@@ -98,18 +91,16 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Create user in auth.users
-    const { data: newUserAuth, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
+    const { data: newUserAuth, error: createUserError }: { data: { user: User | null }, error: AuthError | null } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: true, // Automatically confirm email
-      user_metadata: { first_name, last_name }, // Pass metadata for profile trigger
+      email_confirm: true,
+      user_metadata: { first_name, last_name },
     });
 
     if (createUserError) throw createUserError;
 
-    // Update the profile with the specified role
-    const { error: updateProfileError } = await supabaseAdmin
+    const { error: updateProfileError }: { error: PostgrestError | null } = await supabaseAdmin
       .from('profiles')
       .update({ role, first_name, last_name })
       .eq('id', newUserAuth.user?.id);
@@ -120,9 +111,9 @@ serve(async (req: Request) => {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-  } catch (error: any) {
-    console.error('Error creating user manually:', error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
+  } catch (error: unknown) {
+    console.error('Error creating user manually:', error instanceof Error ? error.message : String(error));
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'An unknown error occurred' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

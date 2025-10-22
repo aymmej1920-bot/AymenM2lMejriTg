@@ -6,10 +6,10 @@ import { Button } from '../ui/button';
 import { DialogFooter } from '../ui/dialog';
 import FormField from '../forms/FormField';
 import { preDepartureChecklistSchema } from '../../types/formSchemas';
-import { PreDepartureChecklist, Resource, Action, OperationResult, Vehicle, Driver } from '../../types'; // Import OperationResult, Vehicle, Driver
+import { PreDepartureChecklist, Resource, Action, OperationResult, Vehicle, Driver } from '../../types';
 import { showSuccess, showError } from '../../utils/toast';
 import { LOCAL_STORAGE_KEYS } from '../../utils/constants';
-import { useFleetData } from '../../components/FleetDataProvider'; // Corrected import path for useFleetData
+import { useFleetData } from '../../components/FleetDataProvider';
 
 type PreDepartureChecklistFormData = z.infer<typeof preDepartureChecklistSchema>;
 
@@ -21,7 +21,6 @@ interface ChecklistFormProps {
 }
 
 const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, hasChecklistForMonth }) => {
-  // Consume data from FleetContext
   const { fleetData } = useFleetData();
   const vehicles = fleetData.vehicles;
   const drivers = fleetData.drivers;
@@ -79,8 +78,8 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
           parsedData.date = new Date(parsedData.date).toISOString().split('T')[0];
         }
         reset(parsedData);
-      } catch (e) {
-        console.error("Failed to parse saved checklist form data", e);
+      } catch (e: unknown) {
+        console.error("Failed to parse saved checklist form data", e instanceof Error ? e.message : String(e));
         localStorage.removeItem(LOCAL_STORAGE_KEYS.CHECKLIST_FORM_DATA);
       }
     }
@@ -132,9 +131,9 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
       } else {
         throw new Error(result.error || 'Erreur lors de l\'ajout de la checklist.');
       }
-    } catch (error: any) {
-      console.error("Erreur lors de l'ajout de la checklist:", error);
-      showError(`Erreur lors de l'ajout de la checklist: ${error.message || 'Une erreur inconnue est survenue.'}`);
+    } catch (error: unknown) {
+      console.error("Erreur lors de l'ajout de la checklist:", error instanceof Error ? error.message : String(error));
+      showError(`Erreur lors de l'ajout de la checklist: ${error instanceof Error ? error.message : 'Une erreur inconnue est survenue.'}`);
     }
   };
 
