@@ -119,10 +119,15 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicles, drivers, onAdd,
       issues_to_address: formData.issues_to_address === '' ? null : formData.issues_to_address,
     };
 
-    await onAdd('pre_departure_checklists', dataToSubmit, 'add');
-    showSuccess('Checklist ajoutée avec succès !');
-    onClose();
-    resetFormAndClearStorage();
+    try {
+      await onAdd('pre_departure_checklists', dataToSubmit, 'add');
+      showSuccess('Checklist ajoutée avec succès !');
+      onClose();
+      resetFormAndClearStorage();
+    } catch (error: any) {
+      console.error("Erreur lors de l'ajout de la checklist:", error);
+      showError(`Erreur lors de l'ajout de la checklist: ${error.message || 'Une erreur inconnue est survenue.'}`);
+    }
   };
 
   const renderBooleanRadio = (name: keyof PreDepartureChecklistFormData, label: string) => (
