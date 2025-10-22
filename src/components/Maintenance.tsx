@@ -18,6 +18,7 @@ import {
 } from './ui/dialog'; // Import shadcn/ui Dialog components
 import DataTable from './DataTable'; // Import the new DataTable component
 import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
+import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
 
 type MaintenanceEntryFormData = z.infer<typeof maintenanceEntrySchema>;
 
@@ -35,7 +36,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
   const [showModal, setShowModal] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
 
-  const { register, handleSubmit, reset, formState: { errors = {} } } = useForm<MaintenanceEntryFormData>({
+  const { register, handleSubmit, reset, watch, formState: { errors = {} } } = useForm<MaintenanceEntryFormData>({
     resolver: zodResolver(maintenanceEntrySchema),
     defaultValues: {
       vehicle_id: '',
@@ -46,7 +47,49 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
     }
   });
 
+  // Function to reset form and clear saved data
+  const resetFormAndClearStorage = useCallback(() => {
+    reset({
+      vehicle_id: '',
+      type: 'Vidange',
+      date: new Date().toISOString().split('T')[0],
+      mileage: 0,
+      cost: 0,
+    });
+    localStorage.removeItem(LOCAL_STORAGE_KEYS.MAINTENANCE_FORM_DATA);
+  }, [reset]);
+
+  // Effect to load saved form data when modal opens for a new maintenance entry
   useEffect(() => {
+    if (showModal && !selectedVehicleId) { // Only for new maintenance entry forms (not pre-filled from vehicle)
+      const savedFormData = localStorage.getItem(LOCAL_STORAGE_KEYS.MAINTENANCE_FORM_DATA);
+      if (savedFormData) {
+        try {
+          const parsedData = JSON.parse(savedFormData);
+          if (parsedData.date) {
+            parsedData.date = new Date(parsedData.date).toISOString().split('T')[0];
+          }
+          reset(parsedData);
+        } catch (e) {
+          console.error("Failed to parse saved maintenance form data", e);
+          localStorage.removeItem(LOCAL_STORAGE_KEYS.MAINTENANCE_FORM_DATA);
+        }
+      }
+    }
+  }, [showModal, selectedVehicleId, reset]);
+
+  // Effect to save form data to localStorage whenever it changes (for new maintenance entry forms)
+  useEffect(() => {
+    if (showModal && !selectedVehicleId) { // Only save for new maintenance entry forms
+      const subscription = watch((value) => {
+        localStorage.setItem(LOCAL_STORAGE_KEYS.MAINTENANCE_FORM_DATA, JSON.stringify(value));
+      });
+      return () => subscription.unsubscribe();
+    }
+  }, [showModal, selectedVehicleId, watch]);
+
+  // Reset form when selectedVehicleId changes (for pre-filling) or when modal closes (for new mode)
+  React.useEffect(() => {
     if (selectedVehicleId) {
       reset({
         vehicle_id: selectedVehicleId,
@@ -56,15 +99,9 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
         cost: 0,
       });
     } else {
-      reset({
-        vehicle_id: '',
-        type: 'Vidange',
-        date: new Date().toISOString().split('T')[0],
-        mileage: 0,
-        cost: 0,
-      });
+      resetFormAndClearStorage(); // Use the new reset function
     }
-  }, [selectedVehicleId, reset, data.vehicles]);
+  }, [selectedVehicleId, resetFormAndClearStorage, data.vehicles]);
 
   // State for filtering for Maintenance History
   const [selectedVehicleFilter, setSelectedVehicleFilter] = useState<string>('');
@@ -113,6 +150,12 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
     }
 
     setShowModal(false);
+    resetFormAndClearStorage(); // Clear saved data on successful submission
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    resetFormAndClearStorage(); // Clear saved data on modal close
   };
 
   const getMaintenanceStatus = (vehicle: Vehicle) => {
@@ -413,7 +456,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
       )}
 
       {/* Modal */}
-      <Dialog open={showModal} onOpenChange={setShowModal}>
+      <Dialog open={showModal} onOpenChange={handleCloseModal}>
         <DialogContent className="sm:max-w-[425px] glass animate-scale-in">
           <DialogHeader>
             <DialogTitle>Enregistrer une Maintenance</DialogTitle>
@@ -464,7 +507,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
                   className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
                   disabled={!canAddMaintenance}
                 />
-                <Calendar className="absolute right-3 w-5 h-5 text-gray-400 pointer-events-none" />
+                <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
               </div>
               {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
             </div>
@@ -495,7 +538,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ data, onAdd, onUpdate, onDele
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setShowModal(false)}
+                onClick={handleCloseModal}
                 className="hover-lift"
               >
                 Annuler

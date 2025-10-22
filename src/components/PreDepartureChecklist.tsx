@@ -18,6 +18,7 @@ import {
 } from './ui/dialog'; // Import shadcn/ui Dialog components
 import DataTable from './DataTable'; // Import the new DataTable component
 import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
+import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
 
 type PreDepartureChecklistFormData = z.infer<typeof preDepartureChecklistSchema>;
 
@@ -31,7 +32,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
 
   const [showModal, setShowModal] = useState(false);
 
-  const { register, handleSubmit, reset, formState: { errors = {} } } = useForm<PreDepartureChecklistFormData>({
+  const { register, handleSubmit, reset, watch, formState: { errors = {} } } = useForm<PreDepartureChecklistFormData>({
     resolver: zodResolver(preDepartureChecklistSchema),
     defaultValues: {
       vehicle_id: '',
@@ -54,7 +55,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
 
   const canAdd = canAccess('pre_departure_checklists', 'add'); // All authenticated users can add
 
-  useEffect(() => {
+  // Function to reset form and clear saved data
+  const resetFormAndClearStorage = useCallback(() => {
     reset({
       vehicle_id: '',
       driver_id: null,
@@ -72,7 +74,44 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
       observations: null,
       issues_to_address: null,
     });
+    localStorage.removeItem(LOCAL_STORAGE_KEYS.CHECKLIST_FORM_DATA);
+  }, [reset]);
+
+  // Effect to load saved form data when modal opens for a new checklist
+  useEffect(() => {
+    if (showModal) { // Always try to load for new checklist forms
+      const savedFormData = localStorage.getItem(LOCAL_STORAGE_KEYS.CHECKLIST_FORM_DATA);
+      if (savedFormData) {
+        try {
+          const parsedData = JSON.parse(savedFormData);
+          if (parsedData.date) {
+            parsedData.date = new Date(parsedData.date).toISOString().split('T')[0];
+          }
+          reset(parsedData);
+        } catch (e) {
+          console.error("Failed to parse saved checklist form data", e);
+          localStorage.removeItem(LOCAL_STORAGE_KEYS.CHECKLIST_FORM_DATA);
+        }
+      }
+    }
   }, [showModal, reset]);
+
+  // Effect to save form data to localStorage whenever it changes
+  useEffect(() => {
+    if (showModal) { // Always save when modal is open
+      const subscription = watch((value) => {
+        localStorage.setItem(LOCAL_STORAGE_KEYS.CHECKLIST_FORM_DATA, JSON.stringify(value));
+      });
+      return () => subscription.unsubscribe();
+    }
+  }, [showModal, watch]);
+
+  // Reset form when modal closes or on successful submission
+  React.useEffect(() => {
+    if (!showModal) {
+      resetFormAndClearStorage();
+    }
+  }, [showModal, resetFormAndClearStorage]);
 
   // State for filtering
   const [selectedVehicle, setSelectedVehicle] = useState<string>('');
@@ -117,7 +156,10 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
   };
 
   const onSubmit = (formData: PreDepartureChecklistFormData) => {
-    if (!canAdd) return;
+    if (!canAdd) {
+      showError('Vous n\'avez pas la permission d\'ajouter une checklist.');
+      return;
+    }
 
     if (Object.keys(errors).length > 0) {
       console.log('Form validation errors:', errors); // Log Zod validation errors
@@ -132,7 +174,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
     const submissionYear = checklistDate.getFullYear();
 
     if (hasChecklistForMonth(vehicle_id, submissionMonth, submissionYear)) {
-      showError('Une checklist pour ce véhicule a déjà été soumise ce mois-ci.');
+      showError('Une checklist pour ce véhicule a déjà été soumise ce mois-ci. Une seule checklist par véhicule par mois est autorisée.');
       return;
     }
 
@@ -147,6 +189,12 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
     onAdd(dataToSubmit);
     showSuccess('Checklist ajoutée avec succès !');
     setShowModal(false);
+    resetFormAndClearStorage(); // Clear saved data on successful submission
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    resetFormAndClearStorage(); // Clear saved data on modal close
   };
 
   const getStatusIcon = (status: boolean) => {
@@ -301,7 +349,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
       />
 
       {/* Modal */}
-      <Dialog open={showModal} onOpenChange={setShowModal}>
+      <Dialog open={showModal} onOpenChange={handleCloseModal}>
         <DialogContent className="sm:max-w-xl glass animate-scale-in">
           <DialogHeader>
             <DialogTitle>Nouvelle Checklist Avant Départ</DialogTitle>
@@ -662,7 +710,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setShowModal(false)}
+                onClick={handleCloseModal}
                 className="hover-lift"
               >
                 Annuler

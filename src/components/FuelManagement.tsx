@@ -18,6 +18,7 @@ import {
 } from './ui/dialog';
 import DataTable from './DataTable'; // Import the new DataTable component
 import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
+import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
 
 type FuelEntryFormData = z.infer<typeof fuelEntrySchema>;
 
@@ -34,7 +35,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
   const [showModal, setShowModal] = useState(false);
   const [editingFuel, setEditingFuel] = useState<FuelEntry | null>(null);
 
-  const { register, handleSubmit, reset, formState: { errors = {} } } = useForm<FuelEntryFormData>({
+  const { register, handleSubmit, reset, watch, formState: { errors = {} } } = useForm<FuelEntryFormData>({
     resolver: zodResolver(fuelEntrySchema),
     defaultValues: {
       date: new Date().toISOString().split('T')[0],
@@ -45,19 +46,55 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
     }
   });
 
+  // Function to reset form and clear saved data
+  const resetFormAndClearStorage = useCallback(() => {
+    reset({
+      date: new Date().toISOString().split('T')[0],
+      vehicle_id: '',
+      liters: 0,
+      price_per_liter: 0,
+      mileage: 0,
+    });
+    localStorage.removeItem(LOCAL_STORAGE_KEYS.FUEL_FORM_DATA);
+  }, [reset]);
+
+  // Effect to load saved form data when modal opens for a new fuel entry
   useEffect(() => {
+    if (showModal && !editingFuel) { // Only for new fuel entry forms
+      const savedFormData = localStorage.getItem(LOCAL_STORAGE_KEYS.FUEL_FORM_DATA);
+      if (savedFormData) {
+        try {
+          const parsedData = JSON.parse(savedFormData);
+          if (parsedData.date) {
+            parsedData.date = new Date(parsedData.date).toISOString().split('T')[0];
+          }
+          reset(parsedData);
+        } catch (e) {
+          console.error("Failed to parse saved fuel form data", e);
+          localStorage.removeItem(LOCAL_STORAGE_KEYS.FUEL_FORM_DATA);
+        }
+      }
+    }
+  }, [showModal, editingFuel, reset]);
+
+  // Effect to save form data to localStorage whenever it changes (for new fuel entry forms)
+  useEffect(() => {
+    if (showModal && !editingFuel) { // Only save for new fuel entry forms
+      const subscription = watch((value) => {
+        localStorage.setItem(LOCAL_STORAGE_KEYS.FUEL_FORM_DATA, JSON.stringify(value));
+      });
+      return () => subscription.unsubscribe();
+    }
+  }, [showModal, editingFuel, watch]);
+
+  // Reset form when editingFuel changes (for edit mode) or when modal closes (for new mode)
+  React.useEffect(() => {
     if (editingFuel) {
       reset(editingFuel);
     } else {
-      reset({
-        date: new Date().toISOString().split('T')[0],
-        vehicle_id: '',
-        liters: 0,
-        price_per_liter: 0,
-        mileage: 0,
-      });
+      resetFormAndClearStorage(); // Use the new reset function
     }
-  }, [editingFuel, reset]);
+  }, [editingFuel, resetFormAndClearStorage]);
 
   // State for custom filters
   const [selectedVehicle, setSelectedVehicle] = useState<string>('');
@@ -70,6 +107,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
 
   const handleAddFuel = () => {
     setEditingFuel(null);
+    resetFormAndClearStorage(); // Clear any previous unsaved data
     setShowModal(true);
   };
 
@@ -87,6 +125,12 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
       showSuccess('Enregistrement de carburant ajouté avec succès !');
     }
     setShowModal(false);
+    resetFormAndClearStorage(); // Clear saved data on successful submission
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    resetFormAndClearStorage(); // Clear saved data on modal close
   };
 
   const columns: DataTableColumn<FuelEntry>[] = useMemo(() => [
@@ -240,7 +284,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
           />
     
           {/* Modal */}
-          <Dialog open={showModal} onOpenChange={setShowModal}>
+          <Dialog open={showModal} onOpenChange={handleCloseModal}>
             <DialogContent className="sm:max-w-[425px] glass animate-scale-in">
               <DialogHeader>
                 <DialogTitle>{editingFuel ? 'Modifier un Plein' : 'Ajouter un Plein'}</DialogTitle>
@@ -319,7 +363,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ data, onAdd, onUpdate, 
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setShowModal(false)}
+                    onClick={handleCloseModal}
                     className="hover-lift"
                   >
                     Annuler

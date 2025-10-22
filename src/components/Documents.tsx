@@ -18,6 +18,7 @@ import {
 } from './ui/dialog';
 import DataTable from './DataTable'; // Import the new DataTable component
 import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
+import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
 
 type DocumentFormData = z.infer<typeof documentSchema>;
 
@@ -34,7 +35,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
   const [showModal, setShowModal] = useState(false);
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
 
-  const { register, handleSubmit, reset, formState: { errors = {} } } = useForm<DocumentFormData>({
+  const { register, handleSubmit, reset, watch, formState: { errors = {} } } = useForm<DocumentFormData>({
     resolver: zodResolver(documentSchema),
     defaultValues: {
       vehicle_id: '',
@@ -44,18 +45,54 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
     }
   });
 
+  // Function to reset form and clear saved data
+  const resetFormAndClearStorage = useCallback(() => {
+    reset({
+      vehicle_id: '',
+      type: '',
+      number: '',
+      expiration: new Date().toISOString().split('T')[0],
+    });
+    localStorage.removeItem(LOCAL_STORAGE_KEYS.DOCUMENT_FORM_DATA);
+  }, [reset]);
+
+  // Effect to load saved form data when modal opens for a new document
   useEffect(() => {
+    if (showModal && !editingDocument) { // Only for new document forms
+      const savedFormData = localStorage.getItem(LOCAL_STORAGE_KEYS.DOCUMENT_FORM_DATA);
+      if (savedFormData) {
+        try {
+          const parsedData = JSON.parse(savedFormData);
+          if (parsedData.expiration) {
+            parsedData.expiration = new Date(parsedData.expiration).toISOString().split('T')[0];
+          }
+          reset(parsedData);
+        } catch (e) {
+          console.error("Failed to parse saved document form data", e);
+          localStorage.removeItem(LOCAL_STORAGE_KEYS.DOCUMENT_FORM_DATA);
+        }
+      }
+    }
+  }, [showModal, editingDocument, reset]);
+
+  // Effect to save form data to localStorage whenever it changes (for new document forms)
+  useEffect(() => {
+    if (showModal && !editingDocument) { // Only save for new document forms
+      const subscription = watch((value) => {
+        localStorage.setItem(LOCAL_STORAGE_KEYS.DOCUMENT_FORM_DATA, JSON.stringify(value));
+      });
+      return () => subscription.unsubscribe();
+    }
+  }, [showModal, editingDocument, watch]);
+
+  // Reset form when editingDocument changes (for edit mode) or when modal closes (for new mode)
+  React.useEffect(() => {
     if (editingDocument) {
       reset(editingDocument);
     } else {
-      reset({
-        vehicle_id: '',
-        type: '',
-        number: '',
-        expiration: new Date().toISOString().split('T')[0],
-      });
+      resetFormAndClearStorage(); // Use the new reset function
     }
-  }, [editingDocument, reset]);
+  }, [editingDocument, resetFormAndClearStorage]);
 
   // State for custom filters
   const [selectedVehicle, setSelectedVehicle] = useState<string>('');
@@ -65,6 +102,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
 
   const handleAddDocument = () => {
     setEditingDocument(null);
+    resetFormAndClearStorage(); // Clear any previous unsaved data
     setShowModal(true);
   };
 
@@ -82,6 +120,12 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
       showSuccess('Document ajouté avec succès !');
     }
     setShowModal(false);
+    resetFormAndClearStorage(); // Clear saved data on successful submission
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    resetFormAndClearStorage(); // Clear saved data on modal close
   };
 
   const getDocumentStatusBadge = (daysLeft: number) => {
@@ -277,7 +321,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
       />
 
       {/* Modal */}
-      <Dialog open={showModal} onOpenChange={setShowModal}>
+      <Dialog open={showModal} onOpenChange={handleCloseModal}>
         <DialogContent className="sm:max-w-[425px] glass animate-scale-in">
           <DialogHeader>
             <DialogTitle>{editingDocument ? 'Modifier un Document' : 'Ajouter un Document'}</DialogTitle>
@@ -349,7 +393,7 @@ const Documents: React.FC<DocumentsProps> = ({ data, onAdd, onUpdate, onDelete }
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setShowModal(false)}
+                onClick={handleCloseModal}
                 className="hover-lift"
               >
                 Annuler

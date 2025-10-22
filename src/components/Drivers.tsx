@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Phone, AlertTriangle, Upload, Download } from 'lucide-react'; // Import Upload and Download icons
 import { FleetData, Driver, DataTableColumn, DriverImportData } from '../types';
 import { showSuccess } from '../utils/toast';
@@ -21,6 +21,7 @@ import { Button } from './ui/button';
 import { usePermissions } from '../hooks/usePermissions';
 import XLSXImportDialog from './XLSXImportDialog'; // Import the new component
 import { exportTemplateToXLSX } from '../utils/templateExport'; // Import the new utility
+import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
 
 type DriverFormData = z.infer<typeof driverSchema>;
 
@@ -49,24 +50,61 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
     }, [editingDriver]),
   });
 
-  const { handleSubmit, reset } = methods;
+  const { handleSubmit, reset, watch } = methods;
 
+  // Function to reset form and clear saved data
+  const resetFormAndClearStorage = useCallback(() => {
+    reset({
+      name: '',
+      license: '',
+      expiration: new Date().toISOString().split('T')[0],
+      status: 'Disponible',
+      phone: '',
+    });
+    localStorage.removeItem(LOCAL_STORAGE_KEYS.DRIVER_FORM_DATA);
+  }, [reset]);
+
+  // Effect to load saved form data when modal opens for a new driver
+  useEffect(() => {
+    if (showModal && !editingDriver) { // Only for new driver forms
+      const savedFormData = localStorage.getItem(LOCAL_STORAGE_KEYS.DRIVER_FORM_DATA);
+      if (savedFormData) {
+        try {
+          const parsedData = JSON.parse(savedFormData);
+          if (parsedData.expiration) {
+            parsedData.expiration = new Date(parsedData.expiration).toISOString().split('T')[0];
+          }
+          reset(parsedData);
+        } catch (e) {
+          console.error("Failed to parse saved driver form data", e);
+          localStorage.removeItem(LOCAL_STORAGE_KEYS.DRIVER_FORM_DATA);
+        }
+      }
+    }
+  }, [showModal, editingDriver, reset]);
+
+  // Effect to save form data to localStorage whenever it changes (for new driver forms)
+  useEffect(() => {
+    if (showModal && !editingDriver) { // Only save for new driver forms
+      const subscription = watch((value) => {
+        localStorage.setItem(LOCAL_STORAGE_KEYS.DRIVER_FORM_DATA, JSON.stringify(value));
+      });
+      return () => subscription.unsubscribe();
+    }
+  }, [showModal, editingDriver, watch]);
+
+  // Reset form when editingDriver changes (for edit mode) or when modal closes (for new mode)
   React.useEffect(() => {
     if (editingDriver) {
       reset(editingDriver);
     } else {
-      reset({
-        name: '',
-        license: '',
-        expiration: new Date().toISOString().split('T')[0],
-        status: 'Disponible',
-        phone: '',
-      });
+      resetFormAndClearStorage(); // Use the new reset function
     }
-  }, [editingDriver, reset]);
+  }, [editingDriver, resetFormAndClearStorage]);
 
   const handleAddDriver = () => {
     setEditingDriver(null);
+    resetFormAndClearStorage(); // Clear any previous unsaved data
     setShowModal(true);
   };
 
@@ -84,11 +122,15 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
       showSuccess('Conducteur ajouté avec succès !');
     }
     setShowModal(false);
+    resetFormAndClearStorage(); // Clear saved data on successful submission
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    resetFormAndClearStorage(); // Clear saved data on modal close
   };
 
   const handleImportDrivers = async (importedData: DriverImportData[]) => {
-    // For simplicity, we'll treat all imported data as new additions.
-    // A more complex logic could check for existing licenses and offer to update.
     for (const driverData of importedData) {
       await onAdd(driverData);
     }
@@ -222,7 +264,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
       />
 
       {/* Modal */}
-      <Dialog open={showModal} onOpenChange={setShowModal}>
+      <Dialog open={showModal} onOpenChange={handleCloseModal}>
         <DialogContent className="sm:max-w-[425px] glass animate-scale-in">
           <DialogHeader>
             <DialogTitle>{editingDriver ? 'Modifier un Conducteur' : 'Ajouter un Conducteur'}</DialogTitle>
@@ -243,7 +285,7 @@ const Drivers: React.FC<DriversProps> = ({ data, onAdd, onUpdate, onDelete }) =>
               ]} disabled={(!canEditForm && !!editingDriver) || (!canAddForm && !editingDriver)} />
               <FormField name="phone" label="Téléphone" type="tel" placeholder="Ex: +216 22 123 456" disabled={(!canEditForm && !!editingDriver) || (!canAddForm && !editingDriver)} />
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setShowModal(false)} className="hover-lift">
+                <Button type="button" variant="outline" onClick={handleCloseModal} className="hover-lift">
                   Annuler
                 </Button>
                 {(canAddForm && !editingDriver) || (canEditForm && editingDriver) ? (

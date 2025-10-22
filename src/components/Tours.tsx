@@ -18,6 +18,7 @@ import {
 } from './ui/dialog';
 import DataTable from './DataTable'; // Import the new DataTable component
 import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
+import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
 
 type TourFormData = z.infer<typeof tourSchema>;
 
@@ -53,7 +54,53 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
   const kmStart = watch('km_start');
   const kmEnd = watch('km_end');
 
+  // Function to reset form and clear saved data
+  const resetFormAndClearStorage = useCallback(() => {
+    reset({
+      date: new Date().toISOString().split('T')[0],
+      vehicle_id: '',
+      driver_id: '',
+      status: 'Planifié',
+      fuel_start: null,
+      km_start: null,
+      fuel_end: null,
+      km_end: null,
+      distance: null,
+    });
+    localStorage.removeItem(LOCAL_STORAGE_KEYS.TOUR_FORM_DATA);
+  }, [reset]);
+
+  // Effect to load saved form data when modal opens for a new tour
   useEffect(() => {
+    if (showModal && !editingTour) { // Only for new tour forms
+      const savedFormData = localStorage.getItem(LOCAL_STORAGE_KEYS.TOUR_FORM_DATA);
+      if (savedFormData) {
+        try {
+          const parsedData = JSON.parse(savedFormData);
+          if (parsedData.date) {
+            parsedData.date = new Date(parsedData.date).toISOString().split('T')[0];
+          }
+          reset(parsedData);
+        } catch (e) {
+          console.error("Failed to parse saved tour form data", e);
+          localStorage.removeItem(LOCAL_STORAGE_KEYS.TOUR_FORM_DATA);
+        }
+      }
+    }
+  }, [showModal, editingTour, reset]);
+
+  // Effect to save form data to localStorage whenever it changes (for new tour forms)
+  useEffect(() => {
+    if (showModal && !editingTour) { // Only save for new tour forms
+      const subscription = watch((value) => {
+        localStorage.setItem(LOCAL_STORAGE_KEYS.TOUR_FORM_DATA, JSON.stringify(value));
+      });
+      return () => subscription.unsubscribe();
+    }
+  }, [showModal, editingTour, watch]);
+
+  // Reset form when editingTour changes (for edit mode) or when modal closes (for new mode)
+  React.useEffect(() => {
     if (editingTour) {
       reset({
         ...editingTour,
@@ -64,19 +111,9 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
         distance: editingTour.distance ?? null,
       });
     } else {
-      reset({
-        date: new Date().toISOString().split('T')[0],
-        vehicle_id: '',
-        driver_id: '',
-        status: 'Planifié',
-        fuel_start: null,
-        km_start: null,
-        fuel_end: null,
-        km_end: null,
-        distance: null,
-      });
+      resetFormAndClearStorage(); // Use the new reset function
     }
-  }, [editingTour, reset]);
+  }, [editingTour, resetFormAndClearStorage]);
 
   // Effect to calculate distance automatically
   useEffect(() => {
@@ -97,6 +134,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
 
   const handleAddTour = () => {
     setEditingTour(null);
+    resetFormAndClearStorage(); // Clear any previous unsaved data
     setShowModal(true);
   };
 
@@ -114,6 +152,12 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
       showSuccess('Tournée ajoutée avec succès !');
     }
     setShowModal(false);
+    resetFormAndClearStorage(); // Clear saved data on successful submission
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    resetFormAndClearStorage(); // Clear saved data on modal close
   };
 
   const getStatusBadge = (status: string) => {
@@ -276,7 +320,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
       />
 
       {/* Modal */}
-      <Dialog open={showModal} onOpenChange={setShowModal}>
+      <Dialog open={showModal} onOpenChange={handleCloseModal}>
         <DialogContent className="sm:max-w-[600px] glass animate-scale-in">
           <DialogHeader>
             <DialogTitle>{editingTour ? 'Modifier une Tournée' : 'Ajouter une Tournée'}</DialogTitle>
@@ -429,7 +473,7 @@ const Tours: React.FC<ToursProps> = ({ data, onAdd, onUpdate, onDelete }) => {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setShowModal(false)}
+                onClick={handleCloseModal}
                 className="hover-lift"
               >
                 Annuler
