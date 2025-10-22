@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { FleetData, Vehicle, DataTableColumn, VehicleImportData } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date';
@@ -21,6 +21,7 @@ import { usePermissions } from '../hooks/usePermissions';
 import XLSXImportDialog from './XLSXImportDialog'; // Import the new component
 import { Upload, Download } from 'lucide-react'; // Import Upload and Download icons
 import { exportTemplateToXLSX } from '../utils/templateExport'; // Import the new utility
+import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
 
 type VehicleFormData = z.infer<typeof vehicleSchema>;
 
@@ -50,25 +51,64 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
     }, [editingVehicle]),
   });
 
-  const { handleSubmit, reset } = methods;
+  const { handleSubmit, reset, watch } = methods;
+  // const formValues = watch(); // Watch all form fields // Removed unused variable
 
+  // Function to reset form and clear saved data
+  const resetFormAndClearStorage = useCallback(() => {
+    reset({
+      plate: '',
+      type: 'Camionnette',
+      status: 'Disponible',
+      mileage: 0,
+      last_service_date: new Date().toISOString().split('T')[0],
+      last_service_mileage: 0,
+    });
+    localStorage.removeItem(LOCAL_STORAGE_KEYS.VEHICLE_FORM_DATA);
+  }, [reset]);
+
+  // Effect to load saved form data when modal opens for a new vehicle
+  useEffect(() => {
+    if (showModal && !editingVehicle) { // Only for new vehicle forms
+      const savedFormData = localStorage.getItem(LOCAL_STORAGE_KEYS.VEHICLE_FORM_DATA);
+      if (savedFormData) {
+        try {
+          const parsedData = JSON.parse(savedFormData);
+          // Ensure date format is correct for input type="date"
+          if (parsedData.last_service_date) {
+            parsedData.last_service_date = new Date(parsedData.last_service_date).toISOString().split('T')[0];
+          }
+          reset(parsedData);
+        } catch (e) {
+          console.error("Failed to parse saved vehicle form data", e);
+          localStorage.removeItem(LOCAL_STORAGE_KEYS.VEHICLE_FORM_DATA);
+        }
+      }
+    }
+  }, [showModal, editingVehicle, reset]);
+
+  // Effect to save form data to localStorage whenever it changes (for new vehicle forms)
+  useEffect(() => {
+    if (showModal && !editingVehicle) { // Only save for new vehicle forms
+      const subscription = watch((value) => {
+        localStorage.setItem(LOCAL_STORAGE_KEYS.VEHICLE_FORM_DATA, JSON.stringify(value));
+      });
+      return () => subscription.unsubscribe();
+    }
+  }, [showModal, editingVehicle, watch]);
+
+  // Reset form when editingVehicle changes (for edit mode) or when modal closes (for new mode)
   React.useEffect(() => {
     if (editingVehicle) {
       reset(editingVehicle);
     } else {
-      reset({
-        plate: '',
-        type: 'Camionnette',
-        status: 'Disponible',
-        mileage: 0,
-        last_service_date: new Date().toISOString().split('T')[0],
-        last_service_mileage: 0,
-      });
+      resetFormAndClearStorage(); // Use the new reset function
     }
-  }, [editingVehicle, reset]);
+  }, [editingVehicle, resetFormAndClearStorage]);
 
   const handleAddVehicle = () => {
     setEditingVehicle(null);
+    resetFormAndClearStorage(); // Clear any previous unsaved data
     setShowModal(true);
   };
 
@@ -77,15 +117,21 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
     setShowModal(true);
   };
 
-  const onSubmit = (formData: VehicleFormData) => {
+  const onSubmit = async (formData: VehicleFormData) => {
     if (editingVehicle) {
-      onUpdate({ ...formData, id: editingVehicle.id, user_id: editingVehicle.user_id, created_at: editingVehicle.created_at });
+      await onUpdate({ ...formData, id: editingVehicle.id, user_id: editingVehicle.user_id, created_at: editingVehicle.created_at });
       showSuccess('Véhicule mis à jour avec succès !');
     } else {
-      onAdd(formData);
+      await onAdd(formData);
       showSuccess('Véhicule ajouté avec succès !');
     }
     setShowModal(false);
+    resetFormAndClearStorage(); // Clear saved data on successful submission
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    resetFormAndClearStorage(); // Clear saved data on modal close
   };
 
   const handleImportVehicles = async (importedData: VehicleImportData[]) => {
@@ -210,7 +256,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
       />
 
       {/* Modal for Add/Edit Vehicle */}
-      <Dialog open={showModal} onOpenChange={setShowModal}>
+      <Dialog open={showModal} onOpenChange={handleCloseModal}> {/* Use handleCloseModal here */}
         <DialogContent className="sm:max-w-[425px] glass animate-scale-in">
           <DialogHeader>
             <DialogTitle>{editingVehicle ? 'Modifier un Véhicule' : 'Ajouter un Véhicule'}</DialogTitle>
@@ -236,7 +282,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ data, onAdd, onUpdate, onDelete }) 
               <FormField name="last_service_date" label="Date dernière vidange" type="date" disabled={(!canEditForm && !!editingVehicle) || (!canAddForm && !editingVehicle)} />
               <FormField name="last_service_mileage" label="Kilométrage dernière vidange" type="number" min={0} disabled={(!canEditForm && !!editingVehicle) || (!canAddForm && !editingVehicle)} />
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setShowModal(false)} className="hover-lift">
+                <Button type="button" variant="outline" onClick={handleCloseModal} className="hover-lift"> {/* Updated onClick */}
                   Annuler
                 </Button>
                 {(canAddForm && !editingVehicle) || (canEditForm && editingVehicle) ? (
