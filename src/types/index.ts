@@ -175,3 +175,11 @@ export interface Permission {
   created_at?: string;
   updated_at?: string;
 }
+
+// New interface for FleetContext
+export interface FleetContextType {
+  fleetData: FleetData;
+  isLoadingFleet: boolean;
+  refetchFleetData: () => Promise<void>;
+  refetchResource: (resource: Resource) => Promise<void>;
+}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import { Truck, Users, Route as RouteIcon, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck, FileText as ReportIcon, UserCog, User as UserIcon, ShieldCheck } from 'lucide-react';
 import Dashboard from './components/Dashboard';
@@ -22,27 +22,16 @@ import { supabase } from './integrations/supabase/client';
 import { showSuccess, showError, showLoading, dismissToast } from './utils/toast';
 import SkeletonLoader from './components/SkeletonLoader';
 import { PermissionsProvider, usePermissions } from './hooks/usePermissions'; // Import PermissionsProvider and usePermissions
+import { FleetDataProvider, useFleetData } from './components/FleetDataProvider'; // Import FleetDataProvider and useFleetData
 
-
-// Define a type for the refetch functions for each resource
-type RefetchFunctions = {
-  [key in Resource]?: () => Promise<void>;
-};
 
 function AppContent() { // Renamed App to AppContent
-  const { session, currentUser, isLoading, isProfileLoading } = useSession();
+  const { session, currentUser, isLoading, isProfileLoading, refetchCurrentUser } = useSession();
   const { canAccess, isLoadingPermissions } = usePermissions(); // Use usePermissions hook
+  const { refetchResource } = useFleetData(); // Use useFleetData hook
   const navigate = useNavigate();
   const location = useLocation();
   
-  // State to hold refetch functions from child components
-  const [refetchFunctions, setRefetchFunctions] = useState<RefetchFunctions>({});
-
-  // Function to register refetch functions from child components
-  const registerRefetch = useCallback((resource: Resource, refetch: () => Promise<void>) => {
-    setRefetchFunctions(prev => ({ ...prev, [resource]: refetch }));
-  }, []);
-
   useEffect(() => {
     if (!isLoading && !isProfileLoading && !isLoadingPermissions) { // Wait for permissions to load
       if (session?.user) {
@@ -84,9 +73,7 @@ function AppContent() { // Renamed App to AppContent
       showSuccess(`Données ${action === 'add' ? 'ajoutées' : action === 'edit' ? 'mises à jour' : 'supprimées'} avec succès !`);
       
       // Trigger refetch for the specific table
-      if (refetchFunctions[tableName]) {
-        await refetchFunctions[tableName]!();
-      }
+      await refetchResource(tableName);
     } catch (error) {
       console.error(`Error ${action}ing data in ${tableName}:`, (error as any)?.message || error); // Log detailed error
       dismissToast(loadingToastId);
@@ -110,8 +97,9 @@ function AppContent() { // Renamed App to AppContent
       dismissToast(loadingToastId);
       showSuccess('Rôle utilisateur mis à jour avec succès !');
       // Refetch users data after role update
-      if (refetchFunctions['users']) {
-        await refetchFunctions['users']!();
+      // UserManagement will handle its own refetch, but we might need to refetch current user's profile if their role changed
+      if (userId === currentUser.id) {
+        await refetchCurrentUser();
       }
     } catch (error: any) {
       console.error('Error updating user role:', error.message);
@@ -248,34 +236,31 @@ function AppContent() { // Renamed App to AppContent
         <main className="flex-1 px-6 py-8 min-w-0 overflow-x-auto w-full">
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard key="dashboard-view" userRole={userRole} registerRefetch={registerRefetch} /></ProtectedRoute>} />
-            <Route path="/vehicles" element={<ProtectedRoute><Vehicles key="vehicles-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} registerRefetch={registerRefetch} /></ProtectedRoute>} />
-            <Route path="/drivers" element={<ProtectedRoute><Drivers key="drivers-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} registerRefetch={registerRefetch} /></ProtectedRoute>} />
-            <Route path="/tours" element={<ProtectedRoute><Tours key="tours-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} registerRefetch={registerRefetch} /></ProtectedRoute>} />
-            <Route path="/fuel" element={<ProtectedRoute><FuelManagement key="fuel-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} registerRefetch={registerRefetch} /></ProtectedRoute>} />
-            <Route path="/documents" element={<ProtectedRoute><Documents key="documents-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} registerRefetch={registerRefetch} /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard key="dashboard-view" userRole={userRole} /></ProtectedRoute>} />
+            <Route path="/vehicles" element={<ProtectedRoute><Vehicles key="vehicles-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} /></ProtectedRoute>} />
+            <Route path="/drivers" element={<ProtectedRoute><Drivers key="drivers-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} /></ProtectedRoute>} />
+            <Route path="/tours" element={<ProtectedRoute><Tours key="tours-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} /></ProtectedRoute>} />
+            <Route path="/fuel" element={<ProtectedRoute><FuelManagement key="fuel-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} /></ProtectedRoute>} />
+            <Route path="/documents" element={<ProtectedRoute><Documents key="documents-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} /></ProtectedRoute>} />
             <Route path="/maintenance" element={<ProtectedRoute><Maintenance 
               key="maintenance-view"
               onUpdate={handleUpdateData} 
               onAdd={handleUpdateData} 
               onDelete={handleUpdateData}
-              registerRefetch={registerRefetch}
             /></ProtectedRoute>} />
             <Route path="/checklists" element={<ProtectedRoute><PreDepartureChecklistComponent 
               key="checklists-view" 
               onAdd={handleUpdateData} 
-              registerRefetch={registerRefetch}
             /></ProtectedRoute>} />
-            <Route path="/reports" element={<ProtectedRoute><Reports key="reports-view" userRole={userRole} registerRefetch={registerRefetch} /></ProtectedRoute>} />
-            <Route path="/summary" element={<ProtectedRoute><Summary key="summary-view" registerRefetch={registerRefetch} /></ProtectedRoute>} />
+            <Route path="/reports" element={<ProtectedRoute><Reports key="reports-view" userRole={userRole} /></ProtectedRoute>} />
+            <Route path="/summary" element={<ProtectedRoute><Summary key="summary-view" /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile key="profile-view" /></ProtectedRoute>} />
             <Route path="/user-management" element={<ProtectedRoute allowedRoles={['admin']}><UserManagement 
                 key="user-management-view" 
                 onUpdateUserRole={handleUpdateUserRole}
-                registerRefetch={registerRefetch}
               /></ProtectedRoute>} />
             <Route path="/permissions-overview" element={<ProtectedRoute allowedRoles={['admin']}><PermissionsOverview key="permissions-overview-view" /></ProtectedRoute>} />
-            <Route path="*" element={<ProtectedRoute><Dashboard key="default-dashboard-view" userRole={userRole} registerRefetch={registerRefetch} /></ProtectedRoute>} />
+            <Route path="*" element={<ProtectedRoute><Dashboard key="default-dashboard-view" userRole={userRole} /></ProtectedRoute>} />
           </Routes>
         </main>
       </div>
@@ -286,7 +271,9 @@ function AppContent() { // Renamed App to AppContent
 function App() {
   return (
     <PermissionsProvider>
-      <AppContent />
+      <FleetDataProvider> {/* Wrap AppContent with FleetDataProvider */}
+        <AppContent />
+      </FleetDataProvider>
     </PermissionsProvider>
   );
 }

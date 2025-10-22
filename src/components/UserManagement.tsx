@@ -25,7 +25,7 @@ import { useSession } from './SessionContextProvider'; // Import useSession
 
 interface UserManagementProps {
   onUpdateUserRole: (userId: string, newRole: UserRole) => Promise<void>;
-  registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void;
+  // registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void; // Removed
 }
 
 interface Profile {
@@ -40,7 +40,7 @@ interface Profile {
 type InviteUserFormData = z.infer<typeof inviteUserSchema>;
 type ManualUserFormData = z.infer<typeof manualUserSchema>; // New type for manual user form
 
-const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole, registerRefetch }) => {
+const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole }) => { // Removed registerRefetch from props
   const { canAccess } = usePermissions();
   const { currentUser } = useSession(); // Get current user for permission checks
   void currentUser; // Explicitly mark as used
@@ -124,12 +124,12 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole, regis
   useEffect(() => {
     if (canAccess('users', 'view')) {
       fetchUsers();
-      registerRefetch('users', fetchUsers); // Register the refetch function
+      // registerRefetch('users', fetchUsers); // Removed
     } else {
       setError('Vous n\'avez pas les permissions pour accéder à cette page.');
       setLoading(false);
     }
-  }, [canAccess, registerRefetch]);
+  }, [canAccess]); // Removed registerRefetch from dependencies
 
   const filteredAndSortedUsers = useMemo(() => {
     let filtered = users.filter(user => {

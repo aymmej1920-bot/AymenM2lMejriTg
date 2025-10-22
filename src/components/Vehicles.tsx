@@ -22,7 +22,7 @@ import XLSXImportDialog from './XLSXImportDialog'; // Import the new component
 import { Upload, Download } from 'lucide-react'; // Import Upload and Download icons
 import { exportTemplateToXLSX } from '../utils/templateExport'; // Import the new utility
 import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
-import { useSupabaseData } from '../hooks/useSupabaseData'; // Import useSupabaseData
+import { useFleetData } from '../components/FleetDataProvider'; // Import useFleetData
 
 type VehicleFormData = z.infer<typeof vehicleSchema>;
 
@@ -30,17 +30,15 @@ interface VehiclesProps {
   onAdd: (tableName: Resource, vehicle: Omit<Vehicle, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<void>;
   onUpdate: (tableName: Resource, vehicle: Vehicle, action: Action) => Promise<void>;
   onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<void>;
-  registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void;
+  // registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void; // Removed
 }
 
-const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete, registerRefetch }) => {
+const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
   const { canAccess } = usePermissions();
 
-  const { data: vehicles, isLoading, refetch } = useSupabaseData<Vehicle>('vehicles');
-
-  useEffect(() => {
-    registerRefetch('vehicles', refetch);
-  }, [registerRefetch, refetch]);
+  // Consume data from FleetContext
+  const { fleetData, isLoadingFleet } = useFleetData();
+  const vehicles = fleetData.vehicles;
 
   const [showModal, setShowModal] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
@@ -257,7 +255,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete, register
         addLabel="Ajouter Véhicule"
         searchPlaceholder="Rechercher par plaque, type ou statut..."
         exportFileName="vehicules"
-        isLoading={isLoading}
+        isLoading={isLoadingFleet}
         resourceType="vehicles"
         renderCustomHeaderButtons={renderCustomHeaderButtons} // Pass the custom buttons
       />

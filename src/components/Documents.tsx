@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Calendar, AlertTriangle, Search } from 'lucide-react'; // Ajout de Search pour le filtre par défaut
-import { Document, DataTableColumn, Resource, Action, Vehicle } from '../types';
+import { Document, DataTableColumn, Resource, Action } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate, getDaysUntilExpiration } from '../utils/date'; // Import from utils/date
 import { Button } from './ui/button';
@@ -20,7 +20,7 @@ import DataTable from './DataTable'; // Import the new DataTable component
 import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
 import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
 import FormField from './forms/FormField'; // Import FormField
-import { useSupabaseData } from '../hooks/useSupabaseData'; // Import useSupabaseData
+import { useFleetData } from '../components/FleetDataProvider'; // Import useFleetData
 
 type DocumentFormData = z.infer<typeof documentSchema>;
 
@@ -28,18 +28,16 @@ interface DocumentsProps {
   onAdd: (tableName: Resource, document: Omit<Document, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<void>;
   onUpdate: (tableName: Resource, document: Document, action: Action) => Promise<void>;
   onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<void>;
-  registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void;
+  // registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void; // Removed
 }
 
-const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete, registerRefetch }) => {
+const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
   const { canAccess } = usePermissions(); // Use usePermissions hook
 
-  const { data: documents, isLoading: isLoadingDocuments, refetch: refetchDocuments } = useSupabaseData<Document>('documents');
-  const { data: vehicles, isLoading: isLoadingVehicles } = useSupabaseData<Vehicle>('vehicles');
-
-  useEffect(() => {
-    registerRefetch('documents', refetchDocuments);
-  }, [registerRefetch, refetchDocuments]);
+  // Consume data from FleetContext
+  const { fleetData, isLoadingFleet } = useFleetData();
+  const documents = fleetData.documents;
+  const vehicles = fleetData.vehicles;
 
   const [showModal, setShowModal] = useState(false);
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
@@ -312,8 +310,6 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete, regist
   const canAddForm = canAccess('documents', 'add');
   const canEditForm = canAccess('documents', 'edit');
 
-  const isLoadingCombined = isLoadingDocuments || isLoadingVehicles;
-
   return (
     <>
       <DataTable
@@ -326,7 +322,7 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete, regist
         addLabel="Ajouter Document"
         searchPlaceholder="Rechercher un document par véhicule, type, numéro ou expiration..."
         exportFileName="documents"
-        isLoading={isLoadingCombined}
+        isLoading={isLoadingFleet}
         renderFilters={renderFilters}
         renderAlerts={renderAlerts}
         customFilter={customFilter}

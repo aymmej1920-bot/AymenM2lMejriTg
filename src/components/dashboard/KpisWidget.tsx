@@ -1,14 +1,15 @@
 import React from 'react';
 import { Truck, CheckCircle, Route, Wrench } from 'lucide-react';
-import { Vehicle } from '../../types';
-import { useSupabaseData } from '../../hooks/useSupabaseData'; // Import useSupabaseData
+import { useFleetData } from '../FleetDataProvider'; // Import useFleetData
 
 interface KpisWidgetProps {
   // data: FleetData; // No longer needed as data is fetched internally
 }
 
 const KpisWidget: React.FC<KpisWidgetProps> = () => {
-  const { data: vehicles, isLoading: isLoadingVehicles } = useSupabaseData<Vehicle>('vehicles');
+  // Consume data from FleetContext
+  const { fleetData, isLoadingFleet } = useFleetData();
+  const vehicles = fleetData.vehicles;
 
   const totalVehicles = vehicles.length;
   const availableVehicles = vehicles.filter(v => v.status === 'Disponible').length;
@@ -46,7 +47,7 @@ const KpisWidget: React.FC<KpisWidgetProps> = () => {
     }
   ];
 
-  if (isLoadingVehicles) {
+  if (isLoadingFleet) {
     return null; // Or a small skeleton loader if preferred
   }
 

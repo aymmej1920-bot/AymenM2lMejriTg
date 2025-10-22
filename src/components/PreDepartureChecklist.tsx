@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { AlertTriangle, Calendar } from 'lucide-react';
-import { PreDepartureChecklist, DataTableColumn, Resource, Action, Vehicle, Driver } from '../types';
+import { PreDepartureChecklist, DataTableColumn, Resource, Action } from '../types';
 import { formatDate } from '../utils/date';
 import {
   Dialog,
@@ -13,27 +13,25 @@ import DataTable from './DataTable';
 import { usePermissions } from '../hooks/usePermissions';
 import ChecklistForm from './checklists/ChecklistForm'; // Import the new form component
 import ChecklistStatusIcon from './checklists/ChecklistStatusIcon'; // Import the new status icon component
-import { useSupabaseData } from '../hooks/useSupabaseData'; // Import useSupabaseData
+import { useFleetData } from '../components/FleetDataProvider'; // Import useFleetData
 
 interface PreDepartureChecklistProps {
   onAdd: (tableName: Resource, checklist: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<void>;
-  registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void;
+  // registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void; // Removed
 }
 
-const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ onAdd, registerRefetch }) => {
+const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ onAdd }) => {
   const { canAccess } = usePermissions();
   
-  const { data: preDepartureChecklists, isLoading: isLoadingChecklists, refetch: refetchChecklists } = useSupabaseData<PreDepartureChecklist>('pre_departure_checklists');
-  const { data: vehicles, isLoading: isLoadingVehicles } = useSupabaseData<Vehicle>('vehicles');
-  const { data: drivers, isLoading: isLoadingDrivers } = useSupabaseData<Driver>('drivers');
-
-  useEffect(() => {
-    registerRefetch('pre_departure_checklists', refetchChecklists);
-  }, [registerRefetch, refetchChecklists]);
+  // Consume data from FleetContext
+  const { fleetData, isLoadingFleet } = useFleetData();
+  const preDepartureChecklists = fleetData.pre_departure_checklists;
+  const vehicles = fleetData.vehicles;
+  const drivers = fleetData.drivers;
 
   const [showModal, setShowModal] = useState(false);
 
-  const canAdd = canAccess('pre_departure_checklists', 'add');
+  const canAddChecklist = canAccess('pre_departure_checklists', 'add'); // Renamed to avoid redeclaration
 
   // State for filtering
   const [selectedVehicle, setSelectedVehicle] = useState<string>('');
@@ -182,7 +180,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
             onChange={(e) => {
               setEndDate(e.target.value);
             }}
-            className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder="Date de fin"
           />
           <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
@@ -206,19 +204,17 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
     return matchesVehicle && matchesDriver && matchesDateRange;
   }, [selectedVehicle, selectedDriver, startDate, endDate]);
 
-  const isLoadingCombined = isLoadingChecklists || isLoadingVehicles || isLoadingDrivers;
-
   return (
     <div className="space-y-6">
       <DataTable
         title="Checklists Avant Départ"
         data={preDepartureChecklists} // Pass all data, DataTable will handle filtering
         columns={columns}
-        onAdd={canAdd ? handleAddChecklist : undefined}
+        onAdd={canAddChecklist ? handleAddChecklist : undefined}
         addLabel="Nouvelle Checklist"
         searchPlaceholder="Rechercher une checklist par date, véhicule, conducteur, observations ou problèmes..."
         exportFileName="checklists_avant_depart"
-        isLoading={isLoadingCombined}
+        isLoading={isLoadingFleet}
         renderFilters={renderFilters}
         renderAlerts={renderAlerts}
         customFilter={customFilter}
@@ -234,11 +230,9 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
             </DialogDescription>
           </DialogHeader>
           <ChecklistForm
-            vehicles={vehicles}
-            drivers={drivers}
             onAdd={onAdd}
             onClose={handleCloseModal}
-            canAdd={canAdd}
+            canAdd={canAddChecklist}
             hasChecklistForMonth={hasChecklistForMonth}
           />
         </DialogContent>

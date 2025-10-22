@@ -1,16 +1,17 @@
 import React from 'react';
-import { FuelEntry } from '../../types';
 import MonthlyFuelConsumptionChart from '../charts/MonthlyFuelConsumptionChart';
-import { useSupabaseData } from '../../hooks/useSupabaseData'; // Import useSupabaseData
+import { useFleetData } from '../FleetDataProvider'; // Import useFleetData
 
 interface MonthlyFuelConsumptionChartWidgetProps {
   // data: FleetData; // No longer needed as data is fetched internally
 }
 
 const MonthlyFuelConsumptionChartWidget: React.FC<MonthlyFuelConsumptionChartWidgetProps> = () => {
-  const { data: fuelEntries, isLoading: isLoadingFuel } = useSupabaseData<FuelEntry>('fuel_entries');
+  // Consume data from FleetContext
+  const { fleetData, isLoadingFleet } = useFleetData();
+  const fuelEntries = fleetData.fuel;
 
-  if (isLoadingFuel) {
+  if (isLoadingFleet) {
     return null; // Or a small skeleton loader if preferred
   }
 

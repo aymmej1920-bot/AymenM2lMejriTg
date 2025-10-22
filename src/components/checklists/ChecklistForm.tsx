@@ -6,22 +6,26 @@ import { Button } from '../ui/button';
 import { DialogFooter } from '../ui/dialog';
 import FormField from '../forms/FormField';
 import { preDepartureChecklistSchema } from '../../types/formSchemas';
-import { PreDepartureChecklist, Vehicle, Driver, Resource, Action } from '../../types';
+import { PreDepartureChecklist, Resource, Action } from '../../types';
 import { showSuccess, showError } from '../../utils/toast';
 import { LOCAL_STORAGE_KEYS } from '../../utils/constants';
+import { useFleetData } from '../FleetDataProvider'; // Import useFleetData
 
 type PreDepartureChecklistFormData = z.infer<typeof preDepartureChecklistSchema>;
 
 interface ChecklistFormProps {
-  vehicles: Vehicle[];
-  drivers: Driver[];
   onAdd: (tableName: Resource, checklist: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<void>;
   onClose: () => void;
   canAdd: boolean;
   hasChecklistForMonth: (vehicleId: string, month: number, year: number) => boolean;
 }
 
-const ChecklistForm: React.FC<ChecklistFormProps> = ({ vehicles, drivers, onAdd, onClose, canAdd, hasChecklistForMonth }) => {
+const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, hasChecklistForMonth }) => {
+  // Consume data from FleetContext
+  const { fleetData } = useFleetData();
+  const vehicles = fleetData.vehicles;
+  const drivers = fleetData.drivers;
+
   const methods = useForm<PreDepartureChecklistFormData>({ // Use methods from useForm
     resolver: zodResolver(preDepartureChecklistSchema),
     defaultValues: {

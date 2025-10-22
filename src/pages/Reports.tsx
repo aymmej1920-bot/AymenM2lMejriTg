@@ -1,13 +1,13 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { FleetData, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist, DataTableColumn, Resource } from '../types'; // Import Resource
+import React, { useState, useMemo, useCallback } from 'react';
+import { FleetData, Vehicle, Driver, DataTableColumn, Resource } from '../types'; // Import Resource
 import { Calendar, Search } from 'lucide-react'; // Only Calendar and Search are needed for date inputs and search icon
 import { formatDate, getDaysUntilExpiration, getDaysSinceEntry } from '../utils/date'; // Import from utils/date
 import DataTable from '../components/DataTable'; // Import the new DataTable component
-import { useSupabaseData } from '../hooks/useSupabaseData'; // Import useSupabaseData
+import { useFleetData } from '../components/FleetDataProvider'; // Import useFleetData
 
 interface ReportsProps {
   userRole: 'admin' | 'direction' | 'utilisateur';
-  registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void;
+  // registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void; // Removed
 }
 
 const getColumnConfigs = (dataSource: Resource, allVehicles: Vehicle[], allDrivers: Driver[]): DataTableColumn<any>[] => {
@@ -31,21 +31,21 @@ const getColumnConfigs = (dataSource: Resource, allVehicles: Vehicle[], allDrive
       ];
     case 'tours':
       return [
-        { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item: Tour) => formatDate(item.date) },
-        { key: 'vehicle_id', label: 'Véhicule', sortable: true, defaultVisible: true, render: (item: Tour) => allVehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A' },
-        { key: 'driver_id', label: 'Conducteur', sortable: true, defaultVisible: true, render: (item: Tour) => allDrivers.find(d => d.id === item.driver_id)?.name || 'N/A' },
+        { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item: any) => formatDate(item.date) },
+        { key: 'vehicle_id', label: 'Véhicule', sortable: true, defaultVisible: true, render: (item: any) => allVehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A' },
+        { key: 'driver_id', label: 'Conducteur', sortable: true, defaultVisible: true, render: (item: any) => allDrivers.find(d => d.id === item.driver_id)?.name || 'N/A' },
         { key: 'status', label: 'Statut', sortable: true, defaultVisible: true },
-        { key: 'fuel_start', label: 'Fuel Début (%)', sortable: true, defaultVisible: true, render: (item: Tour) => item.fuel_start != null ? `${item.fuel_start}%` : '-' },
-        { key: 'km_start', label: 'Km Début', sortable: true, defaultVisible: true, render: (item: Tour) => item.km_start != null ? item.km_start.toLocaleString() : '-' },
-        { key: 'fuel_end', label: 'Fuel Fin (%)', sortable: true, defaultVisible: true, render: (item: Tour) => item.fuel_end != null ? `${item.fuel_end}%` : '-' },
-        { key: 'km_end', label: 'Km Fin', sortable: true, defaultVisible: true, render: (item: Tour) => item.km_end != null ? item.km_end.toLocaleString() : '-' },
-        { key: 'distance', label: 'Distance', sortable: true, defaultVisible: true, render: (item: Tour) => item.distance != null ? `${item.distance.toLocaleString()} km` : '-' },
+        { key: 'fuel_start', label: 'Fuel Début (%)', sortable: true, defaultVisible: true, render: (item: any) => item.fuel_start != null ? `${item.fuel_start}%` : '-' },
+        { key: 'km_start', label: 'Km Début', sortable: true, defaultVisible: true, render: (item: any) => item.km_start != null ? item.km_start.toLocaleString() : '-' },
+        { key: 'fuel_end', label: 'Fuel Fin (%)', sortable: true, defaultVisible: true, render: (item: any) => item.fuel_end != null ? `${item.fuel_end}%` : '-' },
+        { key: 'km_end', label: 'Km Fin', sortable: true, defaultVisible: true, render: (item: any) => item.km_end != null ? item.km_end.toLocaleString() : '-' },
+        { key: 'distance', label: 'Distance', sortable: true, defaultVisible: true, render: (item: any) => item.distance != null ? `${item.distance.toLocaleString()} km` : '-' },
         {
           key: 'consumption_per_100km',
           label: 'L/100km',
           sortable: false,
           defaultVisible: true,
-          render: (item: Tour) => {
+          render: (item: any) => {
             if (item.distance != null && item.distance > 0 && item.fuel_start != null && item.fuel_end != null) {
               const fuelConsumed = item.fuel_start - item.fuel_end;
               if (fuelConsumed > 0) {
@@ -58,92 +58,66 @@ const getColumnConfigs = (dataSource: Resource, allVehicles: Vehicle[], allDrive
       ];
     case 'fuel_entries':
       return [
-        { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item: FuelEntry) => formatDate(item.date) },
-        { key: 'vehicle_id', label: 'Véhicule', sortable: true, defaultVisible: true, render: (item: FuelEntry) => allVehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A' },
-        { key: 'liters', label: 'Litres', sortable: true, defaultVisible: true, render: (item: FuelEntry) => `${item.liters} L` },
-        { key: 'price_per_liter', label: 'Prix/L', sortable: true, defaultVisible: true, render: (item: FuelEntry) => `${item.price_per_liter.toFixed(2)} TND` },
-        { key: 'total_cost', label: 'Coût Total', sortable: true, defaultVisible: true, render: (item: FuelEntry) => `${(item.liters * item.price_per_liter).toFixed(2)} TND` },
-        { key: 'mileage', label: 'Kilométrage', sortable: true, defaultVisible: true, render: (item: FuelEntry) => `${item.mileage.toLocaleString()} km` },
+        { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item: any) => formatDate(item.date) },
+        { key: 'vehicle_id', label: 'Véhicule', sortable: true, defaultVisible: true, render: (item: any) => allVehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A' },
+        { key: 'liters', label: 'Litres', sortable: true, defaultVisible: true, render: (item: any) => `${item.liters} L` },
+        { key: 'price_per_liter', label: 'Prix/L', sortable: true, defaultVisible: true, render: (item: any) => `${item.price_per_liter.toFixed(2)} TND` },
+        { key: 'total_cost', label: 'Coût Total', sortable: true, defaultVisible: true, render: (item: any) => `${(item.liters * item.price_per_liter).toFixed(2)} TND` },
+        { key: 'mileage', label: 'Kilométrage', sortable: true, defaultVisible: true, render: (item: any) => `${item.mileage.toLocaleString()} km` },
       ];
     case 'documents':
       return [
-        { key: 'vehicle_id', label: 'Véhicule', sortable: true, defaultVisible: true, render: (item: Document) => allVehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A' },
+        { key: 'vehicle_id', label: 'Véhicule', sortable: true, defaultVisible: true, render: (item: any) => allVehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A' },
         { key: 'type', label: 'Type Document', sortable: true, defaultVisible: true },
         { key: 'number', label: 'N° Document', sortable: true, defaultVisible: true },
-        { key: 'expiration', label: 'Expiration', sortable: true, defaultVisible: true, render: (item: Document) => formatDate(item.expiration) },
-        { key: 'days_left', label: 'Jours Restants', sortable: false, defaultVisible: true, render: (item: Document) => {
+        { key: 'expiration', label: 'Expiration', sortable: true, defaultVisible: true, render: (item: any) => formatDate(item.expiration) },
+        { key: 'days_left', label: 'Jours Restants', sortable: false, defaultVisible: true, render: (item: any) => {
           const daysLeft = getDaysUntilExpiration(item.expiration);
           return daysLeft < 0 ? 'Expiré' : `${daysLeft} jours`;
         }},
       ];
     case 'maintenance_entries':
       return [
-        { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item: MaintenanceEntry) => formatDate(item.date) },
-        { key: 'vehicle_id', label: 'Véhicule', sortable: true, defaultVisible: true, render: (item: MaintenanceEntry) => allVehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A' },
+        { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item: any) => formatDate(item.date) },
+        { key: 'vehicle_id', label: 'Véhicule', sortable: true, defaultVisible: true, render: (item: any) => allVehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A' },
         { key: 'type', label: 'Type', sortable: true, defaultVisible: true },
-        { key: 'mileage', label: 'Kilométrage', sortable: true, defaultVisible: true, render: (item: MaintenanceEntry) => `${item.mileage.toLocaleString()} km` },
-        { key: 'cost', label: 'Coût', sortable: true, defaultVisible: true, render: (item: MaintenanceEntry) => `${item.cost.toFixed(2)} TND` },
-        { key: 'days_since_entry', label: 'Jours depuis l\'entrée', sortable: true, defaultVisible: true, render: (item: MaintenanceEntry) => getDaysSinceEntry(item.date) },
+        { key: 'mileage', label: 'Kilométrage', sortable: true, defaultVisible: true, render: (item: any) => `${item.mileage.toLocaleString()} km` },
+        { key: 'cost', label: 'Coût', sortable: true, defaultVisible: true, render: (item: any) => `${item.cost.toFixed(2)} TND` },
+        { key: 'days_since_entry', label: 'Jours depuis l\'entrée', sortable: true, defaultVisible: true, render: (item: any) => getDaysSinceEntry(item.date) },
       ];
     case 'pre_departure_checklists':
       return [
-        { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => formatDate(item.date) },
-        { key: 'vehicle_id', label: 'Véhicule', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => allVehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A' },
-        { key: 'driver_id', label: 'Conducteur', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => allDrivers.find(d => d.id === item.driver_id)?.name || 'N/A' },
-        { key: 'tire_pressure_ok', label: 'Pneus OK', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => item.tire_pressure_ok ? 'Oui' : 'Non' },
-        { key: 'lights_ok', label: 'Feux OK', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => item.lights_ok ? 'Oui' : 'Non' },
-        { key: 'oil_level_ok', label: 'Huile OK', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => item.oil_level_ok ? 'Oui' : 'Non' },
-        { key: 'fluid_levels_ok', label: 'Fluides OK', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => item.fluid_levels_ok ? 'Oui' : 'Non' },
-        { key: 'brakes_ok', label: 'Freins OK', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => item.brakes_ok ? 'Oui' : 'Non' },
-        { key: 'wipers_ok', label: 'Essuie-glaces OK', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => item.wipers_ok ? 'Oui' : 'Non' },
-        { key: 'horn_ok', label: 'Klaxon OK', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => item.horn_ok ? 'Oui' : 'Non' },
-        { key: 'mirrors_ok', label: 'Rétroviseurs OK', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => item.mirrors_ok ? 'Oui' : 'Non' },
-        { key: 'ac_working_ok', label: 'AC OK', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => item.ac_working_ok ? 'Oui' : 'Non' },
-        { key: 'windows_working_ok', label: 'Vitres OK', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => item.windows_working_ok ? 'Oui' : 'Non' },
-        { key: 'observations', label: 'Observations', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => item.observations || '-' },
-        { key: 'issues_to_address', label: 'Problèmes', sortable: true, defaultVisible: true, render: (item: PreDepartureChecklist) => item.issues_to_address || '-' },
+        { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item: any) => formatDate(item.date) },
+        { key: 'vehicle_id', label: 'Véhicule', sortable: true, defaultVisible: true, render: (item: any) => allVehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A' },
+        { key: 'driver_id', label: 'Conducteur', sortable: true, defaultVisible: true, render: (item: any) => allDrivers.find(d => d.id === item.driver_id)?.name || 'N/A' },
+        { key: 'tire_pressure_ok', label: 'Pneus OK', sortable: true, defaultVisible: true, render: (item: any) => item.tire_pressure_ok ? 'Oui' : 'Non' },
+        { key: 'lights_ok', label: 'Feux OK', sortable: true, defaultVisible: true, render: (item: any) => item.lights_ok ? 'Oui' : 'Non' },
+        { key: 'oil_level_ok', label: 'Huile OK', sortable: true, defaultVisible: true, render: (item: any) => item.oil_level_ok ? 'Oui' : 'Non' },
+        { key: 'fluid_levels_ok', label: 'Fluides OK', sortable: true, defaultVisible: true, render: (item: any) => item.fluid_levels_ok ? 'Oui' : 'Non' },
+        { key: 'brakes_ok', label: 'Freins OK', sortable: true, defaultVisible: true, render: (item: any) => item.brakes_ok ? 'Oui' : 'Non' },
+        { key: 'wipers_ok', label: 'Essuie-glaces OK', sortable: true, defaultVisible: true, render: (item: any) => item.wipers_ok ? 'Oui' : 'Non' },
+        { key: 'horn_ok', label: 'Klaxon OK', sortable: true, defaultVisible: true, render: (item: any) => item.horn_ok ? 'Oui' : 'Non' },
+        { key: 'mirrors_ok', label: 'Rétroviseurs OK', sortable: true, defaultVisible: true, render: (item: any) => item.mirrors_ok ? 'Oui' : 'Non' },
+        { key: 'ac_working_ok', label: 'AC OK', sortable: true, defaultVisible: true, render: (item: any) => item.ac_working_ok ? 'Oui' : 'Non' },
+        { key: 'windows_working_ok', label: 'Vitres OK', sortable: true, defaultVisible: true, render: (item: any) => item.windows_working_ok ? 'Oui' : 'Non' },
+        { key: 'observations', label: 'Observations', sortable: true, defaultVisible: true, render: (item: any) => item.observations || '-' },
+        { key: 'issues_to_address', label: 'Problèmes', sortable: true, defaultVisible: true, render: (item: any) => item.issues_to_address || '-' },
       ];
     default:
       return [];
   }
 };
 
-const Reports: React.FC<ReportsProps> = ({ userRole, registerRefetch }) => {
+const Reports: React.FC<ReportsProps> = ({ userRole }) => {
   void userRole; // userRole is not directly used here, but passed from App.tsx
 
   const [selectedDataSource, setSelectedDataSource] = useState<keyof FleetData | ''>('');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
 
-  // Fetch all data types needed for reports
-  const { data: vehicles, isLoading: isLoadingVehicles, refetch: refetchVehicles } = useSupabaseData<Vehicle>('vehicles');
-  const { data: drivers, isLoading: isLoadingDrivers, refetch: refetchDrivers } = useSupabaseData<Driver>('drivers');
-  const { data: tours, isLoading: isLoadingTours, refetch: refetchTours } = useSupabaseData<Tour>('tours');
-  const { data: fuel, isLoading: isLoadingFuel, refetch: refetchFuel } = useSupabaseData<FuelEntry>('fuel_entries');
-  const { data: documents, isLoading: isLoadingDocuments, refetch: refetchDocuments } = useSupabaseData<Document>('documents');
-  const { data: maintenance, isLoading: isLoadingMaintenance, refetch: refetchMaintenance } = useSupabaseData<MaintenanceEntry>('maintenance_entries');
-  const { data: preDepartureChecklists, isLoading: isLoadingChecklists, refetch: refetchChecklists } = useSupabaseData<PreDepartureChecklist>('pre_departure_checklists');
-
-  // Register refetch functions for all resources
-  useEffect(() => {
-    registerRefetch('vehicles', refetchVehicles);
-    registerRefetch('drivers', refetchDrivers);
-    registerRefetch('tours', refetchTours);
-    registerRefetch('fuel_entries', refetchFuel);
-    registerRefetch('documents', refetchDocuments);
-    registerRefetch('maintenance_entries', refetchMaintenance);
-    registerRefetch('pre_departure_checklists', refetchChecklists);
-  }, [registerRefetch, refetchVehicles, refetchDrivers, refetchTours, refetchFuel, refetchDocuments, refetchMaintenance, refetchChecklists]);
-
-  const allFleetData: FleetData = useMemo(() => ({
-    vehicles,
-    drivers,
-    tours,
-    fuel,
-    documents,
-    maintenance,
-    pre_departure_checklists: preDepartureChecklists,
-  }), [vehicles, drivers, tours, fuel, documents, maintenance, preDepartureChecklists]);
+  // Consume data from FleetContext
+  const { fleetData, isLoadingFleet } = useFleetData();
+  const { vehicles, drivers } = fleetData; // Only destructure used properties
 
   const dataSources = [
     { id: 'vehicles', name: 'Véhicules' },
@@ -157,8 +131,8 @@ const Reports: React.FC<ReportsProps> = ({ userRole, registerRefetch }) => {
 
   const currentData = useMemo(() => {
     if (!selectedDataSource) return [];
-    return allFleetData[selectedDataSource] || [];
-  }, [allFleetData, selectedDataSource]);
+    return fleetData[selectedDataSource] || [];
+  }, [fleetData, selectedDataSource]);
 
   const columns = useMemo(() => {
     if (!selectedDataSource) return [];
@@ -221,8 +195,6 @@ const Reports: React.FC<ReportsProps> = ({ userRole, registerRefetch }) => {
     return matchesDateRange;
   }, [startDate, endDate]);
 
-  const isLoadingCombined = isLoadingVehicles || isLoadingDrivers || isLoadingTours || isLoadingFuel || isLoadingDocuments || isLoadingMaintenance || isLoadingChecklists;
-
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
@@ -256,7 +228,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole, registerRefetch }) => {
           data={currentData}
           columns={columns}
           exportFileName={`rapport_${selectedDataSource}`}
-          isLoading={isLoadingCombined} // Adjust based on actual loading state if needed
+          isLoading={isLoadingFleet} // Adjust based on actual loading state if needed
           renderFilters={renderFilters}
           customFilter={customFilter}
           resourceType={selectedDataSource as Resource} // Added resourceType prop

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Wrench, AlertTriangle, Clock, ClipboardCheck } from 'lucide-react';
-import { MaintenanceEntry, PreDepartureChecklist, DataTableColumn, Vehicle, Resource, Action } from '../types';
+import { MaintenanceEntry, DataTableColumn, Vehicle, Resource, Action } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date';
 import { useForm, FormProvider } from 'react-hook-form';
@@ -20,7 +20,7 @@ import DataTable from './DataTable';
 import { usePermissions } from '../hooks/usePermissions';
 import { LOCAL_STORAGE_KEYS } from '../utils/constants';
 import FormField from './forms/FormField';
-import { useSupabaseData } from '../hooks/useSupabaseData';
+import { useFleetData } from '../components/FleetDataProvider'; // Import useFleetData
 
 type MaintenanceEntryFormData = z.infer<typeof maintenanceEntrySchema>;
 
@@ -28,21 +28,17 @@ interface MaintenanceProps {
   onAdd: (tableName: Resource, maintenanceEntry: Omit<MaintenanceEntry, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<void>;
   onUpdate: (tableName: Resource, vehicle: { id: string; last_service_date: string; last_service_mileage: number; mileage: number }, action: Action) => Promise<void>;
   onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<void>;
-  registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void;
+  // registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void; // Removed
 }
 
-const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete, registerRefetch }) => {
+const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete }) => {
   const { canAccess } = usePermissions();
 
-  const { data: maintenanceEntries, isLoading: isLoadingMaintenance, refetch: refetchMaintenance } = useSupabaseData<MaintenanceEntry>('maintenance_entries');
-  const { data: vehicles, isLoading: isLoadingVehicles, refetch: refetchVehicles } = useSupabaseData<Vehicle>('vehicles');
-  const { data: preDepartureChecklists, isLoading: isLoadingChecklists } = useSupabaseData<PreDepartureChecklist>('pre_departure_checklists');
-  // Removed unused drivers fetch: const { data: drivers, isLoading: isLoadingDrivers } = useSupabaseData<Driver>('drivers');
-
-  useEffect(() => {
-    registerRefetch('maintenance_entries', refetchMaintenance);
-    registerRefetch('vehicles', refetchVehicles); // Register refetch for vehicles as well, since maintenance updates vehicle data
-  }, [registerRefetch, refetchMaintenance, refetchVehicles]);
+  // Consume data from FleetContext
+  const { fleetData, isLoadingFleet } = useFleetData();
+  const maintenanceEntries = fleetData.maintenance;
+  const vehicles = fleetData.vehicles;
+  const preDepartureChecklists = fleetData.pre_departure_checklists;
 
   const [showModal, setShowModal] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
@@ -329,7 +325,399 @@ const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete, re
           <select
             value={selectedTypeFilter}
             onChange={(e) => setSelectedTypeFilter(e.target.value)}
+            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-50<dyad-problem-report summary="21 problems">
+<problem file="src/components/Maintenance.tsx" line="3" column="28" code="6133">'PreDepartureChecklist' is declared but its value is never read.</problem>
+<problem file="src/components/Summary.tsx" line="1" column="17" code="6133">'useMemo' is declared but its value is never read.</problem>
+<problem file="src/components/Summary.tsx" line="3" column="1" code="6192">All imports in import declaration are unused.</problem>
+<problem file="src/components/checklists/ChecklistForm.tsx" line="9" column="33" code="6133">'Vehicle' is declared but its value is never read.</problem>
+<problem file="src/components/checklists/ChecklistForm.tsx" line="9" column="42" code="6133">'Driver' is declared but its value is never read.</problem>
+<problem file="src/components/PreDepartureChecklist.tsx" line="34" column="9" code="2451">Cannot redeclare block-scoped variable 'canAdd'.</problem>
+<problem file="src/components/PreDepartureChecklist.tsx" line="207" column="9" code="2451">Cannot redeclare block-scoped variable 'canAdd'.</problem>
+<problem file="src/components/PreDepartureChecklist.tsx" line="1" column="49" code="6133">'useEffect' is declared but its value is never read.</problem>
+<problem file="src/components/PreDepartureChecklist.tsx" line="3" column="68" code="6133">'Vehicle' is declared but its value is never read.</problem>
+<problem file="src/components/PreDepartureChecklist.tsx" line="3" column="77" code="6133">'Driver' is declared but its value is never read.</problem>
+<problem file="src/components/PreDepartureChecklist.tsx" line="235" column="13" code="2322">Type '{ vehicles: Vehicle[]; drivers: Driver[]; onAdd: (tableName: Resource, checklist: Omit&lt;PreDepartureChecklist, &quot;user_id&quot; | &quot;id&quot; | &quot;created_at&quot;&gt;, action: Action) =&gt; Promise&lt;...&gt;; onClose: () =&gt; void; canAdd: boolean; hasChecklistForMonth: (vehicleId: string, month: number, year: number) =&gt; boolean; }' is not assignable to type 'IntrinsicAttributes &amp; ChecklistFormProps'.
+  Property 'vehicles' does not exist on type 'IntrinsicAttributes &amp; ChecklistFormProps'.</problem>
+<problem file="src/pages/Reports.tsx" line="1" column="49" code="6133">'useEffect' is declared but its value is never read.</problem>
+<problem file="src/pages/Reports.tsx" line="120" column="30" code="6133">'tours' is declared but its value is never read.</problem>
+<problem file="src/pages/Reports.tsx" line="120" column="37" code="6133">'fuel' is declared but its value is never read.</problem>
+<problem file="src/pages/Reports.tsx" line="120" column="43" code="6133">'documents' is declared but its value is never read.</problem>
+<problem file="src/pages/Reports.tsx" line="120" column="54" code="6133">'maintenance' is declared but its value is never read.</problem>
+<problem file="src/pages/Reports.tsx" line="120" column="67" code="6133">'pre_departure_checklists' is declared but its value is never read.</problem>
+<problem file="src/App.tsx" line="1" column="10" code="6133">'useState' is declared but its value is never read.</problem>
+<problem file="src/App.tsx" line="1" column="31" code="6133">'useCallback' is declared but its value is never read.</problem>
+<problem file="src/App.tsx" line="31" column="11" code="6133">'refetchFleetData' is declared but its value is never read.</problem>
+<problem file="src/App.tsx" line="258" column="95" code="2741">Property 'registerRefetch' is missing in type '{ key: string; onUpdateUserRole: (userId: string, newRole: UserRole) =&gt; Promise&lt;void&gt;; }' but required in type 'UserManagementProps'.</problem>
+</dyad-problem-report><think>**Eliminating Compile Errors**
+
+I'm currently addressing 21 TypeScript compile-time errors. My focus is on eliminating each one individually. I've begun with `src/components/Maintenance.tsx` and have removed an unused import.  The plan is to work systematically through each error, making the required adjustments to resolve them and achieve a clean build.
+
+
+**Refining Import Statements**
+
+I've made substantial progress on addressing the compile errors.  I've eliminated unused imports in `src/components/Summary.tsx`, `src/components/checklists/ChecklistForm.tsx`, and further pruned imports in `src/components/PreDepartureChecklist.tsx`, streamlining the codebase and reducing clutter.  Currently, I'm focusing on resolving the redeclaration issue in `PreDepartureChecklist.tsx` to ensure `canAdd` is defined only once, leading to cleaner and more efficient code.
+
+
+**Resolving Remaining Issues**
+
+I'm now in the process of rectifying the remaining errors. In `src/components/PreDepartureChecklist.tsx`, I've removed the unnecessary `useEffect`, `Vehicle`, and `Driver` imports and addressed the issue of `canAdd` being redeclared, ensuring it's defined only once. I also removed the superfluous `vehicles` and `drivers` props passed to `ChecklistForm`. The focus has then shifted to `src/pages/Reports.tsx`, where I've eliminated the unused `useEffect` import and cleaned up the destructuring assignment by removing unused variables. Finally, I'm working on `src/App.tsx`, eliminating unused imports for `useState`, `useCallback` and `refetchFleetData`, and removing `registerRefetch` prop from `UserManagement`, as it's handled by `FleetDataProvider`.
+
+
+**Tackling Remaining Imports**
+
+I've been systematically addressing the TypeScript errors. I've focused on `src/components/Maintenance.tsx`, `src/components/Summary.tsx`, `src/components/checklists/ChecklistForm.tsx`, and `src/components/PreDepartureChecklist.tsx`, streamlining imports. I've eliminated unused imports and addressed the `canAdd` redeclaration issue in `PreDepartureChecklist.tsx`.  Now, I'm working on `src/pages/Reports.tsx` and `src/App.tsx`, eliminating unused imports and variables in destructuring assignments, and removing the unnecessary `registerRefetch` prop.
+
+
+</think>Je vais corriger ces 21 erreurs de compilation TypeScript. Elles sont principalement dues à des imports inutilisés et à quelques incohérences dans les props passées aux composants après la refactorisation pour le `FleetDataProvider`.
+
+Voici les modifications que je vais apporter :
+
+1.  **`src/components/Maintenance.tsx`**: Supprimer l'import inutilisé de `PreDepartureChecklist`.
+2.  **`src/components/Summary.tsx`**: Supprimer les imports inutilisés de `useMemo` et des types `FleetData`, `Resource`, `Vehicle`, `Driver`, `Tour`, `FuelEntry`, `MaintenanceEntry`, `Document`.
+3.  **`src/components/checklists/ChecklistForm.tsx`**: Supprimer les imports inutilisés des types `Vehicle` et `Driver`.
+4.  **`src/components/PreDepartureChecklist.tsx`**:
+    *   Corriger la double déclaration de la variable `canAdd`.
+    *   Supprimer les imports inutilisés de `useEffect`, `Vehicle` et `Driver`.
+    *   Retirer les props `vehicles` et `drivers` de l'appel à `ChecklistForm`, car ce composant les consomme désormais directement du `FleetContext`.
+5.  **`src/pages/Reports.tsx`**:
+    *   Supprimer l'import inutilisé de `useEffect`.
+    *   Retirer les variables `tours`, `fuel`, `documents`, `maintenance`, `pre_departure_checklists` du destructuring de `fleetData` car elles ne sont pas directement utilisées dans ce composant.
+6.  **`src/App.tsx`**:
+    *   Supprimer les imports inutilisés de `useState` et `useCallback`.
+    *   Retirer `refetchFleetData` du destructuring de `useFleetData` car il n'est pas utilisé dans `AppContent`.
+    *   Mettre à jour l'interface `UserManagementProps` pour retirer `registerRefetch` et supprimer cette prop de l'appel au composant `UserManagement` dans les routes.
+
+Voici le code mis à jour :
+
+<dyad-write path="src/components/Maintenance.tsx" description="Suppression de l'import inutilisé de PreDepartureChecklist.">
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { Wrench, AlertTriangle, Clock, ClipboardCheck } from 'lucide-react';
+import { MaintenanceEntry, DataTableColumn, Vehicle, Resource, Action } from '../types';
+import { showSuccess } from '../utils/toast';
+import { formatDate } from '../utils/date';
+import { useForm, FormProvider } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { maintenanceEntrySchema } from '../types/formSchemas';
+import { z } from 'zod';
+import { Button } from './ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from './ui/dialog';
+import DataTable from './DataTable';
+import { usePermissions } from '../hooks/usePermissions';
+import { LOCAL_STORAGE_KEYS } from '../utils/constants';
+import FormField from './forms/FormField';
+import { useFleetData } from '../components/FleetDataProvider'; // Import useFleetData
+
+type MaintenanceEntryFormData = z.infer<typeof maintenanceEntrySchema>;
+
+interface MaintenanceProps {
+  onAdd: (tableName: Resource, maintenanceEntry: Omit<MaintenanceEntry, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<void>;
+  onUpdate: (tableName: Resource, vehicle: { id: string; last_service_date: string; last_service_mileage: number; mileage: number }, action: Action) => Promise<void>;
+  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<void>;
+  // registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void; // Removed
+}
+
+const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete }) => {
+  const { canAccess } = usePermissions();
+
+  // Consume data from FleetContext
+  const { fleetData, isLoadingFleet } = useFleetData();
+  const maintenanceEntries = fleetData.maintenance;
+  const vehicles = fleetData.vehicles;
+  const preDepartureChecklists = fleetData.pre_departure_checklists;
+
+  const [showModal, setShowModal] = useState(false);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
+
+  const methods = useForm<MaintenanceEntryFormData>({
+    resolver: zodResolver(maintenanceEntrySchema),
+    defaultValues: {
+      vehicle_id: '',
+      type: 'Vidange',
+      date: new Date().toISOString().split('T')[0],
+      mileage: 0,
+      cost: 0,
+    }
+  });
+
+  const { handleSubmit, reset, watch } = methods;
+
+  // Function to reset form and clear saved data
+  const resetFormAndClearStorage = useCallback(() => {
+    reset({
+      vehicle_id: '',
+      type: 'Vidange',
+      date: new Date().toISOString().split('T')[0],
+      mileage: 0,
+      cost: 0,
+    });
+    localStorage.removeItem(LOCAL_STORAGE_KEYS.MAINTENANCE_FORM_DATA);
+  }, [reset]);
+
+  // Effect to load saved form data when modal opens for a new maintenance entry
+  useEffect(() => {
+    if (showModal && !selectedVehicleId) { // Only for new maintenance entry forms (not pre-filled from vehicle)
+      const savedFormData = localStorage.getItem(LOCAL_STORAGE_KEYS.MAINTENANCE_FORM_DATA);
+      if (savedFormData) {
+        try {
+          const parsedData = JSON.parse(savedFormData);
+          if (parsedData.date) {
+            parsedData.date = new Date(parsedData.date).toISOString().split('T')[0];
+          }
+          reset(parsedData);
+        } catch (e) {
+          console.error("Failed to parse saved maintenance form data", e);
+          localStorage.removeItem(LOCAL_STORAGE_KEYS.MAINTENANCE_FORM_DATA);
+        }
+      }
+    }
+  }, [showModal, selectedVehicleId, reset]);
+
+  // Effect to save form data to localStorage whenever it changes (for new maintenance entry forms)
+  useEffect(() => {
+    if (showModal && !selectedVehicleId) { // Only save for new maintenance entry forms
+      const subscription = watch((value: Partial<MaintenanceEntryFormData>) => {
+        localStorage.setItem(LOCAL_STORAGE_KEYS.MAINTENANCE_FORM_DATA, JSON.stringify(value));
+      });
+      return () => subscription.unsubscribe();
+    }
+  }, [showModal, selectedVehicleId, watch]);
+
+  // Reset form when selectedVehicleId changes (for pre-filling) or when modal closes (for new mode)
+  React.useEffect(() => {
+    if (selectedVehicleId) {
+      reset({
+        vehicle_id: selectedVehicleId,
+        type: 'Vidange',
+        date: new Date().toISOString().split('T')[0],
+        mileage: vehicles.find(v => v.id === selectedVehicleId)?.mileage || 0,
+        cost: 0,
+      });
+    } else {
+      resetFormAndClearStorage(); // Use the new reset function
+    }
+  }, [selectedVehicleId, resetFormAndClearStorage, vehicles]);
+
+  // State for filtering for Maintenance History
+  const [selectedVehicleFilter, setSelectedVehicleFilter] = useState<string>('');
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+
+  // Get unique types for filter options
+  const uniqueMaintenanceTypes = useMemo(() => {
+    const types = new Set(maintenanceEntries.map(m => m.type));
+    return Array.from(types);
+  }, [maintenanceEntries]);
+
+  const handleAddMaintenance = (vehicleId?: string) => {
+    setSelectedVehicleId(vehicleId || '');
+    setShowModal(true);
+  };
+
+  const handleEditMaintenance = (maintenanceEntry: MaintenanceEntry) => {
+    // For now, DataTable doesn't support editing, but if it did, this would be the handler
+    // This function is currently not used by DataTable, but kept for future expansion
+    console.log("Edit maintenance entry:", maintenanceEntry);
+    // You would typically set editingFuel and show the modal here
+    // setEditingFuel(maintenanceEntry);
+    // setShowModal(true);
+  };
+
+  // Removed unused handleDeleteMaintenance function
+  // const handleDeleteMaintenance = async (id: string) => {
+  //   await onDelete('maintenance_entries', { id }, 'delete');
+  //   showSuccess('Entrée de maintenance supprimée avec succès !');
+  // };
+
+  const onSubmit = async (maintenanceData: MaintenanceEntryFormData) => {
+    await onAdd('maintenance_entries', maintenanceData, 'add');
+    showSuccess('Entrée de maintenance ajoutée avec succès !');
+
+    // If it's an oil change, update vehicle info
+    if (maintenanceData.type === 'Vidange') {
+      await onUpdate('vehicles', {
+        id: maintenanceData.vehicle_id,
+        last_service_date: maintenanceData.date,
+        last_service_mileage: maintenanceData.mileage,
+        mileage: maintenanceData.mileage, // Also update current mileage
+      }, 'edit');
+      showSuccess('Informations du véhicule mises à jour après la vidange !');
+    }
+
+    setShowModal(false);
+    resetFormAndClearStorage(); // Clear saved data on successful submission
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    resetFormAndClearStorage(); // Clear saved data on modal close
+  };
+
+  const getMaintenanceStatus = (vehicle: Vehicle) => {
+    const nextServiceKm = (vehicle.last_service_mileage || 0) + 10000;
+    const kmUntilService = nextServiceKm - vehicle.mileage;
+    
+    if (kmUntilService <= 0) {
+      return { text: 'URGENT', class: 'bg-red-100 text-red-800', icon: AlertTriangle };
+    } else if (kmUntilService <= 1000) {
+      return { text: 'Bientôt', class: 'bg-orange-100 text-orange-800', icon: Clock };
+    } else {
+      return { text: 'OK', class: 'bg-green-100 text-green-800', icon: Wrench };
+    }
+  };
+
+  // Filter checklists with issues to address - MOVED TO COMPONENT SCOPE
+  const checklistsWithIssues = useMemo(() => {
+    return preDepartureChecklists.filter(cl => cl.issues_to_address && cl.issues_to_address.trim() !== '');
+  }, [preDepartureChecklists]);
+
+  const renderMaintenanceAlerts = useCallback(() => {
+    const upcomingMaintenanceCount = vehicles.filter(vehicle => {
+      const nextService = (vehicle.last_service_mileage || 0) + 10000;
+      const kmUntilService = nextService - vehicle.mileage;
+      return kmUntilService <= 1000 && kmUntilService > 0;
+    }).length;
+
+    const urgentMaintenanceCount = vehicles.filter(vehicle => {
+      const nextService = (vehicle.last_service_mileage || 0) + 10000;
+      const kmUntilService = nextService - vehicle.mileage;
+      return kmUntilService <= 0;
+    }).length;
+
+    if (urgentMaintenanceCount === 0 && upcomingMaintenanceCount === 0 && checklistsWithIssues.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="space-y-4 animate-slide-up">
+        {urgentMaintenanceCount > 0 && (
+          <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg glass">
+            <div className="flex items-center">
+              <AlertTriangle className="w-5 h-5 text-red-400 mr-3" />
+              <div>
+                <h3 className="text-red-800 font-semibold">Maintenance Urgente Requise</h3>
+                <p className="text-red-700">
+                  {urgentMaintenanceCount} véhicule(s) ont dépassé leur échéance de maintenance.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        {upcomingMaintenanceCount > 0 && (
+          <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-r-lg glass">
+            <div className="flex items-center">
+              <Clock className="w-5 h-5 text-orange-400 mr-3" />
+              <div>
+                <h3 className="text-orange-800 font-semibold">Maintenance à Venir</h3>
+                <p className="text-orange-700">
+                  {upcomingMaintenanceCount} véhicule(s) nécessitent une maintenance dans moins de 1000 km.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        {checklistsWithIssues.length > 0 && (
+          <div className="bg-purple-50 border-l-4 border-purple-400 p-4 rounded-r-lg glass">
+            <div className="flex items-center">
+              <ClipboardCheck className="w-5 h-5 text-purple-400 mr-3" />
+              <div>
+                <h3 className="text-purple-800 font-semibold">Points à Traiter (Checklists)</h3>
+                <p className="text-purple-700">
+                  {checklistsWithIssues.length} checklist(s) contiennent des problèmes à résoudre.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }, [vehicles, checklistsWithIssues]); // Added checklistsWithIssues to dependencies
+
+  const vehicleMaintenanceColumns: DataTableColumn<Vehicle>[] = useMemo(() => [
+    { key: 'plate', label: 'Véhicule', sortable: true, defaultVisible: true },
+    { key: 'mileage', label: 'Km Actuel', sortable: true, defaultVisible: true, render: (item) => `${item.mileage.toLocaleString()} km` },
+    { key: 'last_service_date', label: 'Dernière Vidange', sortable: true, defaultVisible: true, render: (item) => formatDate(item.last_service_date) || 'N/A' },
+    { key: 'last_service_mileage', label: 'Km Dernière Vidange', sortable: true, defaultVisible: true, render: (item) => `${(item.last_service_mileage || 0).toLocaleString()} km` },
+    { 
+      key: 'next_service_km', 
+      label: 'Prochaine Vidange', 
+      sortable: true, 
+      defaultVisible: true, 
+      render: (item) => {
+        const nextServiceKm = (item.last_service_mileage || 0) + 10000;
+        return `${nextServiceKm.toLocaleString()} km`;
+      }
+    },
+    { 
+      key: 'status', 
+      label: 'Statut', 
+      sortable: false, 
+      defaultVisible: true, 
+      render: (item) => {
+        const status = getMaintenanceStatus(item);
+        const Icon = status.icon;
+        return (
+          <span className={`px-3 py-1 text-xs rounded-full font-medium flex items-center space-x-1 ${status.class}`}>
+            <Icon className="w-4 h-4" />
+            <span>{status.text}</span>
+          </span>
+        );
+      }
+    },
+  ], [getMaintenanceStatus]);
+
+  const maintenanceHistoryColumns: DataTableColumn<MaintenanceEntry>[] = useMemo(() => [
+    { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item) => formatDate(item.date) },
+    {
+      key: 'vehicle_id',
+      label: 'Véhicule',
+      sortable: true,
+      defaultVisible: true,
+      render: (item) => vehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A',
+    },
+    { key: 'type', label: 'Type', sortable: true, defaultVisible: true },
+    { key: 'mileage', label: 'Kilométrage', sortable: true, defaultVisible: true, render: (item) => `${item.mileage.toLocaleString()} km` },
+    { key: 'cost', label: 'Coût', sortable: true, defaultVisible: true, render: (item) => `${item.cost.toFixed(2)} TND` },
+  ], [vehicles]);
+
+  const renderFilters = useCallback((searchTerm: string, setSearchTerm: (term: string) => void) => {
+    return (
+      <>
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Rechercher une entrée de maintenance..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all glass"
+          />
+        </div>
+        <div>
+          <select
+            value={selectedVehicleFilter}
+            onChange={(e) => setSelectedVehicleFilter(e.target.value)}
             className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">Tous les véhicules</option>
+            {vehicles.map(vehicle => (
+              <option key={vehicle.id} value={vehicle.id}>
+                {vehicle.plate} - {vehicle.type}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <select
+            value={selectedTypeFilter}
+            onChange={(e) => setSelectedTypeFilter(e.target.value)}
+            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Tous les types</option>
             {uniqueMaintenanceTypes.map(type => (
@@ -377,8 +765,6 @@ const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete, re
   const canAddForm = canAccess('maintenance_entries', 'add');
   const canEditForm = canAccess('maintenance_entries', 'edit');
 
-  const isLoadingCombined = isLoadingMaintenance || isLoadingVehicles || isLoadingChecklists; // Removed isLoadingDrivers
-
   return (
     <div className="space-y-6">
       {renderMaintenanceAlerts()}
@@ -391,7 +777,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete, re
         addLabel="Ajouter Maintenance"
         searchPlaceholder="Rechercher un véhicule par plaque, type ou statut..."
         exportFileName="maintenance_vehicules"
-        isLoading={isLoadingCombined}
+        isLoading={isLoadingFleet}
         resourceType="vehicles"
         renderRowActions={(item) => (
           <Button
@@ -415,7 +801,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete, re
         addLabel="Nouvelle Entrée"
         searchPlaceholder="Rechercher une entrée de maintenance..."
         exportFileName="historique_maintenance"
-        isLoading={isLoadingCombined}
+        isLoading={isLoadingFleet}
         renderFilters={renderFilters}
         customFilter={customFilter}
         resourceType="maintenance_entries"

@@ -7,21 +7,28 @@ import { Resource } from '../types';
 interface UseSupabaseDataOptions {
   enabled?: boolean; // Whether the query should run
   filters?: (query: any) => any; // Function to apply additional filters to the Supabase query
+  skipUserIdFilter?: boolean; // New option to skip user_id filter
+  manualFetch?: boolean; // New option to prevent automatic fetching on mount/session change
 }
 
 export const useSupabaseData = <T>(
   tableName: Resource,
   options?: UseSupabaseDataOptions
 ) => {
-  const { session, isLoading: isSessionLoading } = useSession();
+  const { session, currentUser, isLoading: isSessionLoading } = useSession();
   const [data, setData] = useState<T[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { enabled = true, filters } = options || {};
+  const { enabled = true, filters, skipUserIdFilter = false, manualFetch = false } = options || {};
 
   const fetchData = useCallback(async () => {
-    if (!session?.user || !enabled) {
+    if (!session?.user && !skipUserIdFilter) { // If not authenticated and not skipping user_id filter
+      setData([]);
+      setIsLoading(false);
+      return;
+    }
+    if (!enabled) {
       setData([]);
       setIsLoading(false);
       return;
@@ -33,8 +40,12 @@ export const useSupabaseData = <T>(
     try {
       let query = supabase.from(tableName).select('*');
 
-      // Apply user_id filter by default
-      query = query.eq('user_id', session.user.id);
+      // Apply user_id filter by default, unless skipUserIdFilter is true AND user is admin/direction
+      const shouldSkipUserIdFilter = skipUserIdFilter && (currentUser?.role === 'admin' || currentUser?.role === 'direction');
+      
+      if (!shouldSkipUserIdFilter) {
+        query = query.eq('user_id', session!.user.id); // session.user is guaranteed if !shouldSkipUserIdFilter
+      }
 
       // Apply additional filters if provided
       if (filters) {
@@ -54,13 +65,13 @@ export const useSupabaseData = <T>(
     } finally {
       setIsLoading(false);
     }
-  }, [session?.user, tableName, enabled, filters]);
+  }, [session?.user, currentUser?.role, tableName, enabled, filters, skipUserIdFilter]);
 
   useEffect(() => {
-    if (!isSessionLoading) {
+    if (!manualFetch && !isSessionLoading) {
       fetchData();
     }
-  }, [isSessionLoading, fetchData]);
+  }, [manualFetch, isSessionLoading, fetchData]);
 
   return { data, isLoading, error, refetch: fetchData };
 };

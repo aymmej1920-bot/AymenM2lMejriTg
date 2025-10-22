@@ -22,7 +22,7 @@ import { usePermissions } from '../hooks/usePermissions';
 import XLSXImportDialog from './XLSXImportDialog'; // Import the new component
 import { exportTemplateToXLSX } from '../utils/templateExport'; // Import the new utility
 import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
-import { useSupabaseData } from '../hooks/useSupabaseData'; // Import useSupabaseData
+import { useFleetData } from '../components/FleetDataProvider'; // Import useFleetData
 
 type DriverFormData = z.infer<typeof driverSchema>;
 
@@ -30,17 +30,15 @@ interface DriversProps {
   onAdd: (tableName: Resource, driver: Omit<Driver, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<void>;
   onUpdate: (tableName: Resource, driver: Driver, action: Action) => Promise<void>;
   onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<void>;
-  registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void;
+  // registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void; // Removed
 }
 
-const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete, registerRefetch }) => {
+const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
   const { canAccess } = usePermissions();
 
-  const { data: drivers, isLoading, refetch } = useSupabaseData<Driver>('drivers');
-
-  useEffect(() => {
-    registerRefetch('drivers', refetch);
-  }, [registerRefetch, refetch]);
+  // Consume data from FleetContext
+  const { fleetData, isLoadingFleet } = useFleetData();
+  const drivers = fleetData.drivers;
 
   const [showModal, setShowModal] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
@@ -264,7 +262,7 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete, registerRe
         addLabel="Ajouter Conducteur"
         searchPlaceholder="Rechercher un conducteur par nom, permis, statut ou téléphone..."
         exportFileName="conducteurs"
-        isLoading={isLoading}
+        isLoading={isLoadingFleet}
         renderAlerts={renderAlerts}
         resourceType="drivers"
         renderCustomHeaderButtons={renderCustomHeaderButtons} // Pass the custom buttons

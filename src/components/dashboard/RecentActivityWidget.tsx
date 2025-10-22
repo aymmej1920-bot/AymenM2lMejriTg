@@ -1,21 +1,20 @@
 import React from 'react';
 import { Route } from 'lucide-react';
-import { Tour, Vehicle, Driver } from '../../types';
 import { formatDate } from '../../utils/date';
-import { useSupabaseData } from '../../hooks/useSupabaseData'; // Import useSupabaseData
+import { useFleetData } from '../FleetDataProvider'; // Import useFleetData
 
 interface RecentActivityWidgetProps {
   // data: FleetData; // No longer needed as data is fetched internally
 }
 
 const RecentActivityWidget: React.FC<RecentActivityWidgetProps> = () => {
-  const { data: tours, isLoading: isLoadingTours } = useSupabaseData<Tour>('tours');
-  const { data: vehicles, isLoading: isLoadingVehicles } = useSupabaseData<Vehicle>('vehicles');
-  const { data: drivers, isLoading: isLoadingDrivers } = useSupabaseData<Driver>('drivers');
+  // Consume data from FleetContext
+  const { fleetData, isLoadingFleet } = useFleetData();
+  const tours = fleetData.tours;
+  const vehicles = fleetData.vehicles;
+  const drivers = fleetData.drivers;
 
-  const isLoadingCombined = isLoadingTours || isLoadingVehicles || isLoadingDrivers;
-
-  if (isLoadingCombined) {
+  if (isLoadingFleet) {
     return null; // Or a small skeleton loader if preferred
   }
 

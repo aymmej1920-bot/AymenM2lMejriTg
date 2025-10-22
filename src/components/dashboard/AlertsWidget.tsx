@@ -1,8 +1,7 @@
 import React from 'react';
 import { AlertTriangle, ClipboardCheck } from 'lucide-react';
-import { PreDepartureChecklist, Vehicle, Document } from '../../types';
 import { getDaysUntilExpiration } from '../../utils/date';
-import { useSupabaseData } from '../../hooks/useSupabaseData'; // Import useSupabaseData
+import { useFleetData } from '../FleetDataProvider'; // Import useFleetData
 
 interface AlertsWidgetProps {
   // data: FleetData; // No longer needed as data is fetched internally
@@ -10,9 +9,9 @@ interface AlertsWidgetProps {
 }
 
 const AlertsWidget: React.FC<AlertsWidgetProps> = () => {
-  const { data: vehicles, isLoading: isLoadingVehicles } = useSupabaseData<Vehicle>('vehicles');
-  const { data: documents, isLoading: isLoadingDocuments } = useSupabaseData<Document>('documents');
-  const { data: preDepartureChecklists, isLoading: isLoadingChecklists } = useSupabaseData<PreDepartureChecklist>('pre_departure_checklists');
+  // Consume data from FleetContext
+  const { fleetData, isLoadingFleet } = useFleetData();
+  const { vehicles, documents, pre_departure_checklists: preDepartureChecklists } = fleetData;
 
   const maintenanceAlerts = vehicles.filter(vehicle => {
     const nextService = (vehicle.last_service_mileage || 0) + 10000;
@@ -27,9 +26,7 @@ const AlertsWidget: React.FC<AlertsWidgetProps> = () => {
 
   const checklistsWithIssues = preDepartureChecklists.filter(cl => cl.issues_to_address && cl.issues_to_address.trim() !== '');
 
-  const isLoadingCombined = isLoadingVehicles || isLoadingDocuments || isLoadingChecklists;
-
-  if (isLoadingCombined) {
+  if (isLoadingFleet) {
     return null; // Or a small skeleton loader if preferred
   }
 

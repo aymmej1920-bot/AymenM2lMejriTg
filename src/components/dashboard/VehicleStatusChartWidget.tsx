@@ -1,16 +1,17 @@
 import React from 'react';
-import { Vehicle } from '../../types';
 import VehicleStatusChart from '../charts/VehicleStatusChart';
-import { useSupabaseData } from '../../hooks/useSupabaseData'; // Import useSupabaseData
+import { useFleetData } from '../FleetDataProvider'; // Import useFleetData
 
 interface VehicleStatusChartWidgetProps {
   // data: FleetData; // No longer needed as data is fetched internally
 }
 
 const VehicleStatusChartWidget: React.FC<VehicleStatusChartWidgetProps> = () => {
-  const { data: vehicles, isLoading: isLoadingVehicles } = useSupabaseData<Vehicle>('vehicles');
+  // Consume data from FleetContext
+  const { fleetData, isLoadingFleet } = useFleetData();
+  const vehicles = fleetData.vehicles;
 
-  if (isLoadingVehicles) {
+  if (isLoadingFleet) {
     return null; // Or a small skeleton loader if preferred
   }
 

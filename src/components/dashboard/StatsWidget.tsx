@@ -1,15 +1,16 @@
 import React from 'react';
 import { Route, Fuel, TrendingUp } from 'lucide-react';
-import { FuelEntry, Tour } from '../../types';
-import { useSupabaseData } from '../../hooks/useSupabaseData'; // Import useSupabaseData
+import { useFleetData } from '../FleetDataProvider'; // Import useFleetData
 
 interface StatsWidgetProps {
   // data: FleetData; // No longer needed as data is fetched internally
 }
 
 const StatsWidget: React.FC<StatsWidgetProps> = () => {
-  const { data: fuelEntries, isLoading: isLoadingFuel } = useSupabaseData<FuelEntry>('fuel_entries');
-  const { data: tours, isLoading: isLoadingTours } = useSupabaseData<Tour>('tours');
+  // Consume data from FleetContext
+  const { fleetData, isLoadingFleet } = useFleetData();
+  const fuelEntries = fleetData.fuel;
+  const tours = fleetData.tours;
 
   const totalFuelCost = fuelEntries.reduce((sum, f) => sum + (f.liters * f.price_per_liter), 0);
   const totalDistance = tours.filter(t => t.distance).reduce((sum, t) => sum + (t.distance || 0), 0);
@@ -38,9 +39,7 @@ const StatsWidget: React.FC<StatsWidgetProps> = () => {
     }
   ];
 
-  const isLoadingCombined = isLoadingFuel || isLoadingTours;
-
-  if (isLoadingCombined) {
+  if (isLoadingFleet) {
     return null; // Or a small skeleton loader if preferred
   }
 

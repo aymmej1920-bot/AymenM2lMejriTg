@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Calendar } from 'lucide-react'; // Seul Calendar est utilisé dans le formulaire
-import { Tour, DataTableColumn, Resource, Action, Vehicle, Driver } from '../types';
+import { Tour, DataTableColumn, Resource, Action } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date';
 import { Button } from './ui/button';
@@ -20,7 +20,7 @@ import DataTable from './DataTable'; // Import the new DataTable component
 import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
 import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
 import FormField from './forms/FormField'; // Import FormField
-import { useSupabaseData } from '../hooks/useSupabaseData'; // Import useSupabaseData
+import { useFleetData } from '../components/FleetDataProvider'; // Import useFleetData
 
 type TourFormData = z.infer<typeof tourSchema>;
 
@@ -28,19 +28,17 @@ interface ToursProps {
   onAdd: (tableName: Resource, tour: Omit<Tour, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<void>;
   onUpdate: (tableName: Resource, tour: Tour, action: Action) => Promise<void>;
   onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<void>;
-  registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void;
+  // registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void; // Removed
 }
 
-const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete, registerRefetch }) => {
+const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
   const { canAccess } = usePermissions(); // Use usePermissions hook
 
-  const { data: tours, isLoading: isLoadingTours, refetch: refetchTours } = useSupabaseData<Tour>('tours');
-  const { data: vehicles, isLoading: isLoadingVehicles } = useSupabaseData<Vehicle>('vehicles');
-  const { data: drivers, isLoading: isLoadingDrivers } = useSupabaseData<Driver>('drivers');
-
-  useEffect(() => {
-    registerRefetch('tours', refetchTours);
-  }, [registerRefetch, refetchTours]);
+  // Consume data from FleetContext
+  const { fleetData, isLoadingFleet } = useFleetData();
+  const tours = fleetData.tours;
+  const vehicles = fleetData.vehicles;
+  const drivers = fleetData.drivers;
 
   const [showModal, setShowModal] = useState(false);
   const [editingTour, setEditingTour] = useState<Tour | null>(null);
@@ -233,7 +231,9 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete, registerRefetc
         <div>
           <select
             value={selectedVehicle}
-            onChange={(e) => setSelectedVehicle(e.target.value)}
+            onChange={(e) => {
+              setSelectedVehicle(e.target.value);
+            }}
             className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Tous les véhicules</option>
@@ -313,8 +313,6 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete, registerRefetc
   const canAddForm = canAccess('tours', 'add');
   const canEditForm = canAccess('tours', 'edit');
 
-  const isLoadingCombined = isLoadingTours || isLoadingVehicles || isLoadingDrivers;
-
   return (
     <>
       <DataTable
@@ -327,7 +325,7 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete, registerRefetc
         addLabel="Nouvelle Tournée"
         searchPlaceholder="Rechercher par date, véhicule, conducteur ou statut..."
         exportFileName="tournees"
-        isLoading={isLoadingCombined}
+        isLoading={isLoadingFleet}
         renderFilters={renderFilters}
         customFilter={filterData} // Pass the custom filter function
         resourceType="tours" // Pass resource type

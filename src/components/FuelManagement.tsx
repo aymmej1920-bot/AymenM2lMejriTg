@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Fuel, DollarSign, TrendingUp, Calendar, Search } from 'lucide-react';
-import { FuelEntry, DataTableColumn, Resource, Action, Vehicle } from '../types';
+import { FuelEntry, DataTableColumn, Resource, Action } from '../types';
 import { showSuccess } from '../utils/toast';
 import { formatDate } from '../utils/date';
 import { Button } from './ui/button';
@@ -20,7 +20,7 @@ import DataTable from './DataTable'; // Import the new DataTable component
 import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
 import { LOCAL_STORAGE_KEYS } from '../utils/constants'; // Import constants
 import FormField from './forms/FormField'; // Import FormField
-import { useSupabaseData } from '../hooks/useSupabaseData'; // Import useSupabaseData
+import { useFleetData } from '../components/FleetDataProvider'; // Import useFleetData
 
 type FuelEntryFormData = z.infer<typeof fuelEntrySchema>;
 
@@ -28,18 +28,16 @@ interface FuelManagementProps {
   onAdd: (tableName: Resource, fuelEntry: Omit<FuelEntry, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<void>;
   onUpdate: (tableName: Resource, fuelEntry: FuelEntry, action: Action) => Promise<void>;
   onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<void>;
-  registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void;
+  // registerRefetch: (resource: Resource, refetch: () => Promise<void>) => void; // Removed
 }
 
-const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDelete, registerRefetch }) => {
+const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDelete }) => {
   const { canAccess } = usePermissions(); // Use usePermissions hook
 
-  const { data: fuelEntries, isLoading: isLoadingFuel, refetch: refetchFuel } = useSupabaseData<FuelEntry>('fuel_entries');
-  const { data: vehicles, isLoading: isLoadingVehicles } = useSupabaseData<Vehicle>('vehicles');
-
-  useEffect(() => {
-    registerRefetch('fuel_entries', refetchFuel);
-  }, [registerRefetch, refetchFuel]);
+  // Consume data from FleetContext
+  const { fleetData, isLoadingFleet } = useFleetData();
+  const fuelEntries = fleetData.fuel;
+  const vehicles = fleetData.vehicles;
 
   const [showModal, setShowModal] = useState(false);
   const [editingFuel, setEditingFuel] = useState<FuelEntry | null>(null);
@@ -233,8 +231,6 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
       const canAddForm = canAccess('fuel_entries', 'add');
       const canEditForm = canAccess('fuel_entries', 'edit');
 
-      const isLoadingCombined = isLoadingFuel || isLoadingVehicles;
-    
       return (
         <div className="space-y-6">
           <div className="flex justify-between items-center">
@@ -290,7 +286,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
             addLabel="Ajouter Plein"
             searchPlaceholder="Rechercher par date, véhicule, litres, prix ou kilométrage..."
             exportFileName="carburant"
-            isLoading={isLoadingCombined}
+            isLoading={isLoadingFleet}
             renderFilters={renderFilters}
             customFilter={customFilter}
             resourceType="fuel_entries" // Pass resource type
