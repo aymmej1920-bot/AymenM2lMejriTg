@@ -243,7 +243,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
               setEndDate('');
               setViewMode('table'); // Reset to table view on data source change
               // Reset pagination and sorting for the new data source
-              setResourcePaginationState(e.target.value as Resource, { currentPage: 1, sortColumn: columns[0]?.key || '', sortDirection: 'asc' });
+              setResourcePaginationState(e.target.value as Resource, { currentPage: 1, sortColumn: columns[0]?.key as string || '', sortDirection: 'asc' });
             }}
             className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >

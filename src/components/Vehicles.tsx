@@ -304,7 +304,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
             <DialogDescription>
               {editingVehicle ? 'Modifiez les détails du véhicule.' : 'Ajoutez un nouveau véhicule à votre flotte.'}
             </DialogDescription>
-          </DialogDescription>
+          </DialogHeader>
           <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
               <FormField name="plate" label="Plaque d'immatriculation" type="text" placeholder="Ex: 123TU456" disabled={isSubmitting || (!canEditForm && !!editingVehicle) || (!canAddForm && !editingVehicle)} />

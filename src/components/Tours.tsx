@@ -368,7 +368,7 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
             <DialogDescription>
               {editingTour ? 'Modifiez les détails de la tournée.' : 'Ajoutez une nouvelle tournée.'}
             </DialogDescription>
-          </DialogDescription>
+          </DialogHeader>
           <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">

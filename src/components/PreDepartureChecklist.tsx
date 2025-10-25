@@ -230,6 +230,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
         searchPlaceholder="Rechercher une checklist par date, véhicule, conducteur, observations ou problèmes..."
         exportFileName="checklists_avant_depart"
         isLoading={isLoadingFleet}
+        renderAlerts={renderAlerts} {/* Pass renderAlerts here */}
         renderFilters={renderFilters}
         customFilter={customFilter}
         resourceType="pre_departure_checklists"

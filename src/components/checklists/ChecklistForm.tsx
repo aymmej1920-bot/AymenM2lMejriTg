@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'; // Import useState
+import React, { useCallback, useEffect, useState } from 'react';
 import { useForm, FormProvider, Controller, FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -7,7 +7,7 @@ import { DialogFooter } from '../ui/dialog';
 import FormField from '../forms/FormField';
 import { preDepartureChecklistSchema } from '../../types/formSchemas';
 import { PreDepartureChecklist, Resource, Action, OperationResult, Vehicle, Driver } from '../../types';
-import { showSuccess, showError, showLoading, updateToast } from '../../utils/toast'; // Import updateToast
+import { showError, showLoading, updateToast } from '../../utils/toast'; // Removed showSuccess
 import { LOCAL_STORAGE_KEYS } from '../../utils/constants';
 import { useFleetData } from '../../components/FleetDataProvider';
 import { Loader2 } from 'lucide-react'; // Import Loader2
@@ -49,7 +49,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
     }
   });
 
-  const { handleSubmit, reset, watch, control, formState: { errors } } = methods;
+  const { handleSubmit, reset, watch, control } = methods; // Removed unused 'errors' from formState
 
   const resetFormAndClearStorage = useCallback(() => {
     reset({

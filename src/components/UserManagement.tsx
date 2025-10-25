@@ -20,7 +20,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole }) => 
   const {
     loading,
     error,
-    filteredAndSortedUsers,
+    // filteredAndSortedUsers, // Removed unused variable
     totalPages,
     currentUsers,
     itemsPerPageOptions,

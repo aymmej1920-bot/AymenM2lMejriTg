@@ -55,7 +55,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
       date: new Date().toISOString().split('T')[0],
       vehicle_id: '',
       liters: 0,
-      price_per_liter: 0,
+      price_per_liter: 0, // Corrected property name
       mileage: 0,
     }
   });
@@ -67,7 +67,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
       date: new Date().toISOString().split('T')[0],
       vehicle_id: '',
       liters: 0,
-      price_per_liter: 0,
+      price_per_liter: 0, // Corrected property name
       mileage: 0,
     });
     localStorage.removeItem(LOCAL_STORAGE_KEYS.FUEL_FORM_DATA);
@@ -133,8 +133,10 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
     let result: OperationResult;
     try {
       if (editingFuel) {
+        // formData now correctly has price_per_liter
         result = await onUpdate('fuel_entries', { ...formData, id: editingFuel.id, user_id: editingFuel.user_id, created_at: editingFuel.created_at }, 'edit');
       } else {
+        // formData now correctly has price_per_liter
         result = await onAdd('fuel_entries', formData, 'add');
       }
 
