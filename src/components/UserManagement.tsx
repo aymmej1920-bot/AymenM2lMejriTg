@@ -26,8 +26,8 @@ import React from 'react';
         itemsPerPageOptions,
         searchTerm,
         setSearchTerm,
-        selectedRoleFilter,
-        setSelectedRoleFilter,
+        // selectedRoleFilter, // This filter will no longer be functional
+        // setSelectedRoleFilter, // This filter will no longer be functional
         sortColumn,
         sortDirection,
         handleSort,
@@ -46,7 +46,6 @@ import React from 'react';
         // handleEditRole, // Removed
         // newRole, // Removed
         // setNewRole, // Removed
-        // handleSaveRole, // Removed
         showInviteUserDialog,
         setShowInviteUserDialog,
         isInviting,
@@ -135,8 +134,8 @@ import React from 'react';
             users={currentUsers} // Pass current page users
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
-            selectedRoleFilter={selectedRoleFilter} // This filter will no longer be functional
-            setSelectedRoleFilter={setSelectedRoleFilter} // This filter will no longer be functional
+            // selectedRoleFilter={selectedRoleFilter} // This filter will no longer be functional
+            // setSelectedRoleFilter={setSelectedRoleFilter} // This filter will no longer be functional
             sortColumn={sortColumn}
             sortDirection={sortDirection}
             handleSort={handleSort}

@@ -312,6 +312,7 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
         isLoading={isLoadingFleet}
         resourceType="drivers"
         renderCustomHeaderButtons={renderCustomHeaderButtons}
+        renderAlerts={renderAlerts}
         // Pagination and sorting props
         currentPage={currentPage}
         onPageChange={onPageChange}

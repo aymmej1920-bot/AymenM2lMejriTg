@@ -43,8 +43,9 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
     itemsPerPage = 10,
     sortColumn = 'date',
     sortDirection = 'desc',
-    totalCount = 0
+    totalCount = 0 // Corrected: totalCount is now destructured and used with default
   } = getResourcePaginationState('fuel_entries') || {};
+  void totalCount; // Mark as used to suppress TS6133
 
   const onPageChange = useCallback((page: number) => setResourcePaginationState('fuel_entries', { currentPage: page }), [setResourcePaginationState]);
   const onItemsPerPageChange = useCallback((count: number) => setResourcePaginationState('fuel_entries', { itemsPerPage: count }), [setResourcePaginationState]);
@@ -325,7 +326,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
             onPageChange={onPageChange}
             itemsPerPage={itemsPerPage}
             onItemsPerPageChange={onItemsPerPageChange}
-            totalCount={totalFuelEntriesCount}
+            totalCount={totalCount}
             sortColumn={sortColumn}
             onSortChange={onSortChange}
             sortDirection={sortDirection}

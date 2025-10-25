@@ -7,7 +7,7 @@ import { DialogFooter } from '../ui/dialog';
 import FormField from '../forms/FormField';
 import { maintenanceScheduleSchema } from '../../types/formSchemas';
 import { MaintenanceSchedule, Resource, Action, OperationResult } from '../../types';
-import { showError, showLoading, updateToast } from '../../utils/toast';
+import { showLoading, updateToast } from '../../utils/toast'; // Removed showError
 import { useFleetData } from '../FleetDataProvider';
 // import { usePermissions } from '../../hooks/usePermissions'; // Removed import
 import { Loader2 } from 'lucide-react';
@@ -112,7 +112,11 @@ const MaintenanceScheduleForm: React.FC<MaintenanceScheduleFormProps> = ({
   }, [editingSchedule, reset]);
 
   const onSubmit = async (formData: MaintenanceScheduleFormData) => {
-    // No permission check needed as access management is eliminated.
+    // All authenticated users can add/edit schedules
+    // if (!canAccess('maintenance_schedules', editingSchedule ? 'edit' : 'add')) {
+    //   showError('Vous n\'avez pas la permission d\'effectuer cette action.');
+    //   return;
+    // }
 
     setIsSubmitting(true);
     const loadingToastId = showLoading(editingSchedule ? 'Mise à jour du planning de maintenance...' : 'Ajout du planning de maintenance...');
@@ -224,7 +228,7 @@ const MaintenanceScheduleForm: React.FC<MaintenanceScheduleFormProps> = ({
           />
           <FormField
             name="next_due_mileage"
-            label="Prochaine échéance (Km)"
+            label="Prochain Km"
             type="number"
             disabled={true} // Calculated field
           />

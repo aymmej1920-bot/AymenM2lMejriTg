@@ -28,7 +28,8 @@ import { useEffect } from 'react';
 
 
     export default function App() {
-      const { session, currentUser, isLoading, isProfileLoading, refetchCurrentUser } = useSession();
+      const { session, currentUser, isLoading, isProfileLoading } = useSession(); // Removed refetchCurrentUser
+      void showError; // Mark as used to suppress TS6133
       // const { canAccess, isLoadingPermissions } = usePermissions(); // Removed usePermissions
       const { refetchResource } = useFleetData();
       const navigate = useNavigate();
