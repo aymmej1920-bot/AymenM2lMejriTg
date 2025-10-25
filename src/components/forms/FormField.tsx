@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
-import { Calendar } from 'lucide-react'; // For date input icon
+import DatePickerField from './DatePickerField'; // Import the new DatePickerField
 
 interface FormFieldProps<TFieldValues extends FieldValues> {
   name: Path<TFieldValues>;
@@ -42,7 +42,7 @@ const FormField = <TFieldValues extends FieldValues>({
 
   return (
     <div className={className}>
-      {type !== 'checkbox' && (
+      {type !== 'checkbox' && type !== 'date' && ( // DatePickerField handles its own label
         <Label htmlFor={name} className="block text-sm font-semibold mb-2 text-gray-900">
           {label}
         </Label>
@@ -53,7 +53,6 @@ const FormField = <TFieldValues extends FieldValues>({
         render={({ field }) => {
           switch (type) {
             case 'select':
-              // Process options to replace empty string values with a unique placeholder
               const processedOptions = options?.map(option => ({
                 ...option,
                 value: option.value === '' ? '__placeholder__' : option.value,
@@ -62,10 +61,8 @@ const FormField = <TFieldValues extends FieldValues>({
               return (
                 <Select
                   onValueChange={(selectedValue) => {
-                    // Convert the unique placeholder back to null for the form's actual value
                     field.onChange(selectedValue === '__placeholder__' ? null : selectedValue);
                   }}
-                  // Ensure the Select component's value prop correctly handles null/undefined/empty string
                   value={field.value === null || field.value === undefined || field.value === '' ? '__placeholder__' : String(field.value)}
                   disabled={disabled}
                 >
@@ -108,18 +105,13 @@ const FormField = <TFieldValues extends FieldValues>({
               );
             case 'date':
               return (
-                <div className="relative flex items-center">
-                  <Input
-                    id={name}
-                    type="date"
-                    placeholder={placeholder || `Sélectionner une date`}
-                    disabled={disabled}
-                    {...field}
-                    value={field.value ? String(field.value).split('T')[0] : ''} // Ensure date format for input
-                    className="w-full glass border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  <Calendar className="absolute right-3 w-5 h-5 text-gray-400 pointer-events-none" />
-                </div>
+                <DatePickerField
+                  name={name}
+                  label={label}
+                  placeholder={placeholder}
+                  disabled={disabled}
+                  className={className}
+                />
               );
             case 'number':
               return (
@@ -129,7 +121,7 @@ const FormField = <TFieldValues extends FieldValues>({
                   placeholder={placeholder || `Entrer ${label.toLowerCase()}`}
                   disabled={disabled}
                   {...field}
-                  onChange={(e) => field.onChange(e.target.value === '' ? null : Number(e.target.value))} // Handle null for empty number input
+                  onChange={(e) => field.onChange(e.target.value === '' ? null : Number(e.target.value))}
                   value={field.value === null || field.value === undefined ? '' : field.value}
                   min={min}
                   max={max}

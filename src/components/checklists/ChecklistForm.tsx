@@ -29,7 +29,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
     resolver: zodResolver(preDepartureChecklistSchema),
     defaultValues: {
       vehicle_id: '',
-      driver_id: null,
+      driver_id: '', // Changed default to empty string for consistency with select options
       date: new Date().toISOString().split('T')[0],
       tire_pressure_ok: false,
       lights_ok: false,
@@ -41,8 +41,8 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
       mirrors_ok: false,
       ac_working_ok: false,
       windows_working_ok: false,
-      observations: null,
-      issues_to_address: null,
+      observations: '', // Changed default to empty string
+      issues_to_address: '', // Changed default to empty string
     }
   });
 
@@ -51,7 +51,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
   const resetFormAndClearStorage = useCallback(() => {
     reset({
       vehicle_id: '',
-      driver_id: null,
+      driver_id: '',
       date: new Date().toISOString().split('T')[0],
       tire_pressure_ok: false,
       lights_ok: false,
@@ -63,8 +63,8 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
       mirrors_ok: false,
       ac_working_ok: false,
       windows_working_ok: false,
-      observations: null,
-      issues_to_address: null,
+      observations: '',
+      issues_to_address: '',
     });
     localStorage.removeItem(LOCAL_STORAGE_KEYS.CHECKLIST_FORM_DATA);
   }, [reset]);
@@ -117,6 +117,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
 
     const dataToSubmit = {
       ...formData,
+      // Convert empty strings to null for nullable database fields
       driver_id: formData.driver_id === '' ? null : formData.driver_id,
       observations: formData.observations === '' ? null : formData.observations,
       issues_to_address: formData.issues_to_address === '' ? null : formData.issues_to_address,
