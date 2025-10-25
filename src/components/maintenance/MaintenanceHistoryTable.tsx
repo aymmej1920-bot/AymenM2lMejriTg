@@ -1,12 +1,10 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { Search, Calendar } from 'lucide-react';
+import React from 'react'; // Removed useState, useMemo, useCallback as they are now in hooks
 import DataTable from '../DataTable';
-import { MaintenanceEntry, DataTableColumn, Resource, Action, OperationResult, Vehicle } from '../../types';
-import { formatDate } from '../../utils/date';
+import { Resource, Action, OperationResult, Vehicle, MaintenanceEntry } from '../../types'; // Keep only necessary types
 import { usePermissions } from '../../hooks/usePermissions';
 import { showLoading, updateToast } from '../../utils/toast';
-import { useMaintenanceFilters } from '../../hooks/useMaintenanceFilters';
-import { useMaintenanceTableColumns } from '../../hooks/useMaintenanceTableColumns';
+import { useMaintenanceFilters } from '../../hooks/useMaintenanceFilters'; // Import the hook
+import { useMaintenanceTableColumns } from '../../hooks/useMaintenanceTableColumns'; // Import the hook
 
 interface MaintenanceHistoryTableProps {
   maintenanceEntries: MaintenanceEntry[];
@@ -73,9 +71,9 @@ const MaintenanceHistoryTable: React.FC<MaintenanceHistoryTableProps> = ({
       renderFilters={renderFilters}
       customFilter={customFilter}
       resourceType="maintenance_entries"
-      currentPage={maintenanceCurrentPage} // Corrected
+      currentPage={maintenanceCurrentPage}
       onPageChange={onMaintenancePageChange}
-      itemsPerPage={maintenanceItemsPerPage} // Corrected
+      itemsPerPage={maintenanceItemsPerPage}
       onItemsPerPageChange={onMaintenanceItemsPerPageChange}
       totalCount={totalMaintenanceEntriesCount}
       sortColumn={maintenanceSortColumn}

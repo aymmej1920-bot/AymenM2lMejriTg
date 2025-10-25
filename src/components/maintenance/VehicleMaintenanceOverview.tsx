@@ -1,10 +1,11 @@
 import React, { useCallback, useMemo } from 'react';
 import DataTable from '../DataTable';
-import { Vehicle, DataTableColumn, PreDepartureChecklist } from '../../types'; // Removed Resource import
+import { Vehicle, DataTableColumn, PreDepartureChecklist } from '../../types';
 import { formatDate } from '../../utils/date';
 import { Button } from '../ui/button';
 import { usePermissions } from '../../hooks/usePermissions';
 import { getMaintenanceStatus } from '../../utils/maintenance'; // Import the utility function
+import { AlertTriangle, Clock, ClipboardCheck, Wrench } from 'lucide-react'; // Import icons
 
 interface VehicleMaintenanceOverviewProps {
   vehicles: Vehicle[];
