@@ -1,186 +1,186 @@
 import { z } from 'zod';
 
-export const vehicleSchema = z.object({
-  id: z.string().optional(), // Optional for new vehicles
-  plate: z.string().min(1, "La plaque d'immatriculation est requise."),
-  type: z.string().min(1, "Le type de véhicule est requis."),
-  status: z.string().min(1, "Le statut est requis."),
-  mileage: z.number().min(0, "Le kilométrage doit être positif."),
-  last_service_date: z.string().min(1, "La date de dernière vidange est requise."),
-  last_service_mileage: z.number().min(0, "Le kilométrage de dernière vidange doit être positif."),
-});
+    export const vehicleSchema = z.object({
+      id: z.string().optional(), // Optional for new vehicles
+      plate: z.string().min(1, "La plaque d'immatriculation est requise."),
+      type: z.string().min(1, "Le type de véhicule est requis."),
+      status: z.string().min(1, "Le statut est requis."),
+      mileage: z.number().min(0, "Le kilométrage doit être positif."),
+      last_service_date: z.string().min(1, "La date de dernière vidange est requise."),
+      last_service_mileage: z.number().min(0, "Le kilométrage de dernière vidange doit être positif."),
+    });
 
-// Schema for importing vehicles (does not include id, user_id, created_at)
-export const vehicleImportSchema = z.object({
-  plate: z.string().min(1, "La plaque d'immatriculation est requise."),
-  type: z.enum(['Camionnette', 'Camion', 'Fourgon', 'Utilitaire'], {
-    message: `Le type de véhicule doit être l'un des suivants : Camionnette, Camion, Fourgon, Utilitaire.`,
-  }),
-  status: z.enum(['Disponible', 'En mission', 'Maintenance'], {
-    message: `Le statut du véhicule doit être l'un des suivants : Disponible, En mission, Maintenance.`,
-  }),
-  mileage: z.preprocess(
-    (val) => (typeof val === 'string' ? parseFloat(val.replace(/,/g, '')) : val), // Handle string with commas
-    z.number().min(0, "Le kilométrage doit être positif.")
-  ),
-  last_service_date: z.string().min(1, "La date de dernière vidange est requise.")
-    .transform((str, ctx) => {
-      const date = new Date(str);
-      if (isNaN(date.getTime())) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Format de date invalide. Veuillez utiliser un format de date reconnu (ex: YYYY-MM-DD, MM/DD/YYYY, DD/MM/YYYY).",
-        });
-        return z.NEVER;
+    // Schema for importing vehicles (does not include id, user_id, created_at)
+    export const vehicleImportSchema = z.object({
+      plate: z.string().min(1, "La plaque d'immatriculation est requise."),
+      type: z.enum(['Camionnette', 'Camion', 'Fourgon', 'Utilitaire'], {
+        message: `Le type de véhicule doit être l'un des suivants : Camionnette, Camion, Fourgon, Utilitaire.`,
+      }),
+      status: z.enum(['Disponible', 'En mission', 'Maintenance'], {
+        message: `Le statut du véhicule doit être l'un des suivants : Disponible, En mission, Maintenance.`,
+      }),
+      mileage: z.preprocess(
+        (val) => (typeof val === 'string' ? parseFloat(val.replace(/,/g, '')) : val), // Handle string with commas
+        z.number().min(0, "Le kilométrage doit être positif.")
+      ),
+      last_service_date: z.string().min(1, "La date de dernière vidange est requise.")
+        .transform((str, ctx) => {
+          const date = new Date(str);
+          if (isNaN(date.getTime())) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "Format de date invalide. Veuillez utiliser un format de date reconnu (ex: YYYY-MM-DD, MM/DD/YYYY, DD/MM/YYYY).",
+            });
+            return z.NEVER;
+          }
+          return date.toISOString().split('T')[0]; // Format to YYYY-MM-DD
+        }),
+      last_service_mileage: z.preprocess(
+        (val) => (typeof val === 'string' ? parseFloat(val.replace(/,/g, '')) : val), // Handle string with commas
+        z.number().min(0, "Le kilométrage de dernière vidange doit être positif.")
+      ),
+    });
+
+    export const driverSchema = z.object({
+      id: z.string().optional(), // Optional for new drivers
+      name: z.string().min(1, "Le nom est requis."),
+      license: z.string().min(1, "Le numéro de permis est requis."),
+      expiration: z.string().min(1, "La date d'expiration est requise."),
+      status: z.string().min(1, "Le statut est requis."),
+      phone: z.string().min(1, "Le numéro de téléphone est requis."),
+    });
+
+    // Schema for importing drivers (does not include id, user_id, created_at)
+    export const driverImportSchema = z.object({
+      name: z.string().min(1, "Le nom est requis."),
+      license: z.string().min(1, "Le numéro de permis est requis."),
+      expiration: z.string().min(1, "La date d'expiration est requise.")
+        .transform((str, ctx) => {
+          const date = new Date(str);
+          if (isNaN(date.getTime())) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "Format de date invalide. Veuillez utiliser un format de date reconnu (ex: YYYY-MM-DD, MM/DD/YYYY, DD/MM/YYYY).",
+            });
+            return z.NEVER;
+          }
+          // Format to YYYY-MM-DD
+          return date.toISOString().split('T')[0];
+        }),
+      status: z.string().min(1, "Le statut est requis."),
+      phone: z.string().min(1, "Le numéro de téléphone est requis."),
+    });
+
+    export const tourSchema = z.object({
+      id: z.string().optional(), // Optional for new tours
+      date: z.string().min(1, "La date est requise."),
+      vehicle_id: z.string().min(1, "Le véhicule est requis."),
+      driver_id: z.string().min(1, "Le conducteur est requis."),
+      status: z.string().min(1, "Le statut est requis."),
+      fuel_start: z.number().min(0).max(100).nullable().optional(),
+      km_start: z.number().min(0).nullable().optional(),
+      fuel_end: z.number().min(0).max(100).nullable().optional(),
+      km_end: z.number().min(0).nullable().optional(),
+      distance: z.number().min(0).nullable().optional(),
+    }).refine(data => {
+      // Custom validation for fuel_start/end and km_start/end
+      if (data.status === 'Terminé') {
+        if (data.fuel_start === null || data.fuel_start === undefined) return false;
+        if (data.km_start === null || data.km_start === undefined) return false;
+        if (data.fuel_end === null || data.fuel_end === undefined) return false;
+        if (data.km_end === null || data.km_end === undefined) return false;
+        if (data.distance === null || data.distance === undefined) return false;
       }
-      return date.toISOString().split('T')[0]; // Format to YYYY-MM-DD
-    }),
-  last_service_mileage: z.preprocess(
-    (val) => (typeof val === 'string' ? parseFloat(val.replace(/,/g, '')) : val), // Handle string with commas
-    z.number().min(0, "Le kilométrage de dernière vidange doit être positif.")
-  ),
-});
+      return true;
+    }, {
+      message: "Tous les champs de début/fin (fuel, km, distance) sont requis pour une tournée 'Terminé'.",
+      path: ['status'], // Associate error with status field
+    });
 
-export const driverSchema = z.object({
-  id: z.string().optional(), // Optional for new drivers
-  name: z.string().min(1, "Le nom est requis."),
-  license: z.string().min(1, "Le numéro de permis est requis."),
-  expiration: z.string().min(1, "La date d'expiration est requise."),
-  status: z.string().min(1, "Le statut est requis."),
-  phone: z.string().min(1, "Le numéro de téléphone est requis."),
-});
+    export const fuelEntrySchema = z.object({
+      id: z.string().optional(), // Optional for new entries
+      date: z.string().min(1, "La date est requise."),
+      vehicle_id: z.string().min(1, "Le véhicule est requis."),
+      liters: z.number().min(0.01, "Les litres doivent être positifs."),
+      price_per_liter: z.number().min(0.01, "Le prix par litre doit être positif."), // Corrected typo
+      mileage: z.number().min(0, "Le kilométrage est requis et doit être positif."),
+    });
 
-// Schema for importing drivers (does not include id, user_id, created_at)
-export const driverImportSchema = z.object({
-  name: z.string().min(1, "Le nom est requis."),
-  license: z.string().min(1, "Le numéro de permis est requis."),
-  expiration: z.string().min(1, "La date d'expiration est requise.")
-    .transform((str, ctx) => {
-      const date = new Date(str);
-      if (isNaN(date.getTime())) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Format de date invalide. Veuillez utiliser un format de date reconnu (ex: YYYY-MM-DD, MM/DD/YYYY, DD/MM/YYYY).",
-        });
-        return z.NEVER;
-      }
-      // Format to YYYY-MM-DD
-      return date.toISOString().split('T')[0];
-    }),
-  status: z.string().min(1, "Le statut est requis."),
-  phone: z.string().min(1, "Le numéro de téléphone est requis."),
-});
+    export const documentSchema = z.object({
+      id: z.string().optional(), // Optional for new documents
+      vehicle_id: z.string().min(1, "Le véhicule est requis."),
+      type: z.string().min(1, "Le type de document est requis."),
+      number: z.string().min(1, "Le numéro de document est requis."),
+      expiration: z.string().min(1, "La date d'expiration est requise."),
+    });
 
-export const tourSchema = z.object({
-  id: z.string().optional(), // Optional for new tours
-  date: z.string().min(1, "La date est requise."),
-  vehicle_id: z.string().min(1, "Le véhicule est requis."),
-  driver_id: z.string().min(1, "Le conducteur est requis."),
-  status: z.string().min(1, "Le statut est requis."),
-  fuel_start: z.number().min(0).max(100).nullable().optional(),
-  km_start: z.number().min(0).nullable().optional(),
-  fuel_end: z.number().min(0).max(100).nullable().optional(),
-  km_end: z.number().min(0).nullable().optional(),
-  distance: z.number().min(0).nullable().optional(),
-}).refine(data => {
-  // Custom validation for fuel_start/end and km_start/end
-  if (data.status === 'Terminé') {
-    if (data.fuel_start === null || data.fuel_start === undefined) return false;
-    if (data.km_start === null || data.km_start === undefined) return false;
-    if (data.fuel_end === null || data.fuel_end === undefined) return false;
-    if (data.km_end === null || data.km_end === undefined) return false;
-    if (data.distance === null || data.distance === undefined) return false;
-  }
-  return true;
-}, {
-  message: "Tous les champs de début/fin (fuel, km, distance) sont requis pour une tournée 'Terminé'.",
-  path: ['status'], // Associate error with status field
-});
+    export const maintenanceEntrySchema = z.object({
+      id: z.string().optional(), // Optional for new entries
+      vehicle_id: z.string().min(1, "Le véhicule est requis."),
+      type: z.string().min(1, "Le type de maintenance est requis."),
+      date: z.string().min(1, "La date est requise."),
+      mileage: z.number().min(0, "Le kilométrage est requis et doit être positif."),
+      cost: z.number().min(0, "Le coût doit être positif."),
+      description: z.string().nullable().optional(), // New field
+      parts_cost: z.number().min(0, "Le coût des pièces doit être positif.").nullable().optional(), // New field
+      labor_cost: z.number().min(0, "Le coût de la main-d'œuvre doit être positif.").nullable().optional(), // New field
+    });
 
-export const fuelEntrySchema = z.object({
-  id: z.string().optional(), // Optional for new entries
-  date: z.string().min(1, "La date est requise."),
-  vehicle_id: z.string().min(1, "Le véhicule est requis."),
-  liters: z.number().min(0.01, "Les litres doivent être positifs."),
-  price_per_liter: z.number().min(0.01, "Le prix par litre doit être positif."), // Corrected typo
-  mileage: z.number().min(0, "Le kilométrage est requis et doit être positif."),
-});
+    export const maintenanceScheduleSchema = z.object({
+      id: z.string().optional(),
+      vehicle_id: z.string().nullable().optional(),
+      vehicle_type: z.string().nullable().optional(),
+      task_type: z.string().min(1, "Le type de tâche est requis."),
+      interval_km: z.number().min(0, "L'intervalle en km doit être positif.").nullable().optional(),
+      interval_months: z.number().min(0, "L'intervalle en mois doit être positif.").nullable().optional(),
+      last_performed_date: z.string().nullable().optional(),
+      last_performed_mileage: z.number().min(0, "Le dernier kilométrage effectué doit être positif.").nullable().optional(),
+      next_due_date: z.string().nullable().optional(),
+      next_due_mileage: z.number().min(0, "Le prochain kilométrage dû doit être positif.").nullable().optional(),
+      notes: z.string().nullable().optional(),
+    }).refine(data => data.vehicle_id || data.vehicle_type, {
+      message: "Un véhicule spécifique ou un type de véhicule est requis pour la planification.",
+      path: ['vehicle_id', 'vehicle_type'],
+    }).refine(data => data.interval_km || data.interval_months, {
+      message: "Un intervalle en km ou en mois est requis pour la planification.",
+      path: ['interval_km', 'interval_months'],
+    });
 
-export const documentSchema = z.object({
-  id: z.string().optional(), // Optional for new documents
-  vehicle_id: z.string().min(1, "Le véhicule est requis."),
-  type: z.string().min(1, "Le type de document est requis."),
-  number: z.string().min(1, "Le numéro de document est requis."),
-  expiration: z.string().min(1, "La date d'expiration est requise."),
-});
+    export const preDepartureChecklistSchema = z.object({
+      id: z.string().optional(),
+      vehicle_id: z.string().min(1, "Le véhicule est requis."),
+      driver_id: z.string().nullable().optional(),
+      date: z.string().min(1, "La date est requise."),
+      tire_pressure_ok: z.boolean(),
+      lights_ok: z.boolean(),
+      oil_level_ok: z.boolean(),
+      fluid_levels_ok: z.boolean(),
+      brakes_ok: z.boolean(),
+      wipers_ok: z.boolean(),
+      horn_ok: z.boolean(),
+      mirrors_ok: z.boolean(),
+      ac_working_ok: z.boolean(),
+      windows_working_ok: z.boolean(),
+      observations: z.string().nullable().optional(),
+      issues_to_address: z.string().nullable().optional(),
+    });
 
-export const maintenanceEntrySchema = z.object({
-  id: z.string().optional(), // Optional for new entries
-  vehicle_id: z.string().min(1, "Le véhicule est requis."),
-  type: z.string().min(1, "Le type de maintenance est requis."),
-  date: z.string().min(1, "La date est requise."),
-  mileage: z.number().min(0, "Le kilométrage est requis et doit être positif."),
-  cost: z.number().min(0, "Le coût doit être positif."),
-  description: z.string().nullable().optional(), // New field
-  parts_cost: z.number().min(0, "Le coût des pièces doit être positif.").nullable().optional(), // New field
-  labor_cost: z.number().min(0, "Le coût de la main-d'œuvre doit être positif.").nullable().optional(), // New field
-});
+    export const profileSchema = z.object({
+      first_name: z.string().min(1, "Le prénom est requis.").nullable(),
+      last_name: z.string().min(1, "Le nom est requis.").nullable(),
+      avatar_url: z.string().url("L'URL de l'avatar doit être valide.").nullable().optional(),
+    });
 
-export const maintenanceScheduleSchema = z.object({
-  id: z.string().optional(),
-  vehicle_id: z.string().nullable().optional(),
-  vehicle_type: z.string().nullable().optional(),
-  task_type: z.string().min(1, "Le type de tâche est requis."),
-  interval_km: z.number().min(0, "L'intervalle en km doit être positif.").nullable().optional(),
-  interval_months: z.number().min(0, "L'intervalle en mois doit être positif.").nullable().optional(),
-  last_performed_date: z.string().nullable().optional(),
-  last_performed_mileage: z.number().min(0, "Le dernier kilométrage effectué doit être positif.").nullable().optional(),
-  next_due_date: z.string().nullable().optional(),
-  next_due_mileage: z.number().min(0, "Le prochain kilométrage dû doit être positif.").nullable().optional(),
-  notes: z.string().nullable().optional(),
-}).refine(data => data.vehicle_id || data.vehicle_type, {
-  message: "Un véhicule spécifique ou un type de véhicule est requis pour la planification.",
-  path: ['vehicle_id', 'vehicle_type'],
-}).refine(data => data.interval_km || data.interval_months, {
-  message: "Un intervalle en km ou en mois est requis pour la planification.",
-  path: ['interval_km', 'interval_months'],
-});
+    export const inviteUserSchema = z.object({
+      email: z.string().email("L'adresse e-mail doit être valide."),
+    });
 
-export const preDepartureChecklistSchema = z.object({
-  id: z.string().optional(),
-  vehicle_id: z.string().min(1, "Le véhicule est requis."),
-  driver_id: z.string().nullable().optional(),
-  date: z.string().min(1, "La date est requise."),
-  tire_pressure_ok: z.boolean(),
-  lights_ok: z.boolean(),
-  oil_level_ok: z.boolean(),
-  fluid_levels_ok: z.boolean(),
-  brakes_ok: z.boolean(),
-  wipers_ok: z.boolean(),
-  horn_ok: z.boolean(),
-  mirrors_ok: z.boolean(),
-  ac_working_ok: z.boolean(),
-  windows_working_ok: z.boolean(),
-  observations: z.string().nullable().optional(),
-  issues_to_address: z.string().nullable().optional(),
-});
-
-export const profileSchema = z.object({
-  first_name: z.string().min(1, "Le prénom est requis.").nullable(),
-  last_name: z.string().min(1, "Le nom est requis.").nullable(),
-  avatar_url: z.string().url("L'URL de l'avatar doit être valide.").nullable().optional(),
-});
-
-export const inviteUserSchema = z.object({
-  email: z.string().email("L'adresse e-mail doit être valide."),
-});
-
-export const manualUserSchema = z.object({
-  email: z.string().email("L'adresse e-mail doit être valide."),
-  password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères."),
-  first_name: z.string().min(1, "Le prénom est requis."),
-  last_name: z.string().min(1, "Le nom est requis."),
-  role: z.enum(['admin', 'direction', 'utilisateur'], {
-    message: "Le rôle est requis.",
-  }),
-});
+    export const manualUserSchema = z.object({
+      email: z.string().email("L'adresse e-mail doit être valide."),
+      password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères."),
+      first_name: z.string().min(1, "Le prénom est requis."),
+      last_name: z.string().min(1, "Le nom est requis."),
+      // role: z.enum(['admin', 'direction', 'utilisateur'], { // Removed role
+      //   message: "Le rôle est requis.",
+      // }),
+    });
