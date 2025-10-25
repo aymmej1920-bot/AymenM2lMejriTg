@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Fuel, DollarSign, TrendingUp, Calendar, Search } from 'lucide-react';
+import { Fuel, DollarSign, TrendingUp, Calendar, Search, Loader2 } from 'lucide-react'; // Import Loader2
 import { FuelEntry, DataTableColumn, Resource, Action, OperationResult } from '../types';
 import { showLoading, updateToast } from '../utils/toast';
 import { formatDate } from '../utils/date';
@@ -47,6 +47,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
 
   const [showModal, setShowModal] = useState(false);
   const [editingFuel, setEditingFuel] = useState<FuelEntry | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Add isSubmitting state
 
   const methods = useForm<FuelEntryFormData>({
     resolver: zodResolver(fuelEntrySchema),
@@ -127,6 +128,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
   };
 
   const onSubmit = async (formData: FuelEntryFormData) => {
+    setIsSubmitting(true); // Set submitting to true
     const loadingToastId = showLoading(editingFuel ? 'Mise à jour du plein...' : 'Ajout du plein...');
     let result: OperationResult;
     try {
@@ -145,6 +147,8 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
       resetFormAndClearStorage();
     } catch (error: unknown) {
       updateToast(loadingToastId, (error instanceof Error ? error.message : String(error)) || 'Erreur lors de l\'opération.', 'error');
+    } finally {
+      setIsSubmitting(false); // Set submitting to false in finally block
     }
   };
 
@@ -333,7 +337,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
                     name="date"
                     label="Date"
                     type="date"
-                    disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
+                    disabled={isSubmitting || (!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
                   />
                   <FormField
                     name="vehicle_id"
@@ -341,27 +345,27 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
                     type="select"
                     options={[{ value: '', label: 'Sélectionner un véhicule' }, ...vehicles.map(vehicle => ({ value: vehicle.id, label: `${vehicle.plate} - ${vehicle.type}` }))]}
                     placeholder="Sélectionner un véhicule"
-                    disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
+                    disabled={isSubmitting || (!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
                   />
                   <FormField
                     name="liters"
                     label="Litres"
                     type="number"
                     step="0.1"
-                    disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
+                    disabled={isSubmitting || (!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
                   />
                   <FormField
                     name="price_per_liter"
                     label="Prix par litre (TND)"
                     type="number"
                     step="0.01"
-                    disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
+                    disabled={isSubmitting || (!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
                   />
                   <FormField
                     name="mileage"
                     label="Kilométrage"
                     type="number"
-                    disabled={(!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
+                    disabled={isSubmitting || (!canEditForm && !!editingFuel) || (!canAddForm && !editingFuel)}
                   />
                   <DialogFooter>
                     <Button
@@ -369,6 +373,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
                       variant="outline"
                       onClick={handleCloseModal}
                       className="hover-lift"
+                      disabled={isSubmitting}
                     >
                       Annuler
                     </Button>
@@ -376,8 +381,16 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
                       <Button
                         type="submit"
                         className="hover-lift"
+                        disabled={isSubmitting}
                       >
-                        Sauvegarder
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Sauvegarde en cours...
+                          </>
+                        ) : (
+                          'Sauvegarder'
+                        )}
                       </Button>
                     ) : null}
                   </DialogFooter>

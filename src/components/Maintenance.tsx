@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Wrench, AlertTriangle, Clock, ClipboardCheck, Search, Calendar } from 'lucide-react';
+import { Wrench, AlertTriangle, Clock, ClipboardCheck, Search, Calendar, Loader2 } from 'lucide-react'; // Import Loader2
 import { MaintenanceEntry, DataTableColumn, Vehicle, Resource, Action, OperationResult } from '../types';
 import { showSuccess, showLoading, updateToast, showError } from '../utils/toast';
 import { formatDate } from '../utils/date';
@@ -15,6 +15,7 @@ import {
   DialogFooter,
   DialogTitle,
   DialogDescription,
+
 } from './ui/dialog';
 import DataTable from './DataTable';
 import { usePermissions } from '../hooks/usePermissions';
@@ -53,6 +54,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete }) 
 
   const [showModal, setShowModal] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false); // Add isSubmitting state
 
   const methods = useForm<MaintenanceEntryFormData>({
     resolver: zodResolver(maintenanceEntrySchema),
@@ -139,6 +141,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete }) 
   };
 
   const onSubmit = async (maintenanceData: MaintenanceEntryFormData) => {
+    setIsSubmitting(true); // Set submitting to true
     const loadingToastId = showLoading('Ajout de l\'entrée de maintenance...');
     let result: OperationResult;
     try {
@@ -167,6 +170,8 @@ const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete }) 
       resetFormAndClearStorage();
     } catch (error: unknown) {
       updateToast(loadingToastId, (error instanceof Error ? error.message : String(error)) || 'Erreur lors de l\'opération.', 'error');
+    } finally {
+      setIsSubmitting(false); // Set submitting to false in finally block
     }
   };
 
@@ -466,7 +471,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete }) 
                 type="select"
                 options={[{ value: '', label: 'Sélectionner un véhicule' }, ...vehicles.map(vehicle => ({ value: vehicle.id, label: `${vehicle.plate} - ${vehicle.type}` }))]}
                 placeholder="Sélectionner un véhicule"
-                disabled={(!canEditForm && !!selectedVehicleId) || (!canAddForm && !selectedVehicleId)}
+                disabled={isSubmitting || (!canEditForm && !!selectedVehicleId) || (!canAddForm && !selectedVehicleId)}
               />
               <FormField
                 name="type"
@@ -480,26 +485,26 @@ const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete }) 
                   { value: 'Freins', label: 'Freins' },
                   { value: 'Autre', label: 'Autre' },
                 ]}
-                disabled={(!canEditForm && !!selectedVehicleId) || (!canAddForm && !selectedVehicleId)}
+                disabled={isSubmitting || (!canEditForm && !!selectedVehicleId) || (!canAddForm && !selectedVehicleId)}
               />
               <FormField
                 name="date"
                 label="Date"
                 type="date"
-                disabled={(!canEditForm && !!selectedVehicleId) || (!canAddForm && !selectedVehicleId)}
+                disabled={isSubmitting || (!canEditForm && !!selectedVehicleId) || (!canAddForm && !selectedVehicleId)}
               />
               <FormField
                 name="mileage"
                 label="Kilométrage"
                 type="number"
-                disabled={(!canEditForm && !!selectedVehicleId) || (!canAddForm && !selectedVehicleId)}
+                disabled={isSubmitting || (!canEditForm && !!selectedVehicleId) || (!canAddForm && !selectedVehicleId)}
               />
               <FormField
                 name="cost"
                 label="Coût (TND)"
                 type="number"
                 step="0.01"
-                disabled={(!canEditForm && !!selectedVehicleId) || (!canAddForm && !selectedVehicleId)}
+                disabled={isSubmitting || (!canEditForm && !!selectedVehicleId) || (!canAddForm && !selectedVehicleId)}
               />
               <DialogFooter>
                 <Button
@@ -507,6 +512,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete }) 
                   variant="outline"
                   onClick={handleCloseModal}
                   className="hover-lift"
+                  disabled={isSubmitting}
                 >
                   Annuler
                 </Button>
@@ -514,8 +520,16 @@ const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete }) 
                   <Button
                     type="submit"
                     className="hover-lift"
+                    disabled={isSubmitting}
                   >
-                    Sauvegarder
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Sauvegarde en cours...
+                      </>
+                    ) : (
+                      'Sauvegarder'
+                    )}
                   </Button>
                 ) : null}
               </DialogFooter>

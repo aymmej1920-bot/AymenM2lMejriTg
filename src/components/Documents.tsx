@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Calendar, AlertTriangle, Search } from 'lucide-react';
+import { Calendar, AlertTriangle, Search, Loader2 } from 'lucide-react'; // Import Loader2
 import { Document, DataTableColumn, Resource, Action, OperationResult } from '../types';
 import { showLoading, updateToast } from '../utils/toast';
 import { formatDate, getDaysUntilExpiration } from '../utils/date';
@@ -47,6 +47,7 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
 
   const [showModal, setShowModal] = useState(false);
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Add isSubmitting state
 
   const methods = useForm<DocumentFormData>({
     resolver: zodResolver(documentSchema),
@@ -122,6 +123,7 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
   };
 
   const onSubmit = async (formData: DocumentFormData) => {
+    setIsSubmitting(true); // Set submitting to true
     const loadingToastId = showLoading(editingDocument ? 'Mise à jour du document...' : 'Ajout du document...');
     let result: OperationResult;
     try {
@@ -140,6 +142,8 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
       resetFormAndClearStorage();
     } catch (error: unknown) {
       updateToast(loadingToastId, (error instanceof Error ? error.message : String(error)) || 'Erreur lors de l\'opération.', 'error');
+    } finally {
+      setIsSubmitting(false); // Set submitting to false in finally block
     }
   };
 
@@ -372,7 +376,7 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
                 type="select"
                 options={[{ value: '', label: 'Sélectionner un véhicule' }, ...vehicles.map(vehicle => ({ value: vehicle.id, label: `${vehicle.plate} - ${vehicle.type}` }))]}
                 placeholder="Sélectionner un véhicule"
-                disabled={(!canEditForm && !!editingDocument) || (!canAddForm && !editingDocument)}
+                disabled={isSubmitting || (!canEditForm && !!editingDocument) || (!canAddForm && !editingDocument)}
               />
               <FormField
                 name="type"
@@ -386,19 +390,19 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
                   { value: 'Vignette', label: 'Vignette' },
                   { value: 'Permis de Circulation', label: 'Permis de Circulation' },
                 ]}
-                disabled={(!canEditForm && !!editingDocument) || (!canAddForm && !editingDocument)}
+                disabled={isSubmitting || (!canEditForm && !!editingDocument) || (!canAddForm && !editingDocument)}
               />
               <FormField
                 name="number"
                 label="Numéro de document"
                 type="text"
-                disabled={(!canEditForm && !!editingDocument) || (!canAddForm && !editingDocument)}
+                disabled={isSubmitting || (!canEditForm && !!editingDocument) || (!canAddForm && !editingDocument)}
               />
               <FormField
                 name="expiration"
                 label="Date d'expiration"
                 type="date"
-                disabled={(!canEditForm && !!editingDocument) || (!canAddForm && !editingDocument)}
+                disabled={isSubmitting || (!canEditForm && !!editingDocument) || (!canAddForm && !editingDocument)}
               />
               <DialogFooter>
                 <Button
@@ -406,6 +410,7 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
                   variant="outline"
                   onClick={handleCloseModal}
                   className="hover-lift"
+                  disabled={isSubmitting}
                 >
                   Annuler
                 </Button>
@@ -413,8 +418,16 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
                   <Button
                     type="submit"
                     className="hover-lift"
+                    disabled={isSubmitting}
                   >
-                    Sauvegarder
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Sauvegarde en cours...
+                      </>
+                    ) : (
+                      'Sauvegarder'
+                    )}
                   </Button>
                 ) : null}
               </DialogFooter>

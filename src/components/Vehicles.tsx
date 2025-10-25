@@ -19,7 +19,7 @@ import FormField from './forms/FormField';
 import { Button } from './ui/button';
 import { usePermissions } from '../hooks/usePermissions';
 import XLSXImportDialog from './XLSXImportDialog';
-import { Upload, Download } from 'lucide-react';
+import { Upload, Download, Loader2 } from 'lucide-react'; // Import Loader2
 import { exportTemplateToXLSX } from '../utils/templateExport';
 import { LOCAL_STORAGE_KEYS } from '../utils/constants';
 import { useFleetData } from '../components/FleetDataProvider';
@@ -49,6 +49,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Add isSubmitting state
 
   const methods = useForm<VehicleFormData>({
     resolver: zodResolver(vehicleSchema),
@@ -123,6 +124,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
   };
 
   const onSubmit = async (formData: VehicleFormData) => {
+    setIsSubmitting(true); // Set submitting to true
     const loadingToastId = showLoading(editingVehicle ? 'Mise à jour du véhicule...' : 'Ajout du véhicule...');
     let result: OperationResult;
     try {
@@ -141,6 +143,8 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
       resetFormAndClearStorage();
     } catch (error: unknown) {
       updateToast(loadingToastId, (error instanceof Error ? error.message : String(error)) || 'Erreur lors de l\'opération.', 'error');
+    } finally {
+      setIsSubmitting(false); // Set submitting to false in finally block
     }
   };
 
@@ -300,31 +304,38 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
             <DialogDescription>
               {editingVehicle ? 'Modifiez les détails du véhicule.' : 'Ajoutez un nouveau véhicule à votre flotte.'}
             </DialogDescription>
-          </DialogHeader>
+          </DialogDescription>
           <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
-              <FormField name="plate" label="Plaque d'immatriculation" type="text" placeholder="Ex: 123TU456" disabled={(!canEditForm && !!editingVehicle) || (!canAddForm && !editingVehicle)} />
+              <FormField name="plate" label="Plaque d'immatriculation" type="text" placeholder="Ex: 123TU456" disabled={isSubmitting || (!canEditForm && !!editingVehicle) || (!canAddForm && !editingVehicle)} />
               <FormField name="type" label="Type de véhicule" type="select" options={[
                 { value: 'Camionnette', label: 'Camionnette' },
                 { value: 'Camion', label: 'Camion' },
                 { value: 'Fourgon', label: 'Fourgon' },
                 { value: 'Utilitaire', label: 'Utilitaire' },
-              ]} disabled={(!canEditForm && !!editingVehicle) || (!canAddForm && !editingVehicle)} />
+              ]} disabled={isSubmitting || (!canEditForm && !!editingVehicle) || (!canAddForm && !editingVehicle)} />
               <FormField name="status" label="Statut" type="select" options={[
                 { value: 'Disponible', label: 'Disponible' },
                 { value: 'En mission', label: 'En mission' },
                 { value: 'Maintenance', label: 'Maintenance' },
-              ]} disabled={(!canEditForm && !!editingVehicle) || (!canAddForm && !editingVehicle)} />
-              <FormField name="mileage" label="Kilométrage actuel" type="number" min={0} disabled={(!canEditForm && !!editingVehicle) || (!canAddForm && !editingVehicle)} />
-              <FormField name="last_service_date" label="Date dernière vidange" type="date" disabled={(!canEditForm && !!editingVehicle) || (!canAddForm && !editingVehicle)} />
-              <FormField name="last_service_mileage" label="Kilométrage dernière vidange" type="number" min={0} disabled={(!canEditForm && !!editingVehicle) || (!canAddForm && !editingVehicle)} />
+              ]} disabled={isSubmitting || (!canEditForm && !!editingVehicle) || (!canAddForm && !editingVehicle)} />
+              <FormField name="mileage" label="Kilométrage actuel" type="number" min={0} disabled={isSubmitting || (!canEditForm && !!editingVehicle) || (!canAddForm && !editingVehicle)} />
+              <FormField name="last_service_date" label="Date dernière vidange" type="date" disabled={isSubmitting || (!canEditForm && !!editingVehicle) || (!canAddForm && !editingVehicle)} />
+              <FormField name="last_service_mileage" label="Kilométrage dernière vidange" type="number" min={0} disabled={isSubmitting || (!canEditForm && !!editingVehicle) || (!canAddForm && !editingVehicle)} />
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={handleCloseModal} className="hover-lift">
+                <Button type="button" variant="outline" onClick={handleCloseModal} className="hover-lift" disabled={isSubmitting}>
                   Annuler
                 </Button>
                 {(canAddForm && !editingVehicle) || (canEditForm && editingVehicle) ? (
-                  <Button type="submit" className="hover-lift">
-                    Sauvegarder
+                  <Button type="submit" className="hover-lift" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Sauvegarde en cours...
+                      </>
+                    ) : (
+                      'Sauvegarder'
+                    )}
                   </Button>
                 ) : null}
               </DialogFooter>

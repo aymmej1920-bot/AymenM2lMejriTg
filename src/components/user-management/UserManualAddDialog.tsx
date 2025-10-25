@@ -13,6 +13,7 @@ import {
 import { Button } from '../ui/button';
 import FormField from '../forms/FormField';
 import { manualUserSchema } from '../../types/formSchemas';
+import { Loader2 } from 'lucide-react'; // Import Loader2
 
 type ManualUserFormData = z.infer<typeof manualUserSchema>;
 
@@ -86,7 +87,14 @@ const UserManualAddDialog: React.FC<UserManualAddDialogProps> = ({
                 disabled={isCreating}
                 className="hover-lift"
               >
-                {isCreating ? 'Création en cours...' : 'Créer Utilisateur'}
+                {isCreating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Création en cours...
+                  </>
+                ) : (
+                  'Créer Utilisateur'
+                )}
               </Button>
             </DialogFooter>
           </form>

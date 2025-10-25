@@ -13,6 +13,7 @@ import {
 import { Button } from '../ui/button';
 import FormField from '../forms/FormField';
 import { inviteUserSchema } from '../../types/formSchemas';
+import { Loader2 } from 'lucide-react'; // Import Loader2
 
 type InviteUserFormData = z.infer<typeof inviteUserSchema>;
 
@@ -68,7 +69,14 @@ const UserInviteDialog: React.FC<UserInviteDialogProps> = ({
                 disabled={isInviting}
                 className="hover-lift"
               >
-                {isInviting ? 'Envoi en cours...' : 'Envoyer l\'invitation'}
+                {isInviting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Envoi en cours...
+                  </>
+                ) : (
+                  'Envoyer l\'invitation'
+                )}
               </Button>
             </DialogFooter>
           </form>

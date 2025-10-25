@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react'; // Import useState
 import { useForm, FormProvider, Controller, FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -7,9 +7,10 @@ import { DialogFooter } from '../ui/dialog';
 import FormField from '../forms/FormField';
 import { preDepartureChecklistSchema } from '../../types/formSchemas';
 import { PreDepartureChecklist, Resource, Action, OperationResult, Vehicle, Driver } from '../../types';
-import { showSuccess, showError } from '../../utils/toast';
+import { showSuccess, showError, showLoading, updateToast } from '../../utils/toast'; // Import updateToast
 import { LOCAL_STORAGE_KEYS } from '../../utils/constants';
 import { useFleetData } from '../../components/FleetDataProvider';
+import { Loader2 } from 'lucide-react'; // Import Loader2
 
 type PreDepartureChecklistFormData = z.infer<typeof preDepartureChecklistSchema>;
 
@@ -24,6 +25,8 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
   const { fleetData } = useFleetData();
   const vehicles = fleetData.vehicles;
   const drivers = fleetData.drivers;
+
+  const [isSubmitting, setIsSubmitting] = useState(false); // Add isSubmitting state
 
   const methods = useForm<PreDepartureChecklistFormData>({
     resolver: zodResolver(preDepartureChecklistSchema),
@@ -99,6 +102,9 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
       return;
     }
 
+    setIsSubmitting(true); // Set submitting to true
+    const loadingToastId = showLoading('Ajout de la checklist...');
+
     const { vehicle_id, date } = formData;
 
     const checklistDate = new Date(date);
@@ -108,7 +114,8 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
     console.log(`[ChecklistForm] Checking for existing checklist for vehicle_id: ${vehicle_id}, month: ${submissionMonth}, year: ${submissionYear}`);
     if (hasChecklistForMonth(vehicle_id, submissionMonth, submissionYear)) {
       console.log("[ChecklistForm] Existing checklist found for this vehicle and month.");
-      showError('Une checklist pour ce véhicule a déjà été soumise ce mois-ci. Une seule checklist par véhicule par mois est autorisée.');
+      updateToast(loadingToastId, 'Une checklist pour ce véhicule a déjà été soumise ce mois-ci. Une seule checklist par véhicule par mois est autorisée.', 'error');
+      setIsSubmitting(false); // Reset submitting state
       return;
     }
     console.log("[ChecklistForm] No existing checklist found for this vehicle and month. Proceeding with submission.");
@@ -124,7 +131,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
       const result = await onAdd('pre_departure_checklists', dataToSubmit, 'add');
       console.log("[ChecklistForm] onAdd result:", result);
       if (result.success) {
-        showSuccess('Checklist ajoutée avec succès !');
+        updateToast(loadingToastId, 'Checklist ajoutée avec succès !', 'success');
         onClose();
         resetFormAndClearStorage();
       } else {
@@ -132,7 +139,9 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
       }
     } catch (error: unknown) {
       console.error("[ChecklistForm] Erreur lors de l'ajout de la checklist:", error instanceof Error ? error.message : String(error));
-      showError(`Erreur lors de l'ajout de la checklist: ${error instanceof Error ? error.message : 'Une erreur inconnue est survenue.'}`);
+      updateToast(loadingToastId, `Erreur lors de l'ajout de la checklist: ${error instanceof Error ? error.message : 'Une erreur inconnue est survenue.'}`, 'error');
+    } finally {
+      setIsSubmitting(false); // Reset submitting state
     }
   };
 
@@ -158,7 +167,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
                   checked={field.value === true}
                   onChange={() => field.onChange(true)}
                   className="h-4 w-4 text-green-600 bg-white border border-gray-300 shadow-sm focus:ring-green-500"
-                  disabled={!canAdd}
+                  disabled={!canAdd || isSubmitting} // Disable if submitting
                 />
                 <label htmlFor={`${name}_ok`} className="text-sm font-semibold text-gray-900">OK</label>
               </div>
@@ -170,7 +179,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
                   checked={field.value === false}
                   onChange={() => field.onChange(false)}
                   className="h-4 w-4 text-red-600 bg-white border border-gray-300 shadow-sm focus:ring-red-500"
-                  disabled={!canAdd}
+                  disabled={!canAdd || isSubmitting} // Disable if submitting
                 />
                 <label htmlFor={`${name}_nok`} className="text-sm font-semibold text-gray-900">NOK</label>
               </div>
@@ -189,7 +198,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
             name="date"
             label="Date"
             type="date"
-            disabled={!canAdd}
+            disabled={!canAdd || isSubmitting} // Disable if submitting
           />
           <FormField
             name="vehicle_id"
@@ -197,7 +206,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
             type="select"
             options={vehicles.map((v: Vehicle) => ({ value: v.id, label: `${v.plate} - ${v.type}` }))}
             placeholder="Sélectionner un véhicule"
-            disabled={!canAdd}
+            disabled={!canAdd || isSubmitting} // Disable if submitting
           />
         </div>
 
@@ -207,7 +216,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
           type="select"
           options={[{ value: '', label: 'Sélectionner un conducteur' }, ...drivers.map((d: Driver) => ({ value: d.id, label: d.name }))]}
           placeholder="Sélectionner un conducteur"
-          disabled={!canAdd}
+          disabled={!canAdd || isSubmitting} // Disable if submitting
         />
 
         <div className="grid grid-cols-2 gap-4">
@@ -228,14 +237,14 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
           label="Observations"
           type="textarea"
           placeholder="Toute observation pertinente..."
-          disabled={!canAdd}
+          disabled={!canAdd || isSubmitting} // Disable if submitting
         />
         <FormField
           name="issues_to_address"
           label="Points à traiter"
           type="textarea"
           placeholder="Problèmes identifiés nécessitant une action..."
-          disabled={!canAdd}
+          disabled={!canAdd || isSubmitting} // Disable if submitting
         />
 
         <DialogFooter>
@@ -244,6 +253,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
             variant="outline"
             onClick={onClose}
             className="hover-lift"
+            disabled={isSubmitting} // Disable if submitting
           >
             Annuler
           </Button>
@@ -251,8 +261,16 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
             <Button
               type="submit"
               className="hover-lift"
+              disabled={isSubmitting} // Disable if submitting
             >
-              Sauvegarder
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sauvegarde en cours...
+                </>
+              ) : (
+                'Sauvegarder'
+              )}
             </Button>
           )}
         </DialogFooter>

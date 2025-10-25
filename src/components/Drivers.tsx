@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { Phone, AlertTriangle, Upload, Download } from 'lucide-react';
+import { Phone, AlertTriangle, Upload, Download, Loader2 } from 'lucide-react'; // Import Loader2
 import { Driver, DataTableColumn, DriverImportData, Resource, Action, OperationResult, DbImportResult } from '../types';
 import { showSuccess, showLoading, updateToast } from '../utils/toast';
 import { formatDate, getDaysUntilExpiration } from '../utils/date';
@@ -54,6 +54,7 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Add isSubmitting state
 
   const methods = useForm<DriverFormData>({
     resolver: zodResolver(driverSchema),
@@ -126,6 +127,7 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
   };
 
   const onSubmit = async (formData: DriverFormData) => {
+    setIsSubmitting(true); // Set submitting to true
     const loadingToastId = showLoading(editingDriver ? 'Mise à jour du conducteur...' : 'Ajout du conducteur...');
     let result: OperationResult;
     try {
@@ -146,6 +148,8 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
       resetFormAndClearStorage();
     } catch (error: unknown) {
       updateToast(loadingToastId, (error instanceof Error ? error.message : String(error)) || 'Erreur lors de l\'opération.', 'error');
+    } finally {
+      setIsSubmitting(false); // Set submitting to false in finally block
     }
   };
 
@@ -324,23 +328,30 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
           </DialogHeader>
           <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
-              <FormField name="name" label="Nom complet" type="text" placeholder="Ex: John Doe" disabled={(!canEditForm && !!editingDriver) || (!canAddForm && !editingDriver)} />
-              <FormField name="license" label="Numéro de permis" type="text" placeholder="Ex: 123456789" disabled={(!canEditForm && !!editingDriver) || (!canAddForm && !editingDriver)} />
-              <FormField name="expiration" label="Date d'expiration" type="date" disabled={(!canEditForm && !!editingDriver) || (!canAddForm && !editingDriver)} />
+              <FormField name="name" label="Nom complet" type="text" placeholder="Ex: John Doe" disabled={isSubmitting || (!canEditForm && !!editingDriver) || (!canAddForm && !editingDriver)} />
+              <FormField name="license" label="Numéro de permis" type="text" placeholder="Ex: 123456789" disabled={isSubmitting || (!canEditForm && !!editingDriver) || (!canAddForm && !editingDriver)} />
+              <FormField name="expiration" label="Date d'expiration" type="date" disabled={isSubmitting || (!canEditForm && !!editingDriver) || (!canAddForm && !editingDriver)} />
               <FormField name="status" label="Statut" type="select" options={[
                 { value: 'Disponible', label: 'Disponible' },
                 { value: 'En mission', label: 'En mission' },
                 { value: 'Repos', label: 'Repos' },
                 { value: 'Congé', label: 'Congé' },
-              ]} disabled={(!canEditForm && !!editingDriver) || (!canAddForm && !editingDriver)} />
-              <FormField name="phone" label="Téléphone" type="tel" placeholder="Ex: +216 22 123 456" disabled={(!canEditForm && !!editingDriver) || (!canAddForm && !editingDriver)} />
+              ]} disabled={isSubmitting || (!canEditForm && !!editingDriver) || (!canAddForm && !editingDriver)} />
+              <FormField name="phone" label="Téléphone" type="tel" placeholder="Ex: +216 22 123 456" disabled={isSubmitting || (!canEditForm && !!editingDriver) || (!canAddForm && !editingDriver)} />
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={handleCloseModal} className="hover-lift">
+                <Button type="button" variant="outline" onClick={handleCloseModal} className="hover-lift" disabled={isSubmitting}>
                   Annuler
                 </Button>
                 {(canAddForm && !editingDriver) || (canEditForm && editingDriver) ? (
-                  <Button type="submit" className="hover-lift">
-                    Sauvegarder
+                  <Button type="submit" className="hover-lift" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Sauvegarde en cours...
+                      </>
+                    ) : (
+                      'Sauvegarder'
+                    )}
                   </Button>
                 ) : null}
               </DialogFooter>

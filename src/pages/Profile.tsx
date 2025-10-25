@@ -8,7 +8,7 @@ import { profileSchema } from '../types/formSchemas';
 import { z } from 'zod';
 import FormField from '../components/forms/FormField';
 import { Button } from '../components/ui/button';
-import { User, Camera } from 'lucide-react';
+import { User, Camera, Loader2 } from 'lucide-react'; // Import Loader2
 import SkeletonLoader from '../components/SkeletonLoader';
 import { usePermissions } from '../hooks/usePermissions'; // Import usePermissions
 
@@ -186,7 +186,14 @@ const Profile: React.FC = () => {
           {canEditProfile && (
             <div className="flex justify-end">
               <Button type="submit" disabled={isSubmitting} className="hover-lift">
-                {isSubmitting ? 'Sauvegarde en cours...' : 'Sauvegarder les modifications'}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sauvegarde en cours...
+                  </>
+                ) : (
+                  'Sauvegarder les modifications'
+                )}
               </Button>
             </div>
           )}

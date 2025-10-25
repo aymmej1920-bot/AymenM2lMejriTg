@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Calendar } from 'lucide-react';
+import { Calendar, Loader2 } from 'lucide-react'; // Import Loader2
 import { Tour, DataTableColumn, Resource, Action, OperationResult } from '../types';
 import { showLoading, updateToast } from '../utils/toast';
 import { formatDate } from '../utils/date';
@@ -48,6 +48,7 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
 
   const [showModal, setShowModal] = useState(false);
   const [editingTour, setEditingTour] = useState<Tour | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Add isSubmitting state
 
   const methods = useForm<TourFormData>({
     resolver: zodResolver(tourSchema),
@@ -153,6 +154,7 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
   };
 
   const onSubmit = async (formData: TourFormData) => {
+    setIsSubmitting(true); // Set submitting to true
     const loadingToastId = showLoading(editingTour ? 'Mise à jour de la tournée...' : 'Ajout de la tournée...');
     let result: OperationResult;
     try {
@@ -171,6 +173,8 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
       resetFormAndClearStorage();
     } catch (error: unknown) {
       updateToast(loadingToastId, (error instanceof Error ? error.message : String(error)) || 'Erreur lors de l\'opération.', 'error');
+    } finally {
+      setIsSubmitting(false); // Set submitting to false in finally block
     }
   };
 
@@ -364,7 +368,7 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
             <DialogDescription>
               {editingTour ? 'Modifiez les détails de la tournée.' : 'Ajoutez une nouvelle tournée.'}
             </DialogDescription>
-          </DialogHeader>
+          </DialogDescription>
           <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
@@ -372,7 +376,7 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
                   name="date"
                   label="Date"
                   type="date"
-                  disabled={(!canEditForm && !!editingTour) || (!canAddForm && !editingTour)}
+                  disabled={isSubmitting || (!canEditForm && !!editingTour) || (!canAddForm && !editingTour)}
                 />
                 <FormField
                   name="status"
@@ -384,7 +388,7 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
                     { value: 'Terminé', label: 'Terminé' },
                     { value: 'Annulé', label: 'Annulé' },
                   ]}
-                  disabled={(!canEditForm && !!editingTour) || (!canAddForm && !editingTour)}
+                  disabled={isSubmitting || (!canEditForm && !!editingTour) || (!canAddForm && !editingTour)}
                 />
               </div>
               
@@ -395,7 +399,7 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
                   type="select"
                   options={[{ value: '', label: 'Sélectionner un véhicule' }, ...vehicles.map(vehicle => ({ value: vehicle.id, label: `${vehicle.plate} - ${vehicle.type}` }))]}
                   placeholder="Sélectionner un véhicule"
-                  disabled={(!canEditForm && !!editingTour) || (!canAddForm && !editingTour)}
+                  disabled={isSubmitting || (!canEditForm && !!editingTour) || (!canAddForm && !editingTour)}
                 />
                 <FormField
                   name="driver_id"
@@ -403,7 +407,7 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
                   type="select"
                   options={[{ value: '', label: 'Sélectionner un conducteur' }, ...drivers.map(driver => ({ value: driver.id, label: driver.name }))]}
                   placeholder="Sélectionner un conducteur"
-                  disabled={(!canEditForm && !!editingTour) || (!canAddForm && !editingTour)}
+                  disabled={isSubmitting || (!canEditForm && !!editingTour) || (!canAddForm && !editingTour)}
                 />
               </div>
 
@@ -414,14 +418,14 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
                   type="number"
                   min={0}
                   max={100}
-                  disabled={((!canEditForm && !!editingTour) || (!canAddForm && !editingTour)) || (status !== 'En cours' && status !== 'Terminé')}
+                  disabled={isSubmitting || ((!canEditForm && !!editingTour) || (!canAddForm && !editingTour)) || (status !== 'En cours' && status !== 'Terminé')}
                 />
                 <FormField
                   name="km_start"
                   label="Km début"
                   type="number"
                   min={0}
-                  disabled={((!canEditForm && !!editingTour) || (!canAddForm && !editingTour)) || (status !== 'En cours' && status !== 'Terminé')}
+                  disabled={isSubmitting || ((!canEditForm && !!editingTour) || (!canAddForm && !editingTour)) || (status !== 'En cours' && status !== 'Terminé')}
                 />
               </div>
 
@@ -432,14 +436,14 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
                   type="number"
                   min={0}
                   max={100}
-                  disabled={((!canEditForm && !!editingTour) || (!canAddForm && !editingTour)) || (status !== 'Terminé')}
+                  disabled={isSubmitting || ((!canEditForm && !!editingTour) || (!canAddForm && !editingTour)) || (status !== 'Terminé')}
                 />
                 <FormField
                   name="km_end"
                   label="Km fin"
                   type="number"
                   min={0}
-                  disabled={((!canEditForm && !!editingTour) || (!canAddForm && !editingTour)) || (status !== 'Terminé')}
+                  disabled={isSubmitting || ((!canEditForm && !!editingTour) || (!canAddForm && !editingTour)) || (status !== 'Terminé')}
                 />
               </div>
 
@@ -448,7 +452,7 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
                 label="Distance (km)"
                 type="number"
                 min={0}
-                disabled={((!canEditForm && !!editingTour) || (!canAddForm && !editingTour)) || (status === 'Terminé')}
+                disabled={isSubmitting || ((!canEditForm && !!editingTour) || (!canAddForm && !editingTour)) || (status === 'Terminé')}
               />
 
               {errors.status && errors.status.message && (
@@ -461,6 +465,7 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
                   variant="outline"
                   onClick={handleCloseModal}
                   className="hover-lift"
+                  disabled={isSubmitting}
                 >
                   Annuler
                 </Button>
@@ -468,8 +473,16 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
                   <Button
                     type="submit"
                     className="hover-lift"
+                    disabled={isSubmitting}
                   >
-                    Sauvegarder
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Sauvegarde en cours...
+                      </>
+                    ) : (
+                      'Sauvegarder'
+                    )}
                   </Button>
                 ) : null}
               </DialogFooter>
