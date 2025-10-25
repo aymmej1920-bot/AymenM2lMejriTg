@@ -34,7 +34,7 @@ import { useState, useEffect, useCallback } from 'react';
       // const [showEditRoleDialog, setShowEditRoleDialog] = useState(false); // Removed
       // const [editingUser, setEditingUser] = useState<Profile | null>(null); // Removed
       // const [newRole, setNewRole] = useState<UserRole>('utilisateur'); // Removed
-      // const [showInviteUserDialog, setShowInviteUserDialog] = useState(false); // Kept for invite dialog
+      const [showInviteUserDialog, setShowInviteUserDialog] = useState(false); // Kept for invite dialog
       const [isInviting, setIsInviting] = useState(false);
       const [showManualAddUserDialog, setShowManualAddUserDialog] = useState(false);
       const [isCreatingManualUser, setIsCreatingManualUser] = useState(false);
@@ -196,7 +196,7 @@ import { useState, useEffect, useCallback } from 'react';
         } finally {
           setIsInviting(false);
         }
-      }, [fetchUsers]);
+      }, [fetchUsers, setShowInviteUserDialog]);
 
       const handleManualAddUser = useCallback(async (formData: ManualUserFormData) => {
         setIsCreatingManualUser(true);
@@ -231,7 +231,7 @@ import { useState, useEffect, useCallback } from 'react';
         } finally {
           setIsCreatingManualUser(false);
         }
-      }, [fetchUsers]);
+      }, [fetchUsers, setShowManualAddUserDialog]);
 
       const handleSort = useCallback((column: keyof Profile) => {
         if (sortColumn === column) {
@@ -281,7 +281,6 @@ import { useState, useEffect, useCallback } from 'react';
         // handleEditRole, // Removed
         // newRole, // Removed
         // setNewRole, // Removed
-        // handleSaveRole, // Removed
         showInviteUserDialog,
         setShowInviteUserDialog,
         isInviting,

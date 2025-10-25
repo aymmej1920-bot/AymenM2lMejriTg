@@ -11,13 +11,7 @@ import {
   DialogFooter,
 } from './ui/dialog';
 import DataTable from './DataTable';
-import { vehicleSchema, vehicleImportSchema } from '../types/formSchemas';
-import { z } from 'zod';
-import { useForm, FormProvider } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import FormField from './forms/FormField';
-import { Button } from './ui/button';
-import { usePermissions } from '../hooks/usePermissions';
+// import { usePermissions } from '../hooks/usePermissions'; // Removed import
 import XLSXImportDialog from './XLSXImportDialog';
 import { Upload, Download, Loader2 } from 'lucide-react'; // Import Loader2
 import { exportTemplateToXLSX } from '../utils/templateExport';
@@ -38,7 +32,7 @@ interface VehiclesProps {
 }
 
 const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
-  const { canAccess } = usePermissions();
+  // const { canAccess } = usePermissions(); // Removed usePermissions
 
   const { fleetData, isLoadingFleet, getResourcePaginationState, setResourcePaginationState } = useFleetData();
   const vehicles = fleetData.vehicles;
@@ -247,9 +241,9 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
     },
   ], []);
 
-  const canEditForm = canAccess('vehicles', 'edit');
-  const canAddForm = canAccess('vehicles', 'add');
-  const canImport = canAccess('vehicles', 'add');
+  const canEditForm = true; // All authenticated users can edit their own data
+  const canAddForm = true; // All authenticated users can add their own data
+  const canImport = true; // All authenticated users can import their own data
 
   const renderCustomHeaderButtons = () => (
     <>
@@ -282,7 +276,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
         columns={columns}
         onAdd={canAddForm ? handleAddVehicle : undefined}
         onEdit={canEditForm ? handleEditVehicle : undefined}
-        onDelete={canAccess('vehicles', 'delete') ? async (id) => {
+        onDelete={true ? async (id) => { // All authenticated users can delete their own data
           const loadingToastId = showLoading('Suppression du véhicule...');
           const result = await onDelete('vehicles', { id }, 'delete');
           if (result.success) {
@@ -302,7 +296,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
         onPageChange={onPageChange}
         itemsPerPage={itemsPerPage}
         onItemsPerPageChange={onItemsPerPageChange}
-        totalCount={totalCount}
+        totalCount={totalVehiclesCount}
         sortColumn={sortColumn}
         onSortChange={onSortChange}
         sortDirection={sortDirection}

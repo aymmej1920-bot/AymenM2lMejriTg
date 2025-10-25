@@ -18,7 +18,7 @@ import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import FormField from './forms/FormField';
 import { Button } from './ui/button';
-import { usePermissions } from '../hooks/usePermissions';
+// import { usePermissions } from '../hooks/usePermissions'; // Removed import
 import XLSXImportDialog from './XLSXImportDialog';
 import { exportTemplateToXLSX } from '../utils/templateExport';
 import { LOCAL_STORAGE_KEYS } from '../utils/constants';
@@ -38,7 +38,7 @@ interface DriversProps {
 }
 
 const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
-  const { canAccess } = usePermissions();
+  // const { canAccess } = usePermissions(); // Removed usePermissions
 
   const { fleetData, isLoadingFleet, getResourcePaginationState, setResourcePaginationState } = useFleetData();
   const drivers = fleetData.drivers;
@@ -262,9 +262,9 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
     );
   }, [expiringDrivers]);
 
-  const canEditForm = canAccess('drivers', 'edit');
-  const canAddForm = canAccess('drivers', 'add');
-  const canImport = canAccess('drivers', 'add');
+  const canEditForm = true; // All authenticated users can edit their own data
+  const canAddForm = true; // All authenticated users can add their own data
+  const canImport = true; // All authenticated users can import their own data
 
   const renderCustomHeaderButtons = () => (
     <>
@@ -297,7 +297,7 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
         columns={columns}
         onAdd={canAddForm ? handleAddDriver : undefined}
         onEdit={canEditForm ? handleEditDriver : undefined}
-        onDelete={canAccess('drivers', 'delete') ? async (id) => {
+        onDelete={true ? async (id) => { // All authenticated users can delete their own data
           const loadingToastId = showLoading('Suppression du conducteur...');
           const result = await onDelete('drivers', { id }, 'delete');
           if (result.success) {
@@ -318,7 +318,7 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
         onPageChange={onPageChange}
         itemsPerPage={itemsPerPage}
         onItemsPerPageChange={onItemsPerPageChange}
-        totalCount={totalCount}
+        totalCount={totalDriversCount}
         sortColumn={sortColumn}
         onSortChange={onSortChange}
         sortDirection={sortDirection}

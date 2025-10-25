@@ -6,6 +6,7 @@ import React, { useState, useMemo, useEffect } from 'react';
     import { showSuccess, showError } from '../utils/toast';
     import SkeletonLoader from './SkeletonLoader';
     import { DataTableColumn, ProcessedDataTableColumn, Resource } from '../types';
+    import DataTableColumnCustomizer from './DataTableColumnCustomizer'; // Added import
     // import { usePermissions } from '../hooks/usePermissions'; // Removed import
 
     interface DataTableProps<T extends { id: string }> {
