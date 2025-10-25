@@ -1,7 +1,7 @@
 import React, { useEffect, createContext, useContext, useCallback, ReactNode, useRef, useState } from 'react';
 import { useSession } from './SessionContextProvider';
 import { useSupabaseData } from '../hooks/useSupabaseData';
-import { FleetData, FleetContextType, Resource, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist } from '../types';
+import { FleetData, FleetContextType, Resource, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist, MaintenanceSchedule } from '../types';
 import SkeletonLoader from './SkeletonLoader';
 
 // Define types for pagination and sorting states
@@ -34,10 +34,11 @@ export const FleetDataProvider: React.FC<{ children: ReactNode }> = ({ children 
     documents: { currentPage: 1, itemsPerPage: 10, sortColumn: 'expiration', sortDirection: 'asc', totalCount: 0 },
     maintenance_entries: { currentPage: 1, itemsPerPage: 10, sortColumn: 'date', sortDirection: 'desc', totalCount: 0 },
     pre_departure_checklists: { currentPage: 1, itemsPerPage: 10, sortColumn: 'date', sortDirection: 'desc', totalCount: 0 },
-    users: { currentPage: 1, itemsPerPage: 10, sortColumn: 'first_name', sortDirection: 'asc', totalCount: 0 }, // For UserManagement
-    profile: { currentPage: 1, itemsPerPage: 10, sortColumn: 'id', sortDirection: 'asc', totalCount: 0 }, // Added default sortColumn
-    permissions: { currentPage: 1, itemsPerPage: 10, sortColumn: 'role', sortDirection: 'asc', totalCount: 0 }, // Added default sortColumn
-    dashboard: { currentPage: 1, itemsPerPage: 10, sortColumn: 'id', sortDirection: 'asc', totalCount: 0 }, // Added default sortColumn
+    maintenance_schedules: { currentPage: 1, itemsPerPage: 10, sortColumn: 'next_due_date', sortDirection: 'asc', totalCount: 0 }, // New resource
+    users: { currentPage: 1, itemsPerPage: 10, sortColumn: 'first_name', sortDirection: 'asc', totalCount: 0 },
+    profile: { currentPage: 1, itemsPerPage: 10, sortColumn: 'id', sortDirection: 'asc', totalCount: 0 },
+    permissions: { currentPage: 1, itemsPerPage: 10, sortColumn: 'role', sortDirection: 'asc', totalCount: 0 },
+    dashboard: { currentPage: 1, itemsPerPage: 10, sortColumn: 'id', sortDirection: 'asc', totalCount: 0 },
   });
 
   const getResourcePaginationState = useCallback((resource: Resource) => resourceStates[resource], [resourceStates]);
@@ -72,6 +73,7 @@ export const FleetDataProvider: React.FC<{ children: ReactNode }> = ({ children 
   const { data: documents, isLoading: isLoadingDocuments, refetch: refetchDocuments, totalCount: totalDocumentsCount } = useSupabaseData<Document>('documents', { enabled: !!currentUser, ...commonOptions('documents') });
   const { data: maintenance, isLoading: isLoadingMaintenance, refetch: refetchMaintenance, totalCount: totalMaintenanceCount } = useSupabaseData<MaintenanceEntry>('maintenance_entries', { enabled: !!currentUser, ...commonOptions('maintenance_entries') });
   const { data: preDepartureChecklists, isLoading: isLoadingChecklists, refetch: refetchChecklists, totalCount: totalChecklistsCount } = useSupabaseData<PreDepartureChecklist>('pre_departure_checklists', { enabled: !!currentUser, ...commonOptions('pre_departure_checklists') });
+  const { data: maintenanceSchedules, isLoading: isLoadingMaintenanceSchedules, refetch: refetchMaintenanceSchedules, totalCount: totalMaintenanceSchedulesCount } = useSupabaseData<MaintenanceSchedule>('maintenance_schedules', { enabled: !!currentUser, ...commonOptions('maintenance_schedules') }); // New hook call
 
   // Update total counts in resourceStates
   useEffect(() => {
@@ -84,8 +86,9 @@ export const FleetDataProvider: React.FC<{ children: ReactNode }> = ({ children 
       documents: { ...prevStates.documents, totalCount: totalDocumentsCount },
       maintenance_entries: { ...prevStates.maintenance_entries, totalCount: totalMaintenanceCount },
       pre_departure_checklists: { ...prevStates.pre_departure_checklists, totalCount: totalChecklistsCount },
+      maintenance_schedules: { ...prevStates.maintenance_schedules, totalCount: totalMaintenanceSchedulesCount }, // Update total count for new resource
     }));
-  }, [totalVehiclesCount, totalDriversCount, totalToursCount, totalFuelEntriesCount, totalDocumentsCount, totalMaintenanceCount, totalChecklistsCount]);
+  }, [totalVehiclesCount, totalDriversCount, totalToursCount, totalFuelEntriesCount, totalDocumentsCount, totalMaintenanceCount, totalChecklistsCount, totalMaintenanceSchedulesCount]);
 
 
   const fleetData: FleetData = {
@@ -96,9 +99,10 @@ export const FleetDataProvider: React.FC<{ children: ReactNode }> = ({ children 
     documents,
     maintenance,
     pre_departure_checklists: preDepartureChecklists,
+    maintenance_schedules: maintenanceSchedules, // Add new resource to fleetData
   };
 
-  const isLoadingFleet = isLoadingVehicles || isLoadingDrivers || isLoadingTours || isLoadingFuel || isLoadingDocuments || isLoadingMaintenance || isLoadingChecklists || isSessionLoading;
+  const isLoadingFleet = isLoadingVehicles || isLoadingDrivers || isLoadingTours || isLoadingFuel || isLoadingDocuments || isLoadingMaintenance || isLoadingChecklists || isLoadingMaintenanceSchedules || isSessionLoading; // Update loading state
 
   // Map des fonctions de refetch pour les ressources individuelles
   const refetchMap = useRef<Record<Resource, () => Promise<void>>>({
@@ -109,10 +113,11 @@ export const FleetDataProvider: React.FC<{ children: ReactNode }> = ({ children 
     documents: async () => {},
     maintenance_entries: async () => {},
     pre_departure_checklists: async () => {},
-    users: async () => {}, // UserManagement gère son propre refetch pour 'users'
-    profile: async () => {}, // La page Profile gère son propre refetch
-    permissions: async () => {}, // PermissionsOverview gère son propre refetch
-    dashboard: async () => {}, // Le tableau de bord n'a pas de ressource directement refetchable
+    maintenance_schedules: async () => {}, // Add new resource refetch
+    users: async () => {},
+    profile: async () => {},
+    permissions: async () => {},
+    dashboard: async () => {},
   });
 
   // Effet pour maintenir refetchMap.current à jour avec les dernières fonctions de refetch
@@ -125,12 +130,13 @@ export const FleetDataProvider: React.FC<{ children: ReactNode }> = ({ children 
       documents: refetchDocuments,
       maintenance_entries: refetchMaintenance,
       pre_departure_checklists: refetchChecklists,
+      maintenance_schedules: refetchMaintenanceSchedules, // Update refetch for new resource
       users: async () => {},
       profile: async () => {},
       permissions: async () => {},
       dashboard: async () => {},
     };
-  }, [refetchVehicles, refetchDrivers, refetchTours, refetchFuel, refetchDocuments, refetchMaintenance, refetchChecklists]);
+  }, [refetchVehicles, refetchDrivers, refetchTours, refetchFuel, refetchDocuments, refetchMaintenance, refetchChecklists, refetchMaintenanceSchedules]); // Add new refetch dependency
 
   // Fonction pour refetcher toutes les données
   const refetchFleetData = useCallback(async () => {

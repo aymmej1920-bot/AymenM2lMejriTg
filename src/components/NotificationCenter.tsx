@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wrench, FileText, ClipboardCheck, Info } from 'lucide-react'; // Removed AlertTriangle
+import { Wrench, FileText, ClipboardCheck, Info, CalendarClock } from 'lucide-react'; // Import CalendarClock
 import { useAlertsData, FleetAlert } from '../hooks/useAlertsData';
 import SkeletonLoader from './SkeletonLoader';
 import { formatDate } from '../utils/date';
@@ -12,6 +12,7 @@ const NotificationCenter: React.FC = () => {
       case 'maintenance': return <Wrench className="w-5 h-5" />;
       case 'document': return <FileText className="w-5 h-5" />;
       case 'checklist_issue': return <ClipboardCheck className="w-5 h-5" />;
+      case 'maintenance_schedule': return <CalendarClock className="w-5 h-5" />; // New icon for schedules
       default: return <Info className="w-5 h-5" />;
     }
   };

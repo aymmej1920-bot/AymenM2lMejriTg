@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { FleetData, Vehicle, Driver, DataTableColumn, Resource, ReportGroupingOption, ReportAggregationType, ReportAggregationField, ReportChartType, ReportOption, ProcessedReportData } from '../types';
+import { FleetData, Vehicle, Driver, DataTableColumn, Resource, ReportGroupingOption, ReportAggregationType, ReportAggregationField, ReportChartType, ReportOption, ProcessedReportData, MaintenanceSchedule } from '../types';
 import { Calendar, Search, Table, BarChart2 } from 'lucide-react';
 import { formatDate, getDaysUntilExpiration, getDaysSinceEntry } from '../utils/date';
 import DataTable from '../components/DataTable';
@@ -78,14 +78,28 @@ const getColumnConfigs = (dataSource: keyof FleetData, allVehicles: Vehicle[], a
           return daysLeft < 0 ? 'Expiré' : `${daysLeft} jours`;
         }},
       ];
-    case 'maintenance': // Corrected from 'maintenance_entries'
+    case 'maintenance':
       return [
         { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item: any) => formatDate(item.date) },
         { key: 'vehicle_id', label: 'Véhicule', sortable: true, defaultVisible: true, render: (item: any) => allVehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A' },
         { key: 'type', label: 'Type', sortable: true, defaultVisible: true },
+        { key: 'description', label: 'Description', sortable: true, defaultVisible: true, render: (item: any) => item.description || '-' },
         { key: 'mileage', label: 'Kilométrage', sortable: true, defaultVisible: true, render: (item: any) => `${item.mileage.toLocaleString()} km` },
-        { key: 'cost', label: 'Coût', sortable: true, defaultVisible: true, render: (item: any) => `${item.cost.toFixed(2)} TND` },
+        { key: 'parts_cost', label: 'Coût Pièces', sortable: true, defaultVisible: true, render: (item: any) => `${(item.parts_cost || 0).toFixed(2)} TND` },
+        { key: 'labor_cost', label: 'Coût Main-d\'œuvre', sortable: true, defaultVisible: true, render: (item: any) => `${(item.labor_cost || 0).toFixed(2)} TND` },
+        { key: 'cost', label: 'Coût Total', sortable: true, defaultVisible: true, render: (item: any) => `${item.cost.toFixed(2)} TND` },
         { key: 'days_since_entry', label: 'Jours depuis l\'entrée', sortable: true, defaultVisible: true, render: (item: any) => getDaysSinceEntry(item.date) },
+      ];
+    case 'maintenance_schedules': // New case for maintenance schedules
+      return [
+        { key: 'task_type', label: 'Type de tâche', sortable: true, defaultVisible: true },
+        { key: 'vehicle_id', label: 'Véhicule', sortable: true, defaultVisible: true, render: (item: MaintenanceSchedule) => item.vehicle_id ? allVehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A' : 'Générique' },
+        { key: 'vehicle_type', label: 'Type Véhicule', sortable: true, defaultVisible: true, render: (item: MaintenanceSchedule) => item.vehicle_type || 'Tous' },
+        { key: 'interval_km', label: 'Intervalle (Km)', sortable: true, defaultVisible: true, render: (item: MaintenanceSchedule) => item.interval_km ? `${item.interval_km.toLocaleString()} km` : '-' },
+        { key: 'interval_months', label: 'Intervalle (Mois)', sortable: true, defaultVisible: true, render: (item: MaintenanceSchedule) => item.interval_months ? `${item.interval_months} mois` : '-' },
+        { key: 'next_due_date', label: 'Prochaine Date', sortable: true, defaultVisible: true, render: (item: MaintenanceSchedule) => item.next_due_date ? formatDate(item.next_due_date) : '-' },
+        { key: 'next_due_mileage', label: 'Prochain Km', sortable: true, defaultVisible: true, render: (item: MaintenanceSchedule) => item.next_due_mileage ? `${item.next_due_mileage.toLocaleString()} km` : '-' },
+        { key: 'notes', label: 'Notes', sortable: true, defaultVisible: false, render: (item: MaintenanceSchedule) => item.notes || '-' },
       ];
     case 'pre_departure_checklists':
       return [
@@ -245,6 +259,22 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
       chartTypes: ['BarChart', 'LineChart', 'PieChart'],
     },
     {
+      id: 'maintenance_schedules', // New resource
+      name: 'Plannings Maintenance',
+      groupableColumns: [
+        { label: 'Aucun', value: 'none' },
+        { label: 'Type de tâche', value: 'task_type' },
+        { label: 'Véhicule', value: 'vehicle_id' },
+        { label: 'Type de véhicule', value: 'vehicle_type' },
+      ],
+      aggregatableFields: [
+        { label: 'Nombre de plannings', value: 'count' },
+        { label: 'Intervalle Km moyen', value: 'interval_km' },
+        { label: 'Intervalle Mois moyen', value: 'interval_months' },
+      ],
+      chartTypes: ['BarChart', 'PieChart'],
+    },
+    {
       id: 'pre_departure_checklists',
       name: 'Checklists Pré-départ',
       groupableColumns: [
@@ -272,7 +302,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
 
   const customFilter = useCallback((item: any) => {
     let matchesDateRange = true;
-    const itemDateString = (item as any).date || (item as any).expiration || (item as any).created_at;
+    const itemDateString = (item as any).date || (item as any).expiration || (item as any).created_at || (item as any).next_due_date; // Added next_due_date
     
     if (itemDateString) {
       const itemDate = new Date(itemDateString);
@@ -314,6 +344,10 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
         } else if (selectedDataSource === 'maintenance') {
           nameValue = `${item.type} - ${vehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A'}`;
           displayValue = `${item.cost.toFixed(2)} TND`;
+        } else if (selectedDataSource === 'maintenance_schedules') { // New case
+          const vehicle = item.vehicle_id ? vehicles.find(v => v.id === item.vehicle_id) : null;
+          nameValue = `${item.task_type} (${vehicle?.plate || item.vehicle_type || 'Générique'})`;
+          displayValue = item.next_due_date ? `Échéance: ${formatDate(item.next_due_date)}` : 'N/A';
         } else if (selectedDataSource === 'pre_departure_checklists') {
           nameValue = formatDate(item.date);
           displayValue = item.issues_to_address ? 'Problèmes' : 'OK';
@@ -340,6 +374,8 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
         dateValue = new Date(item.expiration);
       } else if (item.created_at) {
         dateValue = new Date(item.created_at);
+      } else if (item.next_due_date && selectedDataSource === 'maintenance_schedules') { // Use next_due_date for schedules
+        dateValue = new Date(item.next_due_date);
       }
 
       if (groupByColumn === 'date_month' && dateValue) {
@@ -354,6 +390,10 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
         groupKey = item.type;
       } else if (groupByColumn === 'status' && item.status) {
         groupKey = item.status;
+      } else if (groupByColumn === 'task_type' && item.task_type && selectedDataSource === 'maintenance_schedules') { // New grouping for schedules
+        groupKey = item.task_type;
+      } else if (groupByColumn === 'vehicle_type' && item.vehicle_type && selectedDataSource === 'maintenance_schedules') { // New grouping for schedules
+        groupKey = item.vehicle_type;
       } else {
         groupKey = 'Non groupé';
       }
@@ -377,17 +417,21 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
           if (aggregationField === 'total_cost') {
             if (selectedDataSource === 'fuel_entries') {
               valueToAdd = (item.liters || 0) * (item.price_per_liter || 0);
-            } else if (selectedDataSource === 'maintenance') { // Corrected
+            } else if (selectedDataSource === 'maintenance') {
               valueToAdd = item.cost || 0;
             }
           } else if (aggregationField === 'distance' && selectedDataSource === 'tours') {
             valueToAdd = item.distance || 0;
-          } else if (aggregationField === 'mileage' && (selectedDataSource === 'vehicles' || selectedDataSource === 'fuel_entries' || selectedDataSource === 'maintenance')) { // Corrected
+          } else if (aggregationField === 'mileage' && (selectedDataSource === 'vehicles' || selectedDataSource === 'fuel_entries' || selectedDataSource === 'maintenance')) {
             valueToAdd = item.mileage || 0;
           } else if (aggregationField === 'liters' && selectedDataSource === 'fuel_entries') {
             valueToAdd = item.liters || 0;
-          } else if (aggregationField === 'cost' && selectedDataSource === 'maintenance') { // Corrected
+          } else if (aggregationField === 'cost' && selectedDataSource === 'maintenance') {
             valueToAdd = item.cost || 0;
+          } else if (aggregationField === 'interval_km' && selectedDataSource === 'maintenance_schedules') { // New aggregation for schedules
+            valueToAdd = item.interval_km || 0;
+          } else if (aggregationField === 'interval_months' && selectedDataSource === 'maintenance_schedules') { // New aggregation for schedules
+            valueToAdd = item.interval_months || 0;
           }
           sum += valueToAdd;
         });
@@ -410,8 +454,8 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
     return aggregatedData.sort((a, b) => a.name.localeCompare(b.name)); // Sort by group key
   }, [currentData, customFilter, groupByColumn, aggregationType, aggregationField, selectedDataSource, vehicles, drivers]);
 
-  const displayTableData = processedReportData; // Always ProcessedReportData[]
-  const displayChartData = processedReportData.filter(item => item.rawItem === undefined); // Only aggregated data for charts
+  const displayTableData = processedReportData;
+  const displayChartData = processedReportData; // Charts can also use processed data
 
   const columns = useMemo(() => {
     if (groupByColumn !== 'none' && aggregationType !== 'none' && aggregationField) {
@@ -425,9 +469,6 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
     return [
       { key: 'name', label: 'Élément', sortable: true, defaultVisible: true },
       { key: 'value', label: 'Détail Principal', sortable: true, defaultVisible: true },
-      // You could add more columns here to display specific fields from rawItem if needed
-      // For example, a generic 'Details' column that renders based on rawItem type
-      // { key: 'rawItem', label: 'Détails Complets', render: (item: ProcessedReportData) => JSON.stringify(item.rawItem) },
     ];
   }, [selectedDataSource, groupByColumn, aggregationType, aggregationField, currentDataSourceConfig, vehicles, drivers]);
 
@@ -532,7 +573,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
               setEndDate('');
               setViewMode('table');
             }}
-            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="" disabled>Sélectionner la source de données</option>
             {dataSources.map(source => (
@@ -567,7 +608,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
               >
                 <option value="none" disabled>Sélectionner l'agrégation</option>
                 <option value="count">Compter</option>
-                {(selectedDataSource === 'fuel_entries' || selectedDataSource === 'maintenance' || selectedDataSource === 'tours' || selectedDataSource === 'vehicles') && (
+                {(selectedDataSource === 'fuel_entries' || selectedDataSource === 'maintenance' || selectedDataSource === 'tours' || selectedDataSource === 'vehicles' || selectedDataSource === 'maintenance_schedules') && ( // Added maintenance_schedules
                   <>
                     <option value="sum">Somme</option>
                     <option value="avg">Moyenne</option>

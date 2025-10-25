@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Truck, Users, Route as RouteIcon, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck, FileText as ReportIcon, UserCog, User as UserIcon, ShieldCheck, CalendarDays, Bell } from 'lucide-react'; // Import CalendarDays and Bell icon
+import { Truck, Users, Route as RouteIcon, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck, FileText as ReportIcon, UserCog, User as UserIcon, ShieldCheck, CalendarDays, Bell, CalendarClock } from 'lucide-react'; // Import CalendarDays, Bell, and CalendarClock icon
 import Dashboard from './components/Dashboard';
 import Vehicles from './components/Vehicles';
 import Drivers from './components/Drivers';
@@ -17,7 +17,7 @@ import UserManagement from './components/UserManagement';
 import PermissionsOverview from './components/PermissionsOverview';
 import ProtectedRoute from './components/ProtectedRoute';
 import CalendarPage from './pages/CalendarPage';
-import NotificationCenter from './components/NotificationCenter'; // Import NotificationCenter
+import NotificationCenter from './components/NotificationCenter';
 import { Resource, Action, UserRole, OperationResult } from './types';
 import { useSession } from './components/SessionContextProvider';
 import { supabase } from './integrations/supabase/client';
@@ -63,19 +63,19 @@ export default function App() {
     try {
       let response;
       if (action === 'add') {
-        console.log(`[handleUpdateData] Inserting into ${tableName}:`, { ...newData, user_id: currentUser.id }); // ADDED LOG
+        console.log(`[handleUpdateData] Inserting into ${tableName}:`, { ...newData, user_id: currentUser.id });
         response = await supabase.from(tableName).insert({ ...newData, user_id: currentUser.id }).select();
       } else if (action === 'edit') {
-        console.log(`[handleUpdateData] Updating ${tableName} with ID ${newData.id}:`, newData); // ADDED LOG
+        console.log(`[handleUpdateData] Updating ${tableName} with ID ${newData.id}:`, newData);
         response = await supabase.from(tableName).update(newData).eq('id', newData.id).eq('user_id', currentUser.id).select();
       } else if (action === 'delete') {
-        console.log(`[handleUpdateData] Deleting from ${tableName} with ID ${newData.id}`); // ADDED LOG
+        console.log(`[handleUpdateData] Deleting from ${tableName} with ID ${newData.id}`);
         response = await supabase.from(tableName).delete().eq('id', newData.id).eq('user_id', currentUser.id);
       } else {
         throw new Error('Action non supportée.');
       }
 
-      console.log(`[handleUpdateData] Supabase raw response for ${action} on ${tableName}:`, response); // IMPROVED LOG
+      console.log(`[handleUpdateData] Supabase raw response for ${action} on ${tableName}:`, response);
 
       if (response?.error) {
         console.error(`[handleUpdateData] Supabase Error during ${action} on ${tableName}:`, response.error);
@@ -135,7 +135,7 @@ export default function App() {
 
   const tabs = [
     { id: 'dashboard', name: 'Dashboard', icon: BarChart3, path: '/dashboard' },
-    { id: 'notifications', name: 'Notifications', icon: Bell, path: '/notifications' }, // New Notifications tab
+    { id: 'notifications', name: 'Notifications', icon: Bell, path: '/notifications' },
     { id: 'calendar', name: 'Calendrier', icon: CalendarDays, path: '/calendar' },
     { id: 'vehicles', name: 'Véhicules', icon: Truck, path: '/vehicles' },
     { id: 'drivers', name: 'Conducteurs', icon: Users, path: '/drivers' },
@@ -254,7 +254,7 @@ export default function App() {
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard key="dashboard-view" userRole={userRole} /></ProtectedRoute>} />
-                <Route path="/notifications" element={<ProtectedRoute><NotificationCenter key="notifications-view" /></ProtectedRoute>} /> {/* New Notifications Route */}
+                <Route path="/notifications" element={<ProtectedRoute><NotificationCenter key="notifications-view" /></ProtectedRoute>} />
                 <Route path="/calendar" element={<ProtectedRoute><CalendarPage key="calendar-view" /></ProtectedRoute>} />
                 <Route path="/vehicles" element={<ProtectedRoute><Vehicles key="vehicles-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} /></ProtectedRoute>} />
                 <Route path="/drivers" element={<ProtectedRoute><Drivers key="drivers-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} /></ProtectedRoute>} />

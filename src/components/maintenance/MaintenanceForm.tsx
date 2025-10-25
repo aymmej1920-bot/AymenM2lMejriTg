@@ -6,7 +6,7 @@ import { Button } from '../ui/button';
 import { DialogFooter } from '../ui/dialog';
 import FormField from '../forms/FormField';
 import { maintenanceEntrySchema } from '../../types/formSchemas';
-import { MaintenanceEntry, Resource, Action, OperationResult } from '../../types'; // Removed Vehicle import
+import { MaintenanceEntry, Resource, Action, OperationResult } from '../../types';
 import { showError, showLoading, updateToast, showSuccess } from '../../utils/toast';
 import { LOCAL_STORAGE_KEYS } from '../../utils/constants';
 import { useFleetData } from '../FleetDataProvider';
@@ -44,10 +44,13 @@ const MaintenanceForm: React.FC<MaintenanceFormProps> = ({
       date: new Date().toISOString().split('T')[0],
       mileage: initialVehicleId ? (vehicles.find(v => v.id === initialVehicleId)?.mileage || 0) : 0,
       cost: 0,
+      description: '', // New field
+      parts_cost: 0,   // New field
+      labor_cost: 0,   // New field
     }, [editingEntry, initialVehicleId, vehicles]),
   });
 
-  const { handleSubmit, reset, watch } = methods;
+  const { handleSubmit, reset, watch, setValue } = methods;
 
   const resetFormAndClearStorage = useCallback(() => {
     reset({
@@ -56,6 +59,9 @@ const MaintenanceForm: React.FC<MaintenanceFormProps> = ({
       date: new Date().toISOString().split('T')[0],
       mileage: initialVehicleId ? (vehicles.find(v => v.id === initialVehicleId)?.mileage || 0) : 0,
       cost: 0,
+      description: '',
+      parts_cost: 0,
+      labor_cost: 0,
     });
     localStorage.removeItem(LOCAL_STORAGE_KEYS.MAINTENANCE_FORM_DATA);
   }, [reset, initialVehicleId, vehicles]);
@@ -70,6 +76,9 @@ const MaintenanceForm: React.FC<MaintenanceFormProps> = ({
         date: new Date().toISOString().split('T')[0],
         mileage: vehicles.find(v => v.id === initialVehicleId)?.mileage || 0,
         cost: 0,
+        description: '',
+        parts_cost: 0,
+        labor_cost: 0,
       });
     } else {
       const savedFormData = localStorage.getItem(LOCAL_STORAGE_KEYS.MAINTENANCE_FORM_DATA);
@@ -94,6 +103,18 @@ const MaintenanceForm: React.FC<MaintenanceFormProps> = ({
     });
     return () => subscription.unsubscribe();
   }, [watch]);
+
+  // Calculate total cost whenever parts_cost or labor_cost changes
+  useEffect(() => {
+    const subscription = watch((value, { name }) => {
+      if (name === 'parts_cost' || name === 'labor_cost') {
+        const parts = value.parts_cost || 0;
+        const labor = value.labor_cost || 0;
+        setValue('cost', parts + labor);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, setValue]);
 
   const onSubmit = async (maintenanceData: MaintenanceEntryFormData) => {
     setIsSubmitting(true);
@@ -176,11 +197,34 @@ const MaintenanceForm: React.FC<MaintenanceFormProps> = ({
           disabled={isSubmitting || !canAddForm}
         />
         <FormField
+          name="description"
+          label="Description"
+          type="textarea"
+          placeholder="Description détaillée de la maintenance..."
+          disabled={isSubmitting || !canAddForm}
+        />
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            name="parts_cost"
+            label="Coût des pièces (TND)"
+            type="number"
+            step="0.01"
+            disabled={isSubmitting || !canAddForm}
+          />
+          <FormField
+            name="labor_cost"
+            label="Coût main-d'œuvre (TND)"
+            type="number"
+            step="0.01"
+            disabled={isSubmitting || !canAddForm}
+          />
+        </div>
+        <FormField
           name="cost"
-          label="Coût (TND)"
+          label="Coût Total (TND)"
           type="number"
           step="0.01"
-          disabled={isSubmitting || !canAddForm}
+          disabled={true} // This field is now calculated automatically
         />
         <DialogFooter>
           <Button

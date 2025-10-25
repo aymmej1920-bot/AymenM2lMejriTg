@@ -84,6 +84,25 @@ export interface MaintenanceEntry {
   date: string;
   mileage: number;
   cost: number;
+  description?: string | null; // New field
+  parts_cost?: number | null; // New field
+  labor_cost?: number | null; // New field
+  created_at?: string;
+}
+
+export interface MaintenanceSchedule {
+  id: string;
+  user_id: string;
+  vehicle_id?: string | null; // Optional, for specific vehicles
+  vehicle_type?: string | null; // Optional, for general schedules (e.g., 'Camionnette')
+  task_type: string; // e.g., 'Vidange', 'Contrôle Technique'
+  interval_km?: number | null; // e.g., 10000 km
+  interval_months?: number | null; // e.g., 6 months
+  last_performed_date?: string | null;
+  last_performed_mileage?: number | null;
+  next_due_date?: string | null;
+  next_due_mileage?: number | null;
+  notes?: string | null;
   created_at?: string;
 }
 
@@ -116,6 +135,7 @@ export interface FleetData {
   documents: Document[];
   maintenance: MaintenanceEntry[];
   pre_departure_checklists: PreDepartureChecklist[];
+  maintenance_schedules: MaintenanceSchedule[]; // New resource
 }
 
 export interface AuthUser {
@@ -162,7 +182,8 @@ export type Resource =
   'users' |
   'profile' |
   'permissions' |
-  'dashboard';
+  'dashboard' |
+  'maintenance_schedules'; // New resource
 
 export type Action = 'view' | 'add' | 'edit' | 'delete';
 
@@ -200,7 +221,7 @@ export interface DbImportResult {
 // New types for reporting features
 export type ReportGroupingOption = 'none' | 'date_month' | 'date_year' | 'vehicle_id' | 'driver_id' | 'type' | 'status';
 export type ReportAggregationType = 'none' | 'count' | 'sum' | 'avg';
-export type ReportAggregationField = keyof Vehicle | keyof Driver | keyof Tour | keyof FuelEntry | keyof Document | keyof MaintenanceEntry | keyof PreDepartureChecklist | 'total_cost' | 'distance';
+export type ReportAggregationField = keyof Vehicle | keyof Driver | keyof Tour | keyof FuelEntry | keyof Document | keyof MaintenanceEntry | keyof PreDepartureChecklist | keyof MaintenanceSchedule | 'total_cost' | 'distance';
 export type ReportChartType = 'BarChart' | 'LineChart' | 'PieChart';
 
 export interface ReportOption {

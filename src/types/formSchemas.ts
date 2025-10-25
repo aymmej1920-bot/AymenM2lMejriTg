@@ -121,6 +121,29 @@ export const maintenanceEntrySchema = z.object({
   date: z.string().min(1, "La date est requise."),
   mileage: z.number().min(0, "Le kilométrage est requis et doit être positif."),
   cost: z.number().min(0, "Le coût doit être positif."),
+  description: z.string().nullable().optional(), // New field
+  parts_cost: z.number().min(0, "Le coût des pièces doit être positif.").nullable().optional(), // New field
+  labor_cost: z.number().min(0, "Le coût de la main-d'œuvre doit être positif.").nullable().optional(), // New field
+});
+
+export const maintenanceScheduleSchema = z.object({
+  id: z.string().optional(),
+  vehicle_id: z.string().nullable().optional(),
+  vehicle_type: z.string().nullable().optional(),
+  task_type: z.string().min(1, "Le type de tâche est requis."),
+  interval_km: z.number().min(0, "L'intervalle en km doit être positif.").nullable().optional(),
+  interval_months: z.number().min(0, "L'intervalle en mois doit être positif.").nullable().optional(),
+  last_performed_date: z.string().nullable().optional(),
+  last_performed_mileage: z.number().min(0, "Le dernier kilométrage effectué doit être positif.").nullable().optional(),
+  next_due_date: z.string().nullable().optional(),
+  next_due_mileage: z.number().min(0, "Le prochain kilométrage dû doit être positif.").nullable().optional(),
+  notes: z.string().nullable().optional(),
+}).refine(data => data.vehicle_id || data.vehicle_type, {
+  message: "Un véhicule spécifique ou un type de véhicule est requis pour la planification.",
+  path: ['vehicle_id', 'vehicle_type'],
+}).refine(data => data.interval_km || data.interval_months, {
+  message: "Un intervalle en km ou en mois est requis pour la planification.",
+  path: ['interval_km', 'interval_months'],
 });
 
 export const preDepartureChecklistSchema = z.object({
