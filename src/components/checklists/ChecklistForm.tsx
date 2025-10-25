@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
-import { useForm, FormProvider } from 'react-hook-form';
+import { useForm, FormProvider, FieldErrors } from 'react-hook-form'; // Import FieldErrors
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '../ui/button';
@@ -29,7 +29,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
     resolver: zodResolver(preDepartureChecklistSchema),
     defaultValues: {
       vehicle_id: '',
-      driver_id: '', // Changed default to empty string for consistency with select options
+      driver_id: '',
       date: new Date().toISOString().split('T')[0],
       tire_pressure_ok: false,
       lights_ok: false,
@@ -41,12 +41,12 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
       mirrors_ok: false,
       ac_working_ok: false,
       windows_working_ok: false,
-      observations: '', // Changed default to empty string
-      issues_to_address: '', // Changed default to empty string
+      observations: '',
+      issues_to_address: '',
     }
   });
 
-  const { handleSubmit, reset, watch, formState: { errors = {} } } = methods;
+  const { handleSubmit, reset, watch, formState: { errors } } = methods;
 
   const resetFormAndClearStorage = useCallback(() => {
     reset({
@@ -137,6 +137,12 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
     }
   };
 
+  // New onError function for handleSubmit
+  const onErrors = (errors: FieldErrors<PreDepartureChecklistFormData>) => {
+    console.error("[ChecklistForm] Form validation errors:", errors);
+    showError('Veuillez corriger les erreurs dans le formulaire.');
+  };
+
   const renderBooleanRadio = (name: keyof PreDepartureChecklistFormData, label: string) => (
     <div className="flex items-center justify-between">
       <label className="text-sm font-semibold text-gray-900">{label}</label>
@@ -145,9 +151,9 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
           <input
             type="radio"
             id={`${name}_ok`}
-            value="true"
+            value="true" // Explicitly set string value
             {...methods.register(name, { setValueAs: v => v === 'true' })}
-            checked={methods.watch(name) === true} // Ensure 'checked' state is managed
+            checked={methods.watch(name) === true}
             className="h-4 w-4 text-green-600 bg-white border border-gray-300 shadow-sm focus:ring-green-500"
             disabled={!canAdd}
           />
@@ -157,9 +163,9 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
           <input
             type="radio"
             id={`${name}_nok`}
-            value="false"
+            value="false" // Explicitly set string value
             {...methods.register(name, { setValueAs: v => v === 'true' })}
-            checked={methods.watch(name) === false} // Ensure 'checked' state is managed
+            checked={methods.watch(name) === false}
             className="h-4 w-4 text-red-600 bg-white border border-gray-300 shadow-sm focus:ring-red-500"
             disabled={!canAdd}
           />
@@ -171,7 +177,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-4">
+      <form onSubmit={handleSubmit(onSubmit, onErrors)} className="space-y-4 py-4"> {/* Pass onErrors here */}
         <div className="grid grid-cols-2 gap-4">
           <FormField
             name="date"
