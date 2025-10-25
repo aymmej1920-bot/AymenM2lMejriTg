@@ -93,6 +93,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
   }, [watch]);
 
   const onSubmit = async (formData: PreDepartureChecklistFormData) => {
+    console.log("onSubmit called with formData:", formData); // ADDED LOG
     if (!canAdd) {
       showError('Vous n\'avez pas la permission d\'ajouter une checklist.');
       return;
@@ -125,6 +126,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
 
     try {
       const result = await onAdd('pre_departure_checklists', dataToSubmit, 'add');
+      console.log("onAdd result:", result); // ADDED LOG
       if (result.success) {
         showSuccess('Checklist ajoutée avec succès !');
         onClose();

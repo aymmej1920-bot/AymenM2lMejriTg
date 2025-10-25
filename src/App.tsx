@@ -61,16 +61,19 @@ export default function App() {
     try {
       let response;
       if (action === 'add') {
+        console.log(`[handleUpdateData] Inserting into ${tableName}:`, { ...newData, user_id: currentUser.id }); // ADDED LOG
         response = await supabase.from(tableName).insert({ ...newData, user_id: currentUser.id }).select();
       } else if (action === 'edit') {
+        console.log(`[handleUpdateData] Updating ${tableName} with ID ${newData.id}:`, newData); // ADDED LOG
         response = await supabase.from(tableName).update(newData).eq('id', newData.id).eq('user_id', currentUser.id).select();
       } else if (action === 'delete') {
+        console.log(`[handleUpdateData] Deleting from ${tableName} with ID ${newData.id}`); // ADDED LOG
         response = await supabase.from(tableName).delete().eq('id', newData.id).eq('user_id', currentUser.id);
       } else {
         throw new Error('Action non supportée.');
       }
 
-      console.log(`[handleUpdateData] Supabase response for ${action} on ${tableName}:`, response);
+      console.log(`[handleUpdateData] Supabase raw response for ${action} on ${tableName}:`, response); // IMPROVED LOG
 
       if (response?.error) {
         console.error(`[handleUpdateData] Supabase Error during ${action} on ${tableName}:`, response.error);
