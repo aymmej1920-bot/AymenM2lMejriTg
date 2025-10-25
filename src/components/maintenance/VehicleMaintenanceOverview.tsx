@@ -3,7 +3,7 @@ import DataTable from '../DataTable';
 import { Vehicle, DataTableColumn, PreDepartureChecklist } from '../../types';
 import { formatDate } from '../../utils/date';
 import { Button } from '../ui/button';
-import { usePermissions } from '../../hooks/usePermissions';
+// import { usePermissions } from '../../hooks/usePermissions'; // Removed import
 import { getMaintenanceStatus } from '../../utils/maintenance'; // Import the utility function
 import { AlertTriangle, Clock, ClipboardCheck, Wrench } from 'lucide-react'; // Import icons
 
@@ -36,7 +36,7 @@ const VehicleMaintenanceOverview: React.FC<VehicleMaintenanceOverviewProps> = ({
   vehiclesCurrentPage,
   vehiclesItemsPerPage,
 }) => {
-  const { canAccess } = usePermissions();
+  // const { canAccess } = usePermissions(); // Removed usePermissions
 
   const checklistsWithIssues = useMemo(() => {
     return preDepartureChecklists.filter(cl => cl.issues_to_address && cl.issues_to_address.trim() !== '');
@@ -137,7 +137,7 @@ const VehicleMaintenanceOverview: React.FC<VehicleMaintenanceOverviewProps> = ({
     },
   ], []);
 
-  const canAddMaintenanceEntry = canAccess('maintenance_entries', 'add');
+  const canAddMaintenanceEntry = true; // All authenticated users can add their own data
 
   return (
     <>

@@ -17,7 +17,7 @@ import {
   DialogDescription,
 } from './ui/dialog';
 import DataTable from './DataTable';
-import { usePermissions } from '../hooks/usePermissions';
+// import { usePermissions } from '../hooks/usePermissions'; // Removed import
 import { LOCAL_STORAGE_KEYS } from '../utils/constants';
 import FormField from './forms/FormField';
 import { useFleetData } from '../components/FleetDataProvider';
@@ -31,7 +31,7 @@ interface FuelManagementProps {
 }
 
 const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDelete }) => {
-  const { canAccess } = usePermissions();
+  // const { canAccess } = usePermissions(); // Removed usePermissions
 
   const { fleetData, isLoadingFleet, getResourcePaginationState, setResourcePaginationState } = useFleetData();
   const fuelEntries = fleetData.fuel_entries; // Updated to fuel_entries
@@ -99,7 +99,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
 
   useEffect(() => {
     if (showModal && !editingFuel) {
-      const subscription = watch((value) => {
+      const subscription = watch((value: Partial<FuelEntryFormData>) => { // Explicitly type value
         localStorage.setItem(LOCAL_STORAGE_KEYS.FUEL_FORM_DATA, JSON.stringify(value));
       });
       return () => subscription.unsubscribe();
@@ -251,8 +251,8 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
         return matchesVehicle && matchesDateRange;
       }, [selectedVehicle, startDate, endDate]);
     
-      const canAddForm = canAccess('fuel_entries', 'add');
-      const canEditForm = canAccess('fuel_entries', 'edit');
+      const canAddForm = true; // All authenticated users can add their own data
+      const canEditForm = true; // All authenticated users can edit their own data
 
       return (
         <div className="space-y-6">
@@ -304,7 +304,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
             columns={columns}
             onAdd={canAddForm ? handleAddFuel : undefined}
             onEdit={canEditForm ? handleEditFuel : undefined}
-            onDelete={canAccess('fuel_entries', 'delete') ? async (id) => {
+            onDelete={true ? async (id) => { // All authenticated users can delete their own data
               const loadingToastId = showLoading('Suppression du plein...');
               const result = await onDelete('fuel_entries', { id }, 'delete');
               if (result.success) {
@@ -325,7 +325,7 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
             onPageChange={onPageChange}
             itemsPerPage={itemsPerPage}
             onItemsPerPageChange={onItemsPerPageChange}
-            totalCount={totalCount}
+            totalCount={totalFuelEntriesCount}
             sortColumn={sortColumn}
             onSortChange={onSortChange}
             sortDirection={sortDirection}

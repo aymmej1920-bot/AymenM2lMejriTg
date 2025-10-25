@@ -10,7 +10,7 @@ import { MaintenanceEntry, Resource, Action, OperationResult } from '../../types
 import { showError, showLoading, updateToast, showSuccess } from '../../utils/toast';
 import { LOCAL_STORAGE_KEYS } from '../../utils/constants';
 import { useFleetData } from '../FleetDataProvider';
-import { usePermissions } from '../../hooks/usePermissions';
+// import { usePermissions } from '../../hooks/usePermissions'; // Removed import
 import { Loader2 } from 'lucide-react';
 
 type MaintenanceEntryFormData = z.infer<typeof maintenanceEntrySchema>;
@@ -34,7 +34,7 @@ const MaintenanceForm: React.FC<MaintenanceFormProps> = ({
 }) => {
   const { fleetData } = useFleetData();
   const vehicles = fleetData.vehicles;
-  const { canAccess } = usePermissions();
+  // const { canAccess } = usePermissions(); // Removed usePermissions
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -100,7 +100,7 @@ const MaintenanceForm: React.FC<MaintenanceFormProps> = ({
   }, [editingEntry, initialVehicleId, reset, vehicles]);
 
   useEffect(() => {
-    const subscription = watch((value: Partial<MaintenanceEntryFormData>) => {
+    const subscription = watch((value: Partial<MaintenanceEntryFormData>) => { // Explicitly type value
       localStorage.setItem(LOCAL_STORAGE_KEYS.MAINTENANCE_FORM_DATA, JSON.stringify(value));
     });
     return () => subscription.unsubscribe();
@@ -172,7 +172,7 @@ const MaintenanceForm: React.FC<MaintenanceFormProps> = ({
     }
   };
 
-  const canAddForm = canAccess('maintenance_entries', 'add');
+  const canAddForm = true; // All authenticated users can add their own data
   // const canEditForm = canAccess('maintenance_entries', 'edit'); // Removed unused variable
 
   return (

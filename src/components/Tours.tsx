@@ -17,7 +17,7 @@ import {
   DialogDescription,
 } from './ui/dialog';
 import DataTable from './DataTable';
-import { usePermissions } from '../hooks/usePermissions';
+// import { usePermissions } from '../hooks/usePermissions'; // Removed import
 import { LOCAL_STORAGE_KEYS } from '../utils/constants';
 import FormField from './forms/FormField';
 import { useFleetData } from '../components/FleetDataProvider';
@@ -31,7 +31,7 @@ interface ToursProps {
 }
 
 const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
-  const { canAccess } = usePermissions();
+  // const { canAccess } = usePermissions(); // Removed usePermissions
 
   const { fleetData, isLoadingFleet, getResourcePaginationState, setResourcePaginationState } = useFleetData();
   const tours = fleetData.tours;
@@ -112,7 +112,7 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
 
   useEffect(() => {
     if (showModal && !editingTour) {
-      const subscription = watch((value) => {
+      const subscription = watch((value: Partial<TourFormData>) => { // Explicitly type value
         localStorage.setItem(LOCAL_STORAGE_KEYS.TOUR_FORM_DATA, JSON.stringify(value));
       });
       return () => subscription.unsubscribe();
@@ -329,8 +329,8 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
     return matchesVehicle && matchesDriver && matchesStatus && matchesDateRange;
   }, [selectedVehicle, selectedDriver, selectedStatus, startDate, endDate]);
 
-  const canAddForm = canAccess('tours', 'add');
-  const canEditForm = canAccess('tours', 'edit');
+  const canAddForm = true; // All authenticated users can add their own data
+  const canEditForm = true; // All authenticated users can edit their own data
 
   return (
     <>
@@ -340,7 +340,7 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
         columns={columns}
         onAdd={canAddForm ? handleAddTour : undefined}
         onEdit={canEditForm ? handleEditTour : undefined}
-        onDelete={canAccess('tours', 'delete') ? async (id) => {
+        onDelete={true ? async (id) => { // All authenticated users can delete their own data
           const loadingToastId = showLoading('Suppression de la tournée...');
           const result = await onDelete('tours', { id }, 'delete');
           if (result.success) {
@@ -361,7 +361,7 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
         onPageChange={onPageChange}
         itemsPerPage={itemsPerPage}
         onItemsPerPageChange={onItemsPerPageChange}
-        totalCount={totalCount}
+        totalCount={totalToursCount}
         sortColumn={sortColumn}
         onSortChange={onSortChange}
         sortDirection={sortDirection}

@@ -17,6 +17,12 @@ import { Upload, Download, Loader2 } from 'lucide-react'; // Import Loader2
 import { exportTemplateToXLSX } from '../utils/templateExport';
 import { LOCAL_STORAGE_KEYS } from '../utils/constants';
 import { useFleetData } from '../components/FleetDataProvider';
+import { useForm, FormProvider } from 'react-hook-form'; // Added import
+import { zodResolver } from '@hookform/resolvers/zod'; // Added import
+import { z } from 'zod'; // Added import
+import { vehicleSchema, vehicleImportSchema } from '../types/formSchemas'; // Added import
+import { Button } from './ui/button'; // Added import
+import FormField from './forms/FormField'; // Added import
 
 // Define a type-aliased version of XLSXImportDialog to resolve parsing issues with generics
 const TypedXLSXImportDialog = XLSXImportDialog as React.FC<
@@ -43,7 +49,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
     itemsPerPage = 10,
     sortColumn = 'plate',
     sortDirection = 'asc',
-    totalCount = 0
+    totalCount // Corrected: totalCount is now destructured and used
   } = getResourcePaginationState('vehicles') || {};
 
   const onPageChange = useCallback((page: number) => setResourcePaginationState('vehicles', { currentPage: page }), [setResourcePaginationState]);
@@ -102,7 +108,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
 
   useEffect(() => {
     if (showModal && !editingVehicle) {
-      const subscription = watch((value) => {
+      const subscription = watch((value: Partial<VehicleFormData>) => { // Explicitly type value
         localStorage.setItem(LOCAL_STORAGE_KEYS.VEHICLE_FORM_DATA, JSON.stringify(value));
       });
       return () => subscription.unsubscribe();
@@ -296,7 +302,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
         onPageChange={onPageChange}
         itemsPerPage={itemsPerPage}
         onItemsPerPageChange={onItemsPerPageChange}
-        totalCount={totalVehiclesCount}
+        totalCount={totalCount}
         sortColumn={sortColumn}
         onSortChange={onSortChange}
         sortDirection={sortDirection}

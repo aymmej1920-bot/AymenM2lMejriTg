@@ -1,7 +1,7 @@
 import React from 'react';
 import DataTable from '../DataTable';
 import { Resource, Action, OperationResult, Vehicle, MaintenanceEntry } from '../../types';
-import { usePermissions } from '../../hooks/usePermissions';
+// import { usePermissions } from '../../hooks/usePermissions'; // Removed import
 import { showLoading, updateToast } from '../../utils/toast';
 import { useMaintenanceFilters } from '../../hooks/useMaintenanceFilters';
 import { useMaintenanceTableColumns } from '../../hooks/useMaintenanceTableColumns';
@@ -37,15 +37,15 @@ const MaintenanceHistoryTable: React.FC<MaintenanceHistoryTableProps> = ({
   maintenanceCurrentPage,
   maintenanceItemsPerPage,
 }) => {
-  const { canAccess } = usePermissions();
+  // const { canAccess } = usePermissions(); // Removed usePermissions
 
   // Destructure renderFilters and customFilter from the hook
   const { renderFilters, customFilter } = useMaintenanceFilters({ vehicles, maintenanceEntries });
 
-  const { maintenanceHistoryColumns } = useMaintenanceTableColumns({ vehicles, onAddMaintenance, canAddForm: canAccess('maintenance_entries', 'add') });
+  const { maintenanceHistoryColumns } = useMaintenanceTableColumns({ vehicles, onAddMaintenance, canAddForm: true }); // canAddForm is always true now
 
-  const canAddMaintenanceEntry = canAccess('maintenance_entries', 'add');
-  const canDeleteMaintenanceEntry = canAccess('maintenance_entries', 'delete');
+  const canAddMaintenanceEntry = true; // All authenticated users can add their own data
+  const canDeleteMaintenanceEntry = true; // All authenticated users can delete their own data
 
   return (
     <DataTable

@@ -49,7 +49,7 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
     itemsPerPage = 10,
     sortColumn = 'name',
     sortDirection = 'asc',
-    totalCount = 0
+    totalCount // Corrected: totalCount is now destructured and used
   } = getResourcePaginationState('drivers') || {};
 
   const onPageChange = useCallback((page: number) => setResourcePaginationState('drivers', { currentPage: page }), [setResourcePaginationState]);
@@ -106,7 +106,7 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
 
   useEffect(() => {
     if (showModal && !editingDriver) {
-      const subscription = watch((value) => {
+      const subscription = watch((value: Partial<DriverFormData>) => { // Explicitly type value
         localStorage.setItem(LOCAL_STORAGE_KEYS.DRIVER_FORM_DATA, JSON.stringify(value));
       });
       return () => subscription.unsubscribe();
@@ -318,7 +318,7 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
         onPageChange={onPageChange}
         itemsPerPage={itemsPerPage}
         onItemsPerPageChange={onItemsPerPageChange}
-        totalCount={totalDriversCount}
+        totalCount={totalCount}
         sortColumn={sortColumn}
         onSortChange={onSortChange}
         sortDirection={sortDirection}

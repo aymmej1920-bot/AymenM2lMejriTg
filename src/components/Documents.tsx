@@ -17,7 +17,7 @@ import {
   DialogDescription,
 } from './ui/dialog';
 import DataTable from './DataTable';
-import { usePermissions } from '../hooks/usePermissions';
+// import { usePermissions } from '../hooks/usePermissions'; // Removed import
 import { LOCAL_STORAGE_KEYS } from '../utils/constants';
 import FormField from './forms/FormField';
 import { useFleetData } from '../components/FleetDataProvider';
@@ -31,7 +31,7 @@ interface DocumentsProps {
 }
 
 const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
-  const { canAccess } = usePermissions();
+  // const { canAccess } = usePermissions(); // Removed usePermissions
 
   const { fleetData, isLoadingFleet, getResourcePaginationState, setResourcePaginationState } = useFleetData();
   const documents = fleetData.documents;
@@ -97,7 +97,7 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
 
   useEffect(() => {
     if (showModal && !editingDocument) {
-      const subscription = watch((value) => {
+      const subscription = watch((value: Partial<DocumentFormData>) => { // Explicitly type value
         localStorage.setItem(LOCAL_STORAGE_KEYS.DOCUMENT_FORM_DATA, JSON.stringify(value));
       });
       return () => subscription.unsubscribe();
@@ -328,8 +328,8 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
     return matchesVehicle && matchesType && matchesDateRange;
   }, [selectedVehicle, selectedType, startDate, endDate]);
 
-  const canAddForm = canAccess('documents', 'add');
-  const canEditForm = canAccess('documents', 'edit');
+  const canAddForm = true; // All authenticated users can add their own data
+  const canEditForm = true; // All authenticated users can edit their own data
 
   return (
     <>
@@ -339,7 +339,7 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
         columns={columns}
         onAdd={canAddForm ? handleAddDocument : undefined}
         onEdit={canEditForm ? handleEditDocument : undefined}
-        onDelete={canAccess('documents', 'delete') ? async (id) => {
+        onDelete={true ? async (id) => { // All authenticated users can delete their own data
           const loadingToastId = showLoading('Suppression du document...');
           const result = await onDelete('documents', { id }, 'delete');
           if (result.success) {

@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import DataTable from '../DataTable';
 import { Resource, Action, OperationResult, Vehicle, MaintenanceSchedule, DataTableColumn } from '../../types';
-import { usePermissions } from '../../hooks/usePermissions';
+// import { usePermissions } from '../../hooks/usePermissions'; // Removed import
 import { showLoading, updateToast } from '../../utils/toast';
 import { formatDate } from '../../utils/date';
 import { Search, Calendar } from 'lucide-react';
@@ -40,7 +40,7 @@ const MaintenanceSchedulesTable: React.FC<MaintenanceSchedulesTableProps> = ({
   schedulesCurrentPage,
   schedulesItemsPerPage,
 }) => {
-  const { canAccess } = usePermissions();
+  // const { canAccess } = usePermissions(); // Removed usePermissions
 
   const [selectedVehicleFilter, setSelectedVehicleFilter] = useState<string>('');
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('');
@@ -191,9 +191,9 @@ const MaintenanceSchedulesTable: React.FC<MaintenanceSchedulesTableProps> = ({
     return matchesVehicle && matchesType && matchesDateRange;
   }, [selectedVehicleFilter, selectedTypeFilter, startDate, endDate]);
 
-  const canAddSchedule = canAccess('maintenance_schedules', 'add');
-  const canEditSchedule = canAccess('maintenance_schedules', 'edit');
-  const canDeleteSchedule = canAccess('maintenance_schedules', 'delete');
+  const canAddSchedule = true; // All authenticated users can add their own data
+  const canEditSchedule = true; // All authenticated users can edit their own data
+  const canDeleteSchedule = true; // All authenticated users can delete their own data
 
   return (
     <DataTable
