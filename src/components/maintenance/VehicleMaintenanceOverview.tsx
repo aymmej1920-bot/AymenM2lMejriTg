@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
 import DataTable from '../DataTable';
-import { Vehicle, DataTableColumn, PreDepartureChecklist } from '../../types'; // Removed Resource import
+import { Vehicle, DataTableColumn, PreDepartureChecklist } from '../../types';
 import { formatDate } from '../../utils/date';
 import { Button } from '../ui/button';
 import { usePermissions } from '../../hooks/usePermissions';
