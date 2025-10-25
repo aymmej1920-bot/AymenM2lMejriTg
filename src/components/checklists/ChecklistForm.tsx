@@ -99,14 +99,6 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
       return;
     }
 
-    // The handleSubmit wrapper already prevents onSubmit from being called if there are Zod errors.
-    // This check is redundant and can be removed.
-    // if (Object.keys(errors).length > 0) {
-    //   console.log('Form validation errors:', errors);
-    //   showError('Veuillez corriger les erreurs dans le formulaire.');
-    //   return;
-    // }
-
     const { vehicle_id, date } = formData;
 
     const checklistDate = new Date(date);
@@ -155,6 +147,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
             id={`${name}_ok`}
             value="true"
             {...methods.register(name, { setValueAs: v => v === 'true' })}
+            checked={methods.watch(name) === true} // Ensure 'checked' state is managed
             className="h-4 w-4 text-green-600 bg-white border border-gray-300 shadow-sm focus:ring-green-500"
             disabled={!canAdd}
           />
@@ -166,6 +159,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
             id={`${name}_nok`}
             value="false"
             {...methods.register(name, { setValueAs: v => v === 'true' })}
+            checked={methods.watch(name) === false} // Ensure 'checked' state is managed
             className="h-4 w-4 text-red-600 bg-white border border-gray-300 shadow-sm focus:ring-red-500"
             disabled={!canAdd}
           />
