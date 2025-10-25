@@ -14,7 +14,7 @@ import MaintenanceHistoryTable from './maintenance/MaintenanceHistoryTable';
 import MaintenanceSchedulesTable from './maintenance/MaintenanceSchedulesTable'; // New import
 import MaintenanceScheduleForm from './maintenance/MaintenanceScheduleForm'; // New import
 import { Button } from './ui/button'; // Import Button for tabs
-import { showLoading, updateToast } from '../utils/toast';
+import { showLoading, updateToast, dismissToast } from '../utils/toast'; // Import dismissToast
 import moment from 'moment'; // Import moment for date calculations
 
 interface MaintenanceProps {
