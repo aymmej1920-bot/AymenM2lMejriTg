@@ -9,7 +9,7 @@ import { maintenanceScheduleSchema } from '../../types/formSchemas';
 import { MaintenanceSchedule, Resource, Action, OperationResult } from '../../types';
 import { showError, showLoading, updateToast } from '../../utils/toast';
 import { useFleetData } from '../FleetDataProvider';
-import { usePermissions } from '../../hooks/usePermissions';
+// import { usePermissions } from '../../hooks/usePermissions'; // Removed import
 import { Loader2 } from 'lucide-react';
 import moment from 'moment';
 
@@ -30,7 +30,7 @@ const MaintenanceScheduleForm: React.FC<MaintenanceScheduleFormProps> = ({
 }) => {
   const { fleetData } = useFleetData();
   const vehicles = fleetData.vehicles;
-  const { canAccess } = usePermissions();
+  // const { canAccess } = usePermissions(); // Removed usePermissions
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -112,10 +112,7 @@ const MaintenanceScheduleForm: React.FC<MaintenanceScheduleFormProps> = ({
   }, [editingSchedule, reset]);
 
   const onSubmit = async (formData: MaintenanceScheduleFormData) => {
-    if (!canAccess('maintenance_schedules', editingSchedule ? 'edit' : 'add')) {
-      showError('Vous n\'avez pas la permission d\'effectuer cette action.');
-      return;
-    }
+    // No permission check needed as access management is eliminated.
 
     setIsSubmitting(true);
     const loadingToastId = showLoading(editingSchedule ? 'Mise à jour du planning de maintenance...' : 'Ajout du planning de maintenance...');
@@ -154,8 +151,8 @@ const MaintenanceScheduleForm: React.FC<MaintenanceScheduleFormProps> = ({
     }
   };
 
-  const canEditSchedule = canAccess('maintenance_schedules', 'edit');
-  const canAddSchedule = canAccess('maintenance_schedules', 'add');
+  const canEditSchedule = true; // All authenticated users can edit their own data
+  const canAddSchedule = true; // All authenticated users can add their own data
 
   return (
     <FormProvider {...methods}>

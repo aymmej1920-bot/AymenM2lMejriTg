@@ -9,7 +9,7 @@ import React from 'react';
     }
 
     const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => { // Removed allowedRoles prop
-      const { session, currentUser, isLoading, isProfileLoading } = useSession();
+      const { session, isLoading, isProfileLoading } = useSession();
       const location = useLocation();
 
       if (isLoading || isProfileLoading) {

@@ -1,5 +1,5 @@
 import React from 'react';
-    import { Edit2, Trash2, ChevronUp, ChevronDown, Search } from 'lucide-react';
+    import { Trash2, ChevronUp, ChevronDown, Search } from 'lucide-react';
     import { Button } from '../ui/button';
     // import { UserRole } from '../../types'; // Removed UserRole
 
@@ -16,8 +16,8 @@ import React from 'react';
       users: Profile[]; // Now represents the current page's data
       searchTerm: string;
       setSearchTerm: (term: string) => void;
-      selectedRoleFilter: string; // This filter will no longer be functional
-      setSelectedRoleFilter: (role: string) => void; // This filter will no longer be functional
+      // selectedRoleFilter: string; // This filter will no longer be functional
+      // setSelectedRoleFilter: (role: string) => void; // This filter will no longer be functional
       sortColumn: keyof Profile;
       sortDirection: 'asc' | 'desc';
       handleSort: (column: keyof Profile) => void;
@@ -37,8 +37,8 @@ import React from 'react';
       users,
       searchTerm,
       setSearchTerm,
-      selectedRoleFilter, // This filter will no longer be functional
-      setSelectedRoleFilter, // This filter will no longer be functional
+      // selectedRoleFilter, // This filter will no longer be functional
+      // setSelectedRoleFilter, // This filter will no longer be functional
       sortColumn,
       sortDirection,
       handleSort,
