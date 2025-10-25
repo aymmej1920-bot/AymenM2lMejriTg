@@ -78,7 +78,7 @@ const getColumnConfigs = (dataSource: keyof FleetData, allVehicles: Vehicle[], a
           return daysLeft < 0 ? 'Expiré' : `${daysLeft} jours`;
         }},
       ];
-    case 'maintenance_entries': // This should be 'maintenance' to match FleetData
+    case 'maintenance': // Corrected from 'maintenance_entries'
       return [
         { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item: any) => formatDate(item.date) },
         { key: 'vehicle_id', label: 'Véhicule', sortable: true, defaultVisible: true, render: (item: any) => allVehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A' },
@@ -228,7 +228,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
       chartTypes: ['BarChart', 'PieChart'],
     },
     {
-      id: 'maintenance', // Corrected to 'maintenance'
+      id: 'maintenance',
       name: 'Maintenance',
       groupableColumns: [
         { label: 'Aucun', value: 'none' },
@@ -286,11 +286,46 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
     return matchesDateRange;
   }, [startDate, endDate]);
 
-  const aggregatedData = useMemo(() => {
+  const processedReportData = useMemo(() => {
     let filtered = currentData.filter(customFilter);
 
     if (groupByColumn === 'none' || aggregationType === 'none' || !aggregationField) {
-      return []; // No aggregated data if no grouping/aggregation is selected
+      // When no aggregation, map raw data to ProcessedReportData format
+      return filtered.map((item: any, index) => {
+        let nameValue: string = 'N/A';
+        let displayValue: number | string = '';
+
+        // Determine a sensible 'name' and 'value' for raw items
+        if (selectedDataSource === 'vehicles') {
+          nameValue = item.plate;
+          displayValue = `${item.mileage.toLocaleString()} km`;
+        } else if (selectedDataSource === 'drivers') {
+          nameValue = item.name;
+          displayValue = item.status;
+        } else if (selectedDataSource === 'tours') {
+          nameValue = formatDate(item.date);
+          displayValue = `${item.distance?.toLocaleString() || '-'} km`;
+        } else if (selectedDataSource === 'fuel_entries') {
+          nameValue = formatDate(item.date);
+          displayValue = `${(item.liters * item.price_per_liter).toFixed(2)} TND`;
+        } else if (selectedDataSource === 'documents') {
+          nameValue = `${item.type} - ${vehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A'}`;
+          displayValue = formatDate(item.expiration);
+        } else if (selectedDataSource === 'maintenance') {
+          nameValue = `${item.type} - ${vehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A'}`;
+          displayValue = `${item.cost.toFixed(2)} TND`;
+        } else if (selectedDataSource === 'pre_departure_checklists') {
+          nameValue = formatDate(item.date);
+          displayValue = item.issues_to_address ? 'Problèmes' : 'OK';
+        }
+
+        return {
+          id: item.id || `raw-${index}`,
+          name: nameValue,
+          value: displayValue,
+          rawItem: item, // Keep the original item accessible
+        } as ProcessedReportData;
+      });
     }
 
     const groupedData: Record<string, any[]> = {};
@@ -329,7 +364,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
       groupedData[groupKey].push(item);
     });
 
-    const result: ProcessedReportData[] = Object.keys(groupedData).map(key => {
+    const aggregatedData: ProcessedReportData[] = Object.keys(groupedData).map(key => {
       const groupItems = groupedData[key];
       let aggregatedValue: number | string = 0;
 
@@ -372,20 +407,11 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
       };
     });
 
-    return result.sort((a, b) => a.name.localeCompare(b.name)); // Sort by group key
+    return aggregatedData.sort((a, b) => a.name.localeCompare(b.name)); // Sort by group key
   }, [currentData, customFilter, groupByColumn, aggregationType, aggregationField, selectedDataSource, vehicles, drivers]);
 
-  const displayTableData = useMemo(() => {
-    if (groupByColumn === 'none' || aggregationType === 'none' || !aggregationField) {
-      return currentData.filter(customFilter).map((item, index) => ({ ...item, id: item.id || `raw-${index}` }));
-    }
-    return aggregatedData;
-  }, [currentData, customFilter, groupByColumn, aggregationType, aggregationField, aggregatedData]);
-
-  const displayChartData = useMemo(() => {
-    return aggregatedData;
-  }, [aggregatedData]);
-
+  const displayTableData = processedReportData; // Always ProcessedReportData[]
+  const displayChartData = processedReportData.filter(item => item.rawItem === undefined); // Only aggregated data for charts
 
   const columns = useMemo(() => {
     if (groupByColumn !== 'none' && aggregationType !== 'none' && aggregationField) {
@@ -395,9 +421,15 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
         { key: 'value', label: currentDataSourceConfig?.aggregatableFields.find(opt => opt.value === aggregationField)?.label || 'Valeur', sortable: true, defaultVisible: true, render: (item: ProcessedReportData) => typeof item.value === 'number' ? item.value.toFixed(2) : item.value },
       ];
     }
-    // Columns for raw data
-    return getColumnConfigs(selectedDataSource as keyof FleetData, vehicles, drivers);
-  }, [selectedDataSource, vehicles, drivers, groupByColumn, aggregationType, aggregationField, currentDataSourceConfig]);
+    // Columns for raw data (transformed to ProcessedReportData)
+    return [
+      { key: 'name', label: 'Élément', sortable: true, defaultVisible: true },
+      { key: 'value', label: 'Détail Principal', sortable: true, defaultVisible: true },
+      // You could add more columns here to display specific fields from rawItem if needed
+      // For example, a generic 'Details' column that renders based on rawItem type
+      // { key: 'rawItem', label: 'Détails Complets', render: (item: ProcessedReportData) => JSON.stringify(item.rawItem) },
+    ];
+  }, [selectedDataSource, groupByColumn, aggregationType, aggregationField, currentDataSourceConfig, vehicles, drivers]);
 
   // Effect to reset aggregation/grouping/chart options when data source changes
   useEffect(() => {
@@ -517,7 +549,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
                 id="groupByColumn"
                 value={groupByColumn}
                 onChange={(e) => setGroupByColumn(e.target.value as ReportGroupingOption)}
-                className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 disabled={!selectedDataSource}
               >
                 {currentDataSourceConfig?.groupableColumns.map(option => (
@@ -550,7 +582,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
                   value={aggregationField}
                   onChange={(e) => setAggregationField(e.target.value as ReportAggregationField)}
                   className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  disabled={!selectedDataSource} // Simplified condition
+                  disabled={!selectedDataSource}
                 >
                   <option value="" disabled>Sélectionner le champ</option>
                   {currentDataSourceConfig?.aggregatableFields
