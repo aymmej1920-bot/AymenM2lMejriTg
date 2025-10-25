@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Truck, Users, Route as RouteIcon, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck, FileText as ReportIcon, UserCog, User as UserIcon, ShieldCheck, CalendarDays, Bell, CalendarClock } from 'lucide-react'; // Import CalendarDays, Bell, and CalendarClock icon
+import { Truck, Users, Route as RouteIcon, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck, FileText as ReportIcon, UserCog, User as UserIcon, ShieldCheck, CalendarDays, Bell } from 'lucide-react'; // Removed CalendarClock
 import Dashboard from './components/Dashboard';
 import Vehicles from './components/Vehicles';
 import Drivers from './components/Drivers';

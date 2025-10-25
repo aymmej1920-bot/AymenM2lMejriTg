@@ -97,6 +97,8 @@ const getColumnConfigs = (dataSource: keyof FleetData, allVehicles: Vehicle[], a
         { key: 'vehicle_type', label: 'Type Véhicule', sortable: true, defaultVisible: true, render: (item: MaintenanceSchedule) => item.vehicle_type || 'Tous' },
         { key: 'interval_km', label: 'Intervalle (Km)', sortable: true, defaultVisible: true, render: (item: MaintenanceSchedule) => item.interval_km ? `${item.interval_km.toLocaleString()} km` : '-' },
         { key: 'interval_months', label: 'Intervalle (Mois)', sortable: true, defaultVisible: true, render: (item: MaintenanceSchedule) => item.interval_months ? `${item.interval_months} mois` : '-' },
+        { key: 'last_performed_date', label: 'Dernière Date', sortable: true, defaultVisible: true, render: (item: MaintenanceSchedule) => item.last_performed_date ? formatDate(item.last_performed_date) : '-' },
+        { key: 'last_performed_mileage', label: 'Dernier Km', sortable: true, defaultVisible: true, render: (item: MaintenanceSchedule) => item.last_performed_mileage ? `${item.last_performed_mileage.toLocaleString()} km` : '-' },
         { key: 'next_due_date', label: 'Prochaine Date', sortable: true, defaultVisible: true, render: (item: MaintenanceSchedule) => item.next_due_date ? formatDate(item.next_due_date) : '-' },
         { key: 'next_due_mileage', label: 'Prochain Km', sortable: true, defaultVisible: true, render: (item: MaintenanceSchedule) => item.next_due_mileage ? `${item.next_due_mileage.toLocaleString()} km` : '-' },
         { key: 'notes', label: 'Notes', sortable: true, defaultVisible: false, render: (item: MaintenanceSchedule) => item.notes || '-' },
@@ -205,11 +207,11 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
         { label: 'Conducteur', value: 'driver_id' },
         { label: 'Statut', value: 'status' },
       ],
+      chartTypes: ['BarChart', 'LineChart'],
       aggregatableFields: [
         { label: 'Nombre de tournées', value: 'count' },
         { label: 'Distance totale', value: 'distance' },
       ],
-      chartTypes: ['BarChart', 'LineChart'],
     },
     {
       id: 'fuel_entries',
@@ -302,7 +304,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
 
   const customFilter = useCallback((item: any) => {
     let matchesDateRange = true;
-    const itemDateString = (item as any).date || (item as any).expiration || (item as any).created_at || (item as any).next_due_date; // Added next_due_date
+    const itemDateString = (item as any).date || (item as any).expiration || (item as any).created_at || (item as any).next_due_date;
     
     if (itemDateString) {
       const itemDate = new Date(itemDateString);
@@ -344,7 +346,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
         } else if (selectedDataSource === 'maintenance') {
           nameValue = `${item.type} - ${vehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A'}`;
           displayValue = `${item.cost.toFixed(2)} TND`;
-        } else if (selectedDataSource === 'maintenance_schedules') { // New case
+        } else if (selectedDataSource === 'maintenance_schedules') {
           const vehicle = item.vehicle_id ? vehicles.find(v => v.id === item.vehicle_id) : null;
           nameValue = `${item.task_type} (${vehicle?.plate || item.vehicle_type || 'Générique'})`;
           displayValue = item.next_due_date ? `Échéance: ${formatDate(item.next_due_date)}` : 'N/A';
@@ -374,7 +376,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
         dateValue = new Date(item.expiration);
       } else if (item.created_at) {
         dateValue = new Date(item.created_at);
-      } else if (item.next_due_date && selectedDataSource === 'maintenance_schedules') { // Use next_due_date for schedules
+      } else if (item.next_due_date && selectedDataSource === 'maintenance_schedules') {
         dateValue = new Date(item.next_due_date);
       }
 
@@ -390,9 +392,9 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
         groupKey = item.type;
       } else if (groupByColumn === 'status' && item.status) {
         groupKey = item.status;
-      } else if (groupByColumn === 'task_type' && item.task_type && selectedDataSource === 'maintenance_schedules') { // New grouping for schedules
+      } else if (groupByColumn === 'task_type' && item.task_type && selectedDataSource === 'maintenance_schedules') {
         groupKey = item.task_type;
-      } else if (groupByColumn === 'vehicle_type' && item.vehicle_type && selectedDataSource === 'maintenance_schedules') { // New grouping for schedules
+      } else if (groupByColumn === 'vehicle_type' && item.vehicle_type && selectedDataSource === 'maintenance_schedules') {
         groupKey = item.vehicle_type;
       } else {
         groupKey = 'Non groupé';
@@ -428,9 +430,9 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
             valueToAdd = item.liters || 0;
           } else if (aggregationField === 'cost' && selectedDataSource === 'maintenance') {
             valueToAdd = item.cost || 0;
-          } else if (aggregationField === 'interval_km' && selectedDataSource === 'maintenance_schedules') { // New aggregation for schedules
+          } else if (aggregationField === 'interval_km' && selectedDataSource === 'maintenance_schedules') {
             valueToAdd = item.interval_km || 0;
-          } else if (aggregationField === 'interval_months' && selectedDataSource === 'maintenance_schedules') { // New aggregation for schedules
+          } else if (aggregationField === 'interval_months' && selectedDataSource === 'maintenance_schedules') {
             valueToAdd = item.interval_months || 0;
           }
           sum += valueToAdd;
@@ -608,7 +610,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
               >
                 <option value="none" disabled>Sélectionner l'agrégation</option>
                 <option value="count">Compter</option>
-                {(selectedDataSource === 'fuel_entries' || selectedDataSource === 'maintenance' || selectedDataSource === 'tours' || selectedDataSource === 'vehicles' || selectedDataSource === 'maintenance_schedules') && ( // Added maintenance_schedules
+                {(selectedDataSource === 'fuel_entries' || selectedDataSource === 'maintenance' || selectedDataSource === 'tours' || selectedDataSource === 'vehicles' || selectedDataSource === 'maintenance_schedules') && (
                   <>
                     <option value="sum">Somme</option>
                     <option value="avg">Moyenne</option>

@@ -1,11 +1,11 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import DataTable from '../DataTable';
 import { Resource, Action, OperationResult, Vehicle, MaintenanceSchedule, DataTableColumn } from '../../types';
 import { usePermissions } from '../../hooks/usePermissions';
 import { showLoading, updateToast } from '../../utils/toast';
 import { formatDate } from '../../utils/date';
 import { Search, Calendar } from 'lucide-react';
-import { Button } from '../ui/button';
+// Removed: import { Button } from '../ui/button';
 
 interface MaintenanceSchedulesTableProps {
   maintenanceSchedules: MaintenanceSchedule[];
@@ -175,7 +175,7 @@ const MaintenanceSchedulesTable: React.FC<MaintenanceSchedulesTableProps> = ({
     );
   }, [vehicles, uniqueTaskTypes, selectedVehicleFilter, selectedTypeFilter, startDate, endDate]);
 
-  const customFilter = useCallback((schedule: MaintenanceSchedule) => {
+  const customFilter = useCallback((schedule: MaintenanceSchedule): boolean => {
     const matchesVehicle = selectedVehicleFilter ? schedule.vehicle_id === selectedVehicleFilter : true;
     const matchesType = selectedTypeFilter ? schedule.task_type === selectedTypeFilter : true;
 

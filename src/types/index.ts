@@ -219,7 +219,7 @@ export interface DbImportResult {
 }
 
 // New types for reporting features
-export type ReportGroupingOption = 'none' | 'date_month' | 'date_year' | 'vehicle_id' | 'driver_id' | 'type' | 'status';
+export type ReportGroupingOption = 'none' | 'date_month' | 'date_year' | 'vehicle_id' | 'driver_id' | 'type' | 'status' | 'task_type' | 'vehicle_type'; // Added task_type and vehicle_type
 export type ReportAggregationType = 'none' | 'count' | 'sum' | 'avg';
 export type ReportAggregationField = keyof Vehicle | keyof Driver | keyof Tour | keyof FuelEntry | keyof Document | keyof MaintenanceEntry | keyof PreDepartureChecklist | keyof MaintenanceSchedule | 'total_cost' | 'distance';
 export type ReportChartType = 'BarChart' | 'LineChart' | 'PieChart';
