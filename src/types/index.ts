@@ -157,7 +157,7 @@ export type Resource =
   'tours' | 
   'fuel_entries' |
   'documents' | 
-  'maintenance_entries' | 
+  'maintenance_entries' | // Keep this as 'maintenance_entries' to match DB table name
   'pre_departure_checklists' |
   'users' |
   'profile' |
@@ -209,5 +209,9 @@ export interface ReportOption {
 }
 
 export interface ProcessedReportData {
+  id: string; // Explicitly add id for DataTable compatibility
+  name: string;
+  value: number | string;
+  rawItems?: any[];
   [key: string]: any;
 }

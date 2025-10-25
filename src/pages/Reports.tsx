@@ -78,7 +78,7 @@ const getColumnConfigs = (dataSource: Resource, allVehicles: Vehicle[], allDrive
           return daysLeft < 0 ? 'Expiré' : `${daysLeft} jours`;
         }},
       ];
-    case 'maintenance': // Corrected from 'maintenance_entries'
+    case 'maintenance_entries': // Corrected to 'maintenance_entries'
       return [
         { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item: any) => formatDate(item.date) },
         { key: 'vehicle_id', label: 'Véhicule', sortable: true, defaultVisible: true, render: (item: any) => allVehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A' },
@@ -343,16 +343,16 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
           if (aggregationField === 'total_cost') {
             if (selectedDataSource === 'fuel_entries') {
               valueToAdd = (item.liters || 0) * (item.price_per_liter || 0);
-            } else if (selectedDataSource === 'maintenance') { // Corrected
+            } else if (selectedDataSource === 'maintenance_entries') { // Corrected
               valueToAdd = item.cost || 0;
             }
           } else if (aggregationField === 'distance' && selectedDataSource === 'tours') {
             valueToAdd = item.distance || 0;
-          } else if (aggregationField === 'mileage' && (selectedDataSource === 'vehicles' || selectedDataSource === 'fuel_entries' || selectedDataSource === 'maintenance')) { // Corrected
+          } else if (aggregationField === 'mileage' && (selectedDataSource === 'vehicles' || selectedDataSource === 'fuel_entries' || selectedDataSource === 'maintenance_entries')) { // Corrected
             valueToAdd = item.mileage || 0;
           } else if (aggregationField === 'liters' && selectedDataSource === 'fuel_entries') {
             valueToAdd = item.liters || 0;
-          } else if (aggregationField === 'cost' && selectedDataSource === 'maintenance') { // Corrected
+          } else if (aggregationField === 'cost' && selectedDataSource === 'maintenance_entries') { // Corrected
             valueToAdd = item.cost || 0;
           }
           sum += valueToAdd;
@@ -524,7 +524,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
               >
                 <option value="none" disabled>Sélectionner l'agrégation</option>
                 <option value="count">Compter</option>
-                {(selectedDataSource === 'fuel_entries' || selectedDataSource === 'maintenance' || selectedDataSource === 'tours' || selectedDataSource === 'vehicles') && ( // Corrected
+                {(selectedDataSource === 'fuel_entries' || selectedDataSource === 'maintenance_entries' || selectedDataSource === 'tours' || selectedDataSource === 'vehicles') && ( // Corrected
                   <>
                     <option value="sum">Somme</option>
                     <option value="avg">Moyenne</option>
@@ -539,7 +539,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
                   value={aggregationField}
                   onChange={(e) => setAggregationField(e.target.value as ReportAggregationField)}
                   className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  disabled={!selectedDataSource || aggregationType === 'none' || aggregationType === 'count'}
+                  disabled={!selectedDataSource} // Simplified condition
                 >
                   <option value="" disabled>Sélectionner le champ</option>
                   {currentDataSourceConfig?.aggregatableFields
