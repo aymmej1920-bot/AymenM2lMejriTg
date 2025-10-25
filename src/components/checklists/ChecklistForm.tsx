@@ -137,7 +137,6 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
     }
   };
 
-  // New onError function for handleSubmit
   const onErrors = (errors: FieldErrors<PreDepartureChecklistFormData>) => {
     console.error("[ChecklistForm] Form validation errors:", errors);
     showError('Veuillez corriger les erreurs dans le formulaire.');
@@ -153,7 +152,6 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
             id={`${name}_ok`}
             value="true" // Explicitly set string value
             {...methods.register(name, { setValueAs: v => v === 'true' })}
-            checked={methods.watch(name) === true}
             className="h-4 w-4 text-green-600 bg-white border border-gray-300 shadow-sm focus:ring-green-500"
             disabled={!canAdd}
           />
@@ -165,7 +163,6 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
             id={`${name}_nok`}
             value="false" // Explicitly set string value
             {...methods.register(name, { setValueAs: v => v === 'true' })}
-            checked={methods.watch(name) === false}
             className="h-4 w-4 text-red-600 bg-white border border-gray-300 shadow-sm focus:ring-red-500"
             disabled={!canAdd}
           />
@@ -177,7 +174,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={handleSubmit(onSubmit, onErrors)} className="space-y-4 py-4"> {/* Pass onErrors here */}
+      <form onSubmit={handleSubmit(onSubmit, onErrors)} className="space-y-4 py-4">
         <div className="grid grid-cols-2 gap-4">
           <FormField
             name="date"
