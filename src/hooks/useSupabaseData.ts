@@ -23,7 +23,10 @@ export const useSupabaseData = <T>(
   const { enabled = true, filters, skipUserIdFilter = false, manualFetch = false } = options || {};
 
   const fetchData = useCallback(async () => {
+    console.log(`[useSupabaseData] Attempting to fetch data for table: ${tableName}. Enabled: ${enabled}. Current User ID: ${currentUser?.id}. Role: ${currentUser?.role}. Session active: ${!!session}. Skip User ID Filter option: ${skipUserIdFilter}`);
+
     if (!enabled) {
+      console.log(`[useSupabaseData] Fetch for ${tableName} skipped because 'enabled' is false.`);
       setData([]);
       setIsLoading(false);
       return;
@@ -31,6 +34,7 @@ export const useSupabaseData = <T>(
 
     // If not skipping user_id filter, ensure a session user is present
     if (!skipUserIdFilter && !session?.user) {
+      console.log(`[useSupabaseData] Fetch for ${tableName} skipped: User ID filter required but no session user found.`);
       setData([]);
       setIsLoading(false);
       return;
@@ -42,39 +46,42 @@ export const useSupabaseData = <T>(
     try {
       let query = supabase.from(tableName).select('*');
 
-      const shouldSkipUserIdFilter = skipUserIdFilter && (currentUser?.role === 'admin' || currentUser?.role === 'direction');
+      const shouldApplyUserIdFilter = !skipUserIdFilter && session?.user;
       
-      if (!shouldSkipUserIdFilter && session?.user) {
-        // Apply user_id filter only if not skipping and session user is available
-        query = query.eq('user_id', session.user.id);
-      } else if (!shouldSkipUserIdFilter && !session?.user) {
-        // This case should ideally be caught by the early return above, but as a fallback
-        setData([]);
-        setIsLoading(false);
-        return;
+      if (shouldApplyUserIdFilter) {
+        console.log(`[useSupabaseData] Applying user_id filter for ${tableName} with user ID: ${session!.user!.id}`);
+        query = query.eq('user_id', session!.user!.id);
+      } else if (skipUserIdFilter && (currentUser?.role === 'admin' || currentUser?.role === 'direction')) {
+        console.log(`[useSupabaseData] Skipping user_id filter for ${tableName} due to admin/direction role.`);
+      } else {
+        console.log(`[useSupabaseData] No user_id filter applied for ${tableName}.`);
       }
-      // If shouldSkipUserIdFilter is true, no user_id filter is applied, which is correct.
 
       if (filters) {
+        console.log(`[useSupabaseData] Applying custom filters for ${tableName}.`);
         query = filters(query);
       }
 
+      console.log(`[useSupabaseData] Executing Supabase query for ${tableName}...`);
       const { data: fetchedData, error: fetchError } = await query;
 
       if (fetchError) {
+        console.error(`[useSupabaseData] Supabase Error during fetch for ${tableName}:`, fetchError);
         throw fetchError;
       }
 
-      setData((fetchedData || []) as T[]); // Ensure it's always an array, even if fetchedData is null/undefined
+      console.log(`[useSupabaseData] Successfully fetched data for ${tableName}. Count: ${fetchedData?.length || 0}`);
+      setData((fetchedData || []) as T[]);
     } catch (err: unknown) {
-      console.error(`Erreur lors du chargement des données de ${tableName}:`, err instanceof Error ? err.message : String(err));
+      console.error(`[useSupabaseData] Caught error during fetch for ${tableName}:`, err instanceof Error ? err.message : String(err));
       setError(`Erreur lors du chargement des données de ${tableName}.`);
       showError(`Erreur lors du chargement des données de ${tableName}.`);
       setData([]);
     } finally {
       setIsLoading(false);
+      console.log(`[useSupabaseData] Fetch for ${tableName} finished. IsLoading: false.`);
     }
-  }, [session?.user, currentUser?.role, tableName, enabled, filters, skipUserIdFilter]);
+  }, [session?.user, currentUser?.id, currentUser?.role, tableName, enabled, filters, skipUserIdFilter]);
 
   useEffect(() => {
     if (!manualFetch && !isSessionLoading) {
