@@ -1,7 +1,6 @@
 import React from 'react';
-import { Resource, Vehicle, FuelEntry, ProcessedReportData, ReportGroupingOption, ReportAggregationType, ReportAggregationField, ReportChartType, Driver } from '../../types';
-import VehicleStatusChart from '../charts/VehicleStatusChart';
-import MonthlyFuelConsumptionChart from '../charts/MonthlyFuelConsumptionChart';
+import { Resource, Vehicle, ProcessedReportData, ReportGroupingOption, ReportAggregationType, ReportAggregationField, ReportChartType, Driver } from '../../types'; // Removed FuelEntry
+// Removed VehicleStatusChart and MonthlyFuelConsumptionChart
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import moment from 'moment';
 
@@ -25,6 +24,8 @@ interface PieLabelProps {
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f43f5e', '#6366f1'];
 
 const ReportCharts: React.FC<ReportChartsProps> = ({ dataSource, data, groupByColumn, aggregationType, aggregationField, chartType, vehicles, drivers }) => {
+  void dataSource; // Mark dataSource as used to suppress TS6133
+
   if (!data || data.length === 0 || groupByColumn === 'none' || aggregationType === 'none' || aggregationField === '') {
     return (
       <div className="glass rounded-xl shadow-lg p-6 text-center text-gray-600 h-64 flex items-center justify-center">
@@ -61,6 +62,14 @@ const ReportCharts: React.FC<ReportChartsProps> = ({ dataSource, data, groupByCo
                      aggregationType === 'sum' ? 'Somme' :
                      aggregationType === 'avg' ? 'Moyenne' : 'Valeur';
 
+  const aggregationFieldLabel = aggregationType === 'count' ? '' :
+                                aggregationField === 'total_cost' ? 'Coût Total' :
+                                aggregationField === 'distance' ? 'Distance' :
+                                aggregationField === 'mileage' ? 'Kilométrage' :
+                                aggregationField === 'liters' ? 'Litres' :
+                                aggregationField === 'cost' ? 'Coût' :
+                                aggregationField;
+
   const renderChart = () => {
     switch (chartType) {
       case 'BarChart':
@@ -72,7 +81,7 @@ const ReportCharts: React.FC<ReportChartsProps> = ({ dataSource, data, groupByCo
               <YAxis stroke="#8884d8" label={{ value: valueLabel, angle: -90, position: 'insideLeft', fill: '#8884d8' }} />
               <Tooltip contentStyle={{ backgroundColor: 'rgba(255,255,255,0.7)', border: 'none', borderRadius: '8px' }} formatter={(value: number) => typeof value === 'number' ? value.toFixed(2) : value} />
               <Legend />
-              <Bar dataKey="value" name={valueLabel} fill="#3b82f6" />
+              <Bar dataKey="value" name={aggregationFieldLabel || valueLabel} fill="#3b82f6" />
             </BarChart>
           </ResponsiveContainer>
         );
@@ -85,7 +94,7 @@ const ReportCharts: React.FC<ReportChartsProps> = ({ dataSource, data, groupByCo
               <YAxis stroke="#8884d8" label={{ value: valueLabel, angle: -90, position: 'insideLeft', fill: '#8884d8' }} />
               <Tooltip contentStyle={{ backgroundColor: 'rgba(255,255,255,0.7)', border: 'none', borderRadius: '8px' }} formatter={(value: number) => typeof value === 'number' ? value.toFixed(2) : value} />
               <Legend />
-              <Line type="monotone" dataKey="value" name={valueLabel} stroke="#8b5cf6" activeDot={{ r: 8 }} />
+              <Line type="monotone" dataKey="value" name={aggregationFieldLabel || valueLabel} stroke="#8b5cf6" activeDot={{ r: 8 }} />
             </LineChart>
           </ResponsiveContainer>
         );
@@ -124,7 +133,7 @@ const ReportCharts: React.FC<ReportChartsProps> = ({ dataSource, data, groupByCo
   return (
     <div className="glass rounded-xl shadow-lg p-6 h-96 flex flex-col">
       <h3 className="text-xl font-semibold mb-6 text-gray-800">
-        Graphique: {aggregationType === 'count' ? 'Nombre' : aggregationType === 'sum' ? 'Somme' : 'Moyenne'} de {aggregationField === 'count' ? '' : aggregationField} par {groupByColumn === 'date_month' ? 'Mois' : groupByColumn === 'date_year' ? 'Année' : groupByColumn}
+        Graphique: {valueLabel} de {aggregationFieldLabel} par {groupByColumn === 'date_month' ? 'Mois' : groupByColumn === 'date_year' ? 'Année' : getGroupLabel('', groupByColumn)}
       </h3>
       <div className="flex-1">
         {renderChart()}

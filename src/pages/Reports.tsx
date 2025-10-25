@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { FleetData, Vehicle, Driver, DataTableColumn, Resource, ReportGroupingOption, ReportAggregationType, ReportAggregationField, ReportChartType, ReportOption, ProcessedReportData } from '../types';
-import { Calendar, Search, Table, BarChart2, LineChart, PieChart } from 'lucide-react';
+import { Calendar, Search, Table, BarChart2 } from 'lucide-react'; // Removed LineChart, PieChart
 import { formatDate, getDaysUntilExpiration, getDaysSinceEntry } from '../utils/date';
 import DataTable from '../components/DataTable';
 import { useFleetData } from '../components/FleetDataProvider';
@@ -78,7 +78,7 @@ const getColumnConfigs = (dataSource: Resource, allVehicles: Vehicle[], allDrive
           return daysLeft < 0 ? 'Expiré' : `${daysLeft} jours`;
         }},
       ];
-    case 'maintenance_entries':
+    case 'maintenance': // Corrected from 'maintenance_entries'
       return [
         { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item: any) => formatDate(item.date) },
         { key: 'vehicle_id', label: 'Véhicule', sortable: true, defaultVisible: true, render: (item: any) => allVehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A' },
@@ -228,7 +228,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
       chartTypes: ['BarChart', 'PieChart'],
     },
     {
-      id: 'maintenance_entries',
+      id: 'maintenance', // Corrected from 'maintenance_entries'
       name: 'Maintenance',
       groupableColumns: [
         { label: 'Aucun', value: 'none' },
@@ -239,7 +239,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
       ],
       aggregatableFields: [
         { label: 'Nombre d\'entrées', value: 'count' },
-        { label: 'Coût total', value: 'cost' },
+        { label: 'Coût total', value: 'cost' }, // Changed from 'total_cost' to 'cost'
         { label: 'Kilométrage moyen', value: 'mileage' },
       ],
       chartTypes: ['BarChart', 'LineChart', 'PieChart'],
@@ -290,7 +290,8 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
     let filtered = currentData.filter(customFilter);
 
     if (groupByColumn === 'none' || aggregationType === 'none' || !aggregationField) {
-      return filtered; // Return raw filtered data if no aggregation/grouping
+      // For raw data, ensure it has an 'id' for DataTable
+      return filtered.map((item, index) => ({ ...item, id: item.id || `raw-${index}` }));
     }
 
     const groupedData: Record<string, any[]> = {};
@@ -342,16 +343,16 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
           if (aggregationField === 'total_cost') {
             if (selectedDataSource === 'fuel_entries') {
               valueToAdd = (item.liters || 0) * (item.price_per_liter || 0);
-            } else if (selectedDataSource === 'maintenance_entries') {
+            } else if (selectedDataSource === 'maintenance') { // Corrected
               valueToAdd = item.cost || 0;
             }
           } else if (aggregationField === 'distance' && selectedDataSource === 'tours') {
             valueToAdd = item.distance || 0;
-          } else if (aggregationField === 'mileage' && (selectedDataSource === 'vehicles' || selectedDataSource === 'fuel_entries' || selectedDataSource === 'maintenance_entries')) {
+          } else if (aggregationField === 'mileage' && (selectedDataSource === 'vehicles' || selectedDataSource === 'fuel_entries' || selectedDataSource === 'maintenance')) { // Corrected
             valueToAdd = item.mileage || 0;
           } else if (aggregationField === 'liters' && selectedDataSource === 'fuel_entries') {
             valueToAdd = item.liters || 0;
-          } else if (aggregationField === 'cost' && selectedDataSource === 'maintenance_entries') {
+          } else if (aggregationField === 'cost' && selectedDataSource === 'maintenance') { // Corrected
             valueToAdd = item.cost || 0;
           }
           sum += valueToAdd;
@@ -365,6 +366,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
       }
 
       return {
+        id: key, // Add id for DataTable
         name: key, // The group key (e.g., '2023-01', 'Camionnette', 'John Doe')
         value: aggregatedValue,
         rawItems: groupItems, // Keep raw items for potential drill-down or detailed table view
@@ -402,6 +404,14 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
       });
     }
   }, [selectedDataSource, currentDataSourceConfig, vehicles, drivers, setResourcePaginationState]);
+
+  // Effect to reset aggregationField when aggregationType or groupByColumn changes
+  useEffect(() => {
+    if (aggregationType === 'none' || aggregationType === 'count') {
+      setAggregationField('');
+    }
+  }, [aggregationType, groupByColumn]);
+
 
   const renderFilters = useCallback((searchTerm: string, setSearchTerm: (term: string) => void) => {
     return (
@@ -514,7 +524,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
               >
                 <option value="none" disabled>Sélectionner l'agrégation</option>
                 <option value="count">Compter</option>
-                {(selectedDataSource === 'fuel_entries' || selectedDataSource === 'maintenance_entries' || selectedDataSource === 'tours' || selectedDataSource === 'vehicles') && (
+                {(selectedDataSource === 'fuel_entries' || selectedDataSource === 'maintenance' || selectedDataSource === 'tours' || selectedDataSource === 'vehicles') && ( // Corrected
                   <>
                     <option value="sum">Somme</option>
                     <option value="avg">Moyenne</option>

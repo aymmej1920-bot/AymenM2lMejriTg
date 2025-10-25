@@ -1,6 +1,6 @@
 import React from 'react';
-import { AlertTriangle, ClipboardCheck, FileText, Wrench } from 'lucide-react'; // Added FileText and Wrench icons
-import { useAlertsData, FleetAlert } from '../../hooks/useAlertsData'; // Import the new hook
+import { ClipboardCheck, FileText, Wrench } from 'lucide-react'; // Removed AlertTriangle
+import { useAlertsData } from '../../hooks/useAlertsData'; // Removed FleetAlert
 
 const AlertsWidget: React.FC = () => {
   const { alerts, isLoadingAlerts } = useAlertsData();

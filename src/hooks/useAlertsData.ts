@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useFleetData } from '../components/FleetDataProvider';
-import { getDaysUntilExpiration } from '../utils/date';
+import { getDaysUntilExpiration, formatDate } from '../utils/date'; // Import formatDate
 import { PreDepartureChecklist, Vehicle, Document } from '../types';
 
 export interface FleetAlert {

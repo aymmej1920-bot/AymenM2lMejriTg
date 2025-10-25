@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, Wrench, FileText, ClipboardCheck, Info } from 'lucide-react';
+import { Wrench, FileText, ClipboardCheck, Info } from 'lucide-react'; // Removed AlertTriangle
 import { useAlertsData, FleetAlert } from '../hooks/useAlertsData';
 import SkeletonLoader from './SkeletonLoader';
 import { formatDate } from '../utils/date';
