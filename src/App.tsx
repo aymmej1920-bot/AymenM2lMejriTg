@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Truck, Users, Route as RouteIcon, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck, FileText as ReportIcon, UserCog, User as UserIcon, ShieldCheck, CalendarDays } from 'lucide-react'; // Import CalendarDays icon
+import { Truck, Users, Route as RouteIcon, Fuel, FileText, Wrench, BarChart3, LogOut, ClipboardCheck, FileText as ReportIcon, UserCog, User as UserIcon, ShieldCheck, CalendarDays, Bell } from 'lucide-react'; // Import CalendarDays and Bell icon
 import Dashboard from './components/Dashboard';
 import Vehicles from './components/Vehicles';
 import Drivers from './components/Drivers';
@@ -16,7 +16,8 @@ import Profile from './pages/Profile';
 import UserManagement from './components/UserManagement';
 import PermissionsOverview from './components/PermissionsOverview';
 import ProtectedRoute from './components/ProtectedRoute';
-import CalendarPage from './pages/CalendarPage'; // Import CalendarPage
+import CalendarPage from './pages/CalendarPage';
+import NotificationCenter from './components/NotificationCenter'; // Import NotificationCenter
 import { Resource, Action, UserRole, OperationResult } from './types';
 import { useSession } from './components/SessionContextProvider';
 import { supabase } from './integrations/supabase/client';
@@ -134,7 +135,8 @@ export default function App() {
 
   const tabs = [
     { id: 'dashboard', name: 'Dashboard', icon: BarChart3, path: '/dashboard' },
-    { id: 'calendar', name: 'Calendrier', icon: CalendarDays, path: '/calendar' }, // New Calendar tab
+    { id: 'notifications', name: 'Notifications', icon: Bell, path: '/notifications' }, // New Notifications tab
+    { id: 'calendar', name: 'Calendrier', icon: CalendarDays, path: '/calendar' },
     { id: 'vehicles', name: 'Véhicules', icon: Truck, path: '/vehicles' },
     { id: 'drivers', name: 'Conducteurs', icon: Users, path: '/drivers' },
     { id: 'tours', name: 'Tournées', icon: RouteIcon, path: '/tours' },
@@ -252,7 +254,8 @@ export default function App() {
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard key="dashboard-view" userRole={userRole} /></ProtectedRoute>} />
-                <Route path="/calendar" element={<ProtectedRoute><CalendarPage key="calendar-view" /></ProtectedRoute>} /> {/* New Calendar Route */}
+                <Route path="/notifications" element={<ProtectedRoute><NotificationCenter key="notifications-view" /></ProtectedRoute>} /> {/* New Notifications Route */}
+                <Route path="/calendar" element={<ProtectedRoute><CalendarPage key="calendar-view" /></ProtectedRoute>} />
                 <Route path="/vehicles" element={<ProtectedRoute><Vehicles key="vehicles-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} /></ProtectedRoute>} />
                 <Route path="/drivers" element={<ProtectedRoute><Drivers key="drivers-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} /></ProtectedRoute>} />
                 <Route path="/tours" element={<ProtectedRoute><Tours key="tours-view" onUpdate={handleUpdateData} onDelete={handleUpdateData} onAdd={handleUpdateData} /></ProtectedRoute>} />
