@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Resource, Action, OperationResult, MaintenanceSchedule } from '../types';
+import { Resource, Action, OperationResult, MaintenanceSchedule, MaintenanceEntry } from '../types';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,8 @@ import MaintenanceHistoryTable from './maintenance/MaintenanceHistoryTable';
 import MaintenanceSchedulesTable from './maintenance/MaintenanceSchedulesTable'; // New import
 import MaintenanceScheduleForm from './maintenance/MaintenanceScheduleForm'; // New import
 import { Button } from './ui/button'; // Import Button for tabs
+import { showLoading, updateToast } from '../utils/toast';
+import moment from 'moment'; // Import moment for date calculations
 
 interface MaintenanceProps {
   onAdd: (tableName: Resource, data: any, action: Action) => Promise<OperationResult>;
@@ -66,6 +68,70 @@ const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete }) 
   const onSchedulesPageChange = useCallback((page: number) => setResourcePaginationState('maintenance_schedules', { currentPage: page }), [setResourcePaginationState]);
   const onSchedulesItemsPerPageChange = useCallback((count: number) => setResourcePaginationState('maintenance_schedules', { itemsPerPage: count }), [setResourcePaginationState]);
   const onSchedulesSortChange = useCallback((column: string, direction: 'asc' | 'desc') => setResourcePaginationState('maintenance_schedules', { sortColumn: column, sortDirection: direction }), [setResourcePaginationState]);
+
+  const handleUpdateMaintenanceSchedule = useCallback(async (newMaintenanceEntry: MaintenanceEntry) => {
+    const loadingToastId = showLoading('Mise à jour du planning de maintenance lié...');
+    try {
+        const matchingSchedules = fleetData.maintenance_schedules.filter(schedule => {
+            // Match by task type
+            if (schedule.task_type !== newMaintenanceEntry.type) return false;
+
+            // Match by specific vehicle_id if specified in schedule
+            if (schedule.vehicle_id) {
+                return schedule.vehicle_id === newMaintenanceEntry.vehicle_id;
+            }
+
+            // Match by vehicle_type if specified in schedule and no specific vehicle_id
+            if (schedule.vehicle_type) {
+                const vehicle = fleetData.vehicles.find(v => v.id === newMaintenanceEntry.vehicle_id);
+                return vehicle?.type === schedule.vehicle_type;
+            }
+
+            // If schedule is generic (no vehicle_id or vehicle_type), it matches
+            return !schedule.vehicle_id && !schedule.vehicle_type;
+        });
+
+        if (matchingSchedules.length === 0) {
+            dismissToast(loadingToastId);
+            return; // No matching schedule to update
+        }
+
+        // For simplicity, let's update the first matching schedule.
+        // A more complex scenario might require user choice or a more sophisticated matching algorithm.
+        const scheduleToUpdate = matchingSchedules[0];
+
+        let newNextDueDate: string | null = null;
+        let newNextDueMileage: number | null = null;
+
+        // Recalculate next due date
+        if (scheduleToUpdate.interval_months) {
+            newNextDueDate = moment(newMaintenanceEntry.date).add(scheduleToUpdate.interval_months, 'months').format('YYYY-MM-DD');
+        }
+
+        // Recalculate next due mileage
+        if (scheduleToUpdate.interval_km) {
+            newNextDueMileage = newMaintenanceEntry.mileage + scheduleToUpdate.interval_km;
+        }
+
+        const updatedSchedule: MaintenanceSchedule = {
+            ...scheduleToUpdate,
+            last_performed_date: newMaintenanceEntry.date,
+            last_performed_mileage: newMaintenanceEntry.mileage,
+            next_due_date: newNextDueDate,
+            next_due_mileage: newNextDueMileage,
+            updated_at: new Date().toISOString(),
+        };
+
+        const result = await onUpdate('maintenance_schedules', updatedSchedule, 'edit');
+        if (result.success) {
+            updateToast(loadingToastId, 'Planning de maintenance lié mis à jour !', 'success');
+        } else {
+            throw new Error(result.error || 'Erreur lors de la mise à jour du planning de maintenance lié.');
+        }
+    } catch (error: unknown) {
+        updateToast(loadingToastId, `Erreur lors de la mise à jour du planning de maintenance lié: ${error instanceof Error ? error.message : String(error)}`, 'error');
+    }
+}, [onUpdate, fleetData.vehicles, fleetData.maintenance_schedules]);
 
 
   const handleAddMaintenanceEntry = (vehicleId?: string) => {
@@ -181,6 +247,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete }) 
             onUpdateVehicle={onUpdate}
             onClose={handleCloseMaintenanceEntryModal}
             initialVehicleId={initialVehicleIdForEntryForm}
+            onUpdateSchedule={handleUpdateMaintenanceSchedule} // Pass the new function here
           />
         </DialogContent>
       </Dialog>
