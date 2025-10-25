@@ -24,6 +24,11 @@ import { exportTemplateToXLSX } from '../utils/templateExport';
 import { LOCAL_STORAGE_KEYS } from '../utils/constants';
 import { useFleetData } from '../components/FleetDataProvider';
 
+// Define a type-aliased version of XLSXImportDialog to resolve parsing issues with generics
+const TypedXLSXImportDialog = XLSXImportDialog as React.FC<
+  React.ComponentProps<typeof XLSXImportDialog<typeof driverImportSchema>>
+>;
+
 type DriverFormData = z.infer<typeof driverSchema>;
 
 interface DriversProps {
@@ -327,7 +332,7 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
         </DialogContent>
       </Dialog>
 
-      <XLSXImportDialog<typeof driverImportSchema>
+      <TypedXLSXImportDialog
         open={showImportDialog}
         onOpenChange={setShowImportDialog}
         title="Importer des Conducteurs depuis XLSX"
