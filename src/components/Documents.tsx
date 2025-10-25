@@ -346,7 +346,7 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
         searchPlaceholder="Rechercher un document par véhicule, type, numéro ou expiration..."
         exportFileName="documents"
         isLoading={isLoadingFleet}
-        renderAlerts={renderAlerts} {/* Pass renderAlerts here */}
+        renderAlerts={renderAlerts} // Pass renderAlerts here
         renderFilters={renderFilters}
         customFilter={customFilter}
         resourceType="documents"
