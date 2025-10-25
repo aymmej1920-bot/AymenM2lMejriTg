@@ -49,7 +49,7 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
     itemsPerPage = 10,
     sortColumn = 'name',
     sortDirection = 'asc',
-    totalCount // Corrected: totalCount is now destructured and used
+    totalCount = 0 // Corrected: totalCount is now destructured and used with default
   } = getResourcePaginationState('drivers') || {};
 
   const onPageChange = useCallback((page: number) => setResourcePaginationState('drivers', { currentPage: page }), [setResourcePaginationState]);
@@ -310,7 +310,6 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
         searchPlaceholder="Rechercher un conducteur par nom, permis, statut ou téléphone..."
         exportFileName="conducteurs"
         isLoading={isLoadingFleet}
-        renderAlerts={renderAlerts}
         resourceType="drivers"
         renderCustomHeaderButtons={renderCustomHeaderButtons}
         // Pagination and sorting props

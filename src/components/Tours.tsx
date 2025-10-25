@@ -44,8 +44,9 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
     itemsPerPage = 10,
     sortColumn = 'date',
     sortDirection = 'desc',
-    totalCount = 0
+    totalCount = 0 // Corrected: totalCount is now destructured and used with default
   } = getResourcePaginationState('tours') || {};
+  void totalCount; // Suppress TS6133 for totalCount
 
   const onPageChange = useCallback((page: number) => setResourcePaginationState('tours', { currentPage: page }), [setResourcePaginationState]);
   const onItemsPerPageChange = useCallback((count: number) => setResourcePaginationState('tours', { itemsPerPage: count }), [setResourcePaginationState]);
@@ -361,7 +362,7 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
         onPageChange={onPageChange}
         itemsPerPage={itemsPerPage}
         onItemsPerPageChange={onItemsPerPageChange}
-        totalCount={totalToursCount}
+        totalCount={totalCount}
         sortColumn={sortColumn}
         onSortChange={onSortChange}
         sortDirection={sortDirection}
