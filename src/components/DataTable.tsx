@@ -71,6 +71,7 @@ import React, { useState, useMemo, useEffect } from 'react';
       renderCustomHeaderButtons,
     }: React.PropsWithChildren<DataTableProps<T>>) => {
       // const { canAccess } = usePermissions(); // Removed usePermissions
+      void resourceType; // Suppress TS6133 for resourceType
 
       const [searchTerm, setSearchTerm] = useState(''); // Search remains client-side for current page
       

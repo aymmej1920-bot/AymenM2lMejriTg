@@ -49,7 +49,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
     itemsPerPage = 10,
     sortColumn = 'plate',
     sortDirection = 'asc',
-    totalCount // Corrected: totalCount is now destructured and used
+    totalCount: totalVehiclesCount = 0 // Corrected: totalCount is now destructured and used
   } = getResourcePaginationState('vehicles') || {};
 
   const onPageChange = useCallback((page: number) => setResourcePaginationState('vehicles', { currentPage: page }), [setResourcePaginationState]);
@@ -302,7 +302,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
         onPageChange={onPageChange}
         itemsPerPage={itemsPerPage}
         onItemsPerPageChange={onItemsPerPageChange}
-        totalCount={totalCount}
+        totalCount={totalVehiclesCount}
         sortColumn={sortColumn}
         onSortChange={onSortChange}
         sortDirection={sortDirection}
