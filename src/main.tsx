@@ -8,6 +8,8 @@ import { BrowserRouter } from 'react-router-dom';
 import { PermissionsProvider } from './hooks/usePermissions.tsx'; // Import direct
 import { FleetDataProvider } from './components/FleetDataProvider.tsx'; // Import direct
 import ErrorBoundary from './components/ErrorBoundary.tsx'; // Import the new ErrorBoundary
+import { DndProvider } from 'react-dnd'; // Import DndProvider
+import { HTML5Backend } from 'react-dnd-html5-backend'; // Import HTML5Backend
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -17,7 +19,9 @@ createRoot(document.getElementById('root')!).render(
           <ToastProvider />
           <PermissionsProvider>
             <FleetDataProvider>
-              <App />
+              <DndProvider backend={HTML5Backend}> {/* Wrap App with DndProvider */}
+                <App />
+              </DndProvider>
             </FleetDataProvider>
           </PermissionsProvider>
         </SessionContextProvider>
