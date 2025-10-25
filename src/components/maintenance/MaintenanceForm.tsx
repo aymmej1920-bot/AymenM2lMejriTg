@@ -6,7 +6,7 @@ import { Button } from '../ui/button';
 import { DialogFooter } from '../ui/dialog';
 import FormField from '../forms/FormField';
 import { maintenanceEntrySchema } from '../../types/formSchemas';
-import { MaintenanceEntry, Resource, Action, OperationResult, Vehicle } from '../../types';
+import { MaintenanceEntry, Resource, Action, OperationResult } from '../../types'; // Removed Vehicle import
 import { showError, showLoading, updateToast, showSuccess } from '../../utils/toast';
 import { LOCAL_STORAGE_KEYS } from '../../utils/constants';
 import { useFleetData } from '../FleetDataProvider';
@@ -101,9 +101,6 @@ const MaintenanceForm: React.FC<MaintenanceFormProps> = ({
     let result: OperationResult;
     try {
       if (editingEntry) {
-        // For now, we only support adding new maintenance entries via this form.
-        // Editing existing entries would require a different approach or a dedicated form.
-        // This path should ideally not be hit if the form is only for 'add'.
         throw new Error("Editing existing maintenance entries is not supported via this form.");
       } else {
         result = await onAdd('maintenance_entries', maintenanceData, 'add');
@@ -120,7 +117,7 @@ const MaintenanceForm: React.FC<MaintenanceFormProps> = ({
           id: maintenanceData.vehicle_id,
           last_service_date: maintenanceData.date,
           last_service_mileage: maintenanceData.mileage,
-          mileage: maintenanceData.mileage, // Update current mileage to service mileage
+          mileage: maintenanceData.mileage,
         }, 'edit');
         if (updateVehicleResult.success) {
           showSuccess('Informations du véhicule mises à jour après la vidange !');
@@ -139,7 +136,7 @@ const MaintenanceForm: React.FC<MaintenanceFormProps> = ({
   };
 
   const canAddForm = canAccess('maintenance_entries', 'add');
-  const canEditForm = canAccess('maintenance_entries', 'edit'); // Not currently used for this form, but kept for consistency
+  // const canEditForm = canAccess('maintenance_entries', 'edit'); // Removed unused variable
 
   return (
     <FormProvider {...methods}>

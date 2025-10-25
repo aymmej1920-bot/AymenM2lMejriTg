@@ -1,10 +1,10 @@
 import React, { useCallback, useMemo } from 'react';
-import { Wrench, AlertTriangle, Clock, ClipboardCheck } from 'lucide-react';
 import DataTable from '../DataTable';
-import { Vehicle, DataTableColumn, Resource, PreDepartureChecklist } from '../../types';
+import { Vehicle, DataTableColumn, PreDepartureChecklist } from '../../types'; // Removed Resource import
 import { formatDate } from '../../utils/date';
 import { Button } from '../ui/button';
 import { usePermissions } from '../../hooks/usePermissions';
+import { getMaintenanceStatus } from '../../utils/maintenance'; // Import the utility function
 
 interface VehicleMaintenanceOverviewProps {
   vehicles: Vehicle[];
@@ -17,6 +17,8 @@ interface VehicleMaintenanceOverviewProps {
   vehiclesSortColumn: string;
   onVehiclesSortChange: (column: string, direction: 'asc' | 'desc') => void;
   vehiclesSortDirection: 'asc' | 'desc';
+  vehiclesCurrentPage: number;
+  vehiclesItemsPerPage: number;
 }
 
 const VehicleMaintenanceOverview: React.FC<VehicleMaintenanceOverviewProps> = ({
@@ -30,21 +32,10 @@ const VehicleMaintenanceOverview: React.FC<VehicleMaintenanceOverviewProps> = ({
   vehiclesSortColumn,
   onVehiclesSortChange,
   vehiclesSortDirection,
+  vehiclesCurrentPage,
+  vehiclesItemsPerPage,
 }) => {
   const { canAccess } = usePermissions();
-
-  const getMaintenanceStatus = useCallback((vehicle: Vehicle) => {
-    const nextServiceKm = (vehicle.last_service_mileage || 0) + 10000;
-    const kmUntilService = nextServiceKm - vehicle.mileage;
-    
-    if (kmUntilService <= 0) {
-      return { text: 'URGENT', class: 'bg-red-100 text-red-800', icon: AlertTriangle };
-    } else if (kmUntilService <= 1000) {
-      return { text: 'Bientôt', class: 'bg-orange-100 text-orange-800', icon: Clock };
-    } else {
-      return { text: 'OK', class: 'bg-green-100 text-green-800', icon: Wrench };
-    }
-  }, []);
 
   const checklistsWithIssues = useMemo(() => {
     return preDepartureChecklists.filter(cl => cl.issues_to_address && cl.issues_to_address.trim() !== '');
@@ -143,7 +134,7 @@ const VehicleMaintenanceOverview: React.FC<VehicleMaintenanceOverviewProps> = ({
         );
       }
     },
-  ], [getMaintenanceStatus]);
+  ], []);
 
   const canAddMaintenanceEntry = canAccess('maintenance_entries', 'add');
 

@@ -45,6 +45,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
 
   const [showModal, setShowModal] = useState(false);
 
+  // Permissions check once at the top level
   const canAddChecklist = canAccess('pre_departure_checklists', 'add');
   const canDeleteChecklist = canAccess('pre_departure_checklists', 'delete');
 
@@ -215,9 +216,6 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
 
     return matchesVehicle && matchesDriver && matchesDateRange;
   }, [selectedVehicle, selectedDriver, startDate, endDate]);
-
-  const canAddChecklist = canAccess('pre_departure_checklists', 'add');
-  const canDeleteChecklist = canAccess('pre_departure_checklists', 'delete');
 
   return (
     <div className="space-y-6">

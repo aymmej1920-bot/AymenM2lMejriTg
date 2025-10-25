@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { FleetData, Vehicle, Driver, DataTableColumn, Resource } from '../types';
 import { Calendar, Search, Table, BarChart2 } from 'lucide-react';
 import { formatDate, getDaysUntilExpiration, getDaysSinceEntry } from '../utils/date';
@@ -171,7 +171,11 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
   // Effect to set default sortColumn when selectedDataSource changes
   useEffect(() => {
     if (selectedDataSource && columns.length > 0 && !sortColumn) {
-      setResourcePaginationState(selectedDataSource as Resource, { sortColumn: columns[0].key as string });
+      setResourcePaginationState(selectedDataSource as Resource, { 
+        currentPage: 1, 
+        sortColumn: columns[0]?.key as string || 'id', // Ensure a default sortColumn
+        sortDirection: 'asc' 
+      });
     }
   }, [selectedDataSource, columns, sortColumn, setResourcePaginationState]);
 
