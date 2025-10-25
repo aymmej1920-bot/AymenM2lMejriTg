@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { FleetData, Vehicle, Driver, DataTableColumn, Resource, ReportGroupingOption, ReportAggregationType, ReportAggregationField, ReportChartType, ReportOption, ProcessedReportData } from '../types';
-import { Calendar, Search, Table, BarChart2 } from 'lucide-react'; // Removed LineChart, PieChart
+import { Calendar, Search, Table, BarChart2 } from 'lucide-react';
 import { formatDate, getDaysUntilExpiration, getDaysSinceEntry } from '../utils/date';
 import DataTable from '../components/DataTable';
 import { useFleetData } from '../components/FleetDataProvider';
@@ -12,7 +12,7 @@ interface ReportsProps {
   userRole: 'admin' | 'direction' | 'utilisateur';
 }
 
-const getColumnConfigs = (dataSource: Resource, allVehicles: Vehicle[], allDrivers: Driver[]): DataTableColumn<any>[] => {
+const getColumnConfigs = (dataSource: keyof FleetData, allVehicles: Vehicle[], allDrivers: Driver[]): DataTableColumn<any>[] => {
   switch (dataSource) {
     case 'vehicles':
       return [
@@ -78,7 +78,7 @@ const getColumnConfigs = (dataSource: Resource, allVehicles: Vehicle[], allDrive
           return daysLeft < 0 ? 'Expiré' : `${daysLeft} jours`;
         }},
       ];
-    case 'maintenance_entries': // Corrected to 'maintenance_entries'
+    case 'maintenance_entries': // This should be 'maintenance' to match FleetData
       return [
         { key: 'date', label: 'Date', sortable: true, defaultVisible: true, render: (item: any) => formatDate(item.date) },
         { key: 'vehicle_id', label: 'Véhicule', sortable: true, defaultVisible: true, render: (item: any) => allVehicles.find(v => v.id === item.vehicle_id)?.plate || 'N/A' },
@@ -228,7 +228,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
       chartTypes: ['BarChart', 'PieChart'],
     },
     {
-      id: 'maintenance', // Corrected from 'maintenance_entries'
+      id: 'maintenance', // Corrected to 'maintenance'
       name: 'Maintenance',
       groupableColumns: [
         { label: 'Aucun', value: 'none' },
@@ -239,7 +239,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
       ],
       aggregatableFields: [
         { label: 'Nombre d\'entrées', value: 'count' },
-        { label: 'Coût total', value: 'cost' }, // Changed from 'total_cost' to 'cost'
+        { label: 'Coût total', value: 'cost' },
         { label: 'Kilométrage moyen', value: 'mileage' },
       ],
       chartTypes: ['BarChart', 'LineChart', 'PieChart'],
@@ -286,12 +286,11 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
     return matchesDateRange;
   }, [startDate, endDate]);
 
-  const processedReportData = useMemo(() => {
+  const aggregatedData = useMemo(() => {
     let filtered = currentData.filter(customFilter);
 
     if (groupByColumn === 'none' || aggregationType === 'none' || !aggregationField) {
-      // For raw data, ensure it has an 'id' for DataTable
-      return filtered.map((item, index) => ({ ...item, id: item.id || `raw-${index}` }));
+      return []; // No aggregated data if no grouping/aggregation is selected
     }
 
     const groupedData: Record<string, any[]> = {};
@@ -330,7 +329,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
       groupedData[groupKey].push(item);
     });
 
-    const aggregatedData: ProcessedReportData[] = Object.keys(groupedData).map(key => {
+    const result: ProcessedReportData[] = Object.keys(groupedData).map(key => {
       const groupItems = groupedData[key];
       let aggregatedValue: number | string = 0;
 
@@ -343,16 +342,16 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
           if (aggregationField === 'total_cost') {
             if (selectedDataSource === 'fuel_entries') {
               valueToAdd = (item.liters || 0) * (item.price_per_liter || 0);
-            } else if (selectedDataSource === 'maintenance_entries') { // Corrected
+            } else if (selectedDataSource === 'maintenance') { // Corrected
               valueToAdd = item.cost || 0;
             }
           } else if (aggregationField === 'distance' && selectedDataSource === 'tours') {
             valueToAdd = item.distance || 0;
-          } else if (aggregationField === 'mileage' && (selectedDataSource === 'vehicles' || selectedDataSource === 'fuel_entries' || selectedDataSource === 'maintenance_entries')) { // Corrected
+          } else if (aggregationField === 'mileage' && (selectedDataSource === 'vehicles' || selectedDataSource === 'fuel_entries' || selectedDataSource === 'maintenance')) { // Corrected
             valueToAdd = item.mileage || 0;
           } else if (aggregationField === 'liters' && selectedDataSource === 'fuel_entries') {
             valueToAdd = item.liters || 0;
-          } else if (aggregationField === 'cost' && selectedDataSource === 'maintenance_entries') { // Corrected
+          } else if (aggregationField === 'cost' && selectedDataSource === 'maintenance') { // Corrected
             valueToAdd = item.cost || 0;
           }
           sum += valueToAdd;
@@ -373,8 +372,20 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
       };
     });
 
-    return aggregatedData.sort((a, b) => a.name.localeCompare(b.name)); // Sort by group key
+    return result.sort((a, b) => a.name.localeCompare(b.name)); // Sort by group key
   }, [currentData, customFilter, groupByColumn, aggregationType, aggregationField, selectedDataSource, vehicles, drivers]);
+
+  const displayTableData = useMemo(() => {
+    if (groupByColumn === 'none' || aggregationType === 'none' || !aggregationField) {
+      return currentData.filter(customFilter).map((item, index) => ({ ...item, id: item.id || `raw-${index}` }));
+    }
+    return aggregatedData;
+  }, [currentData, customFilter, groupByColumn, aggregationType, aggregationField, aggregatedData]);
+
+  const displayChartData = useMemo(() => {
+    return aggregatedData;
+  }, [aggregatedData]);
+
 
   const columns = useMemo(() => {
     if (groupByColumn !== 'none' && aggregationType !== 'none' && aggregationField) {
@@ -385,7 +396,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
       ];
     }
     // Columns for raw data
-    return getColumnConfigs(selectedDataSource as Resource, vehicles, drivers);
+    return getColumnConfigs(selectedDataSource as keyof FleetData, vehicles, drivers);
   }, [selectedDataSource, vehicles, drivers, groupByColumn, aggregationType, aggregationField, currentDataSourceConfig]);
 
   // Effect to reset aggregation/grouping/chart options when data source changes
@@ -396,7 +407,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
       setAggregationField('');
       setChartType(currentDataSourceConfig?.chartTypes[0] || 'BarChart'); // Default to first available chart type
       // Reset pagination and sorting for the new data source
-      const newColumns = getColumnConfigs(selectedDataSource as Resource, vehicles, drivers);
+      const newColumns = getColumnConfigs(selectedDataSource as keyof FleetData, vehicles, drivers);
       setResourcePaginationState(selectedDataSource as Resource, { 
         currentPage: 1, 
         sortColumn: newColumns[0]?.key as string || 'id', // Ensure a default sortColumn
@@ -524,7 +535,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
               >
                 <option value="none" disabled>Sélectionner l'agrégation</option>
                 <option value="count">Compter</option>
-                {(selectedDataSource === 'fuel_entries' || selectedDataSource === 'maintenance_entries' || selectedDataSource === 'tours' || selectedDataSource === 'vehicles') && ( // Corrected
+                {(selectedDataSource === 'fuel_entries' || selectedDataSource === 'maintenance' || selectedDataSource === 'tours' || selectedDataSource === 'vehicles') && (
                   <>
                     <option value="sum">Somme</option>
                     <option value="avg">Moyenne</option>
@@ -543,7 +554,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
                 >
                   <option value="" disabled>Sélectionner le champ</option>
                   {currentDataSourceConfig?.aggregatableFields
-                    .filter(f => f.value !== 'count') // Exclude 'count' as it's an aggregation type, not a field
+                    .filter(f => f.value !== 'count')
                     .map(option => (
                       <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
@@ -573,7 +584,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
         viewMode === 'table' ? (
           <DataTable
             title={`Rapport: ${currentDataSourceConfig?.name || ''}`}
-            data={processedReportData}
+            data={displayTableData}
             columns={columns}
             exportFileName={`rapport_${selectedDataSource}`}
             isLoading={isLoadingFleet}
@@ -590,7 +601,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
         ) : (
           <ReportCharts
             dataSource={selectedDataSource as Resource}
-            data={processedReportData}
+            data={displayChartData}
             groupByColumn={groupByColumn}
             aggregationType={aggregationType}
             aggregationField={aggregationField}
