@@ -24,6 +24,11 @@ import { exportTemplateToXLSX } from '../utils/templateExport';
 import { LOCAL_STORAGE_KEYS } from '../utils/constants';
 import { useFleetData } from '../components/FleetDataProvider';
 
+// Define a type-aliased version of XLSXImportDialog to resolve parsing issues with generics
+const TypedXLSXImportDialog = XLSXImportDialog as React.FC<
+  React.ComponentProps<typeof XLSXImportDialog<typeof vehicleImportSchema>>
+>;
+
 type VehicleFormData = z.infer<typeof vehicleSchema>;
 
 interface VehiclesProps {
@@ -344,7 +349,7 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
         </DialogContent>
       </Dialog>
 
-      <XLSXImportDialog<typeof vehicleImportSchema>
+      <TypedXLSXImportDialog
         open={showImportDialog}
         onOpenChange={setShowImportDialog}
         title="Importer des Véhicules depuis XLSX"
