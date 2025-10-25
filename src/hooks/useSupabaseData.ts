@@ -23,12 +23,14 @@ export const useSupabaseData = <T>(
   const { enabled = true, filters, skipUserIdFilter = false, manualFetch = false } = options || {};
 
   const fetchData = useCallback(async () => {
-    if (!session?.user && !skipUserIdFilter) {
+    if (!enabled) {
       setData([]);
       setIsLoading(false);
       return;
     }
-    if (!enabled) {
+
+    // If not skipping user_id filter, ensure a session user is present
+    if (!skipUserIdFilter && !session?.user) {
       setData([]);
       setIsLoading(false);
       return;
@@ -42,9 +44,16 @@ export const useSupabaseData = <T>(
 
       const shouldSkipUserIdFilter = skipUserIdFilter && (currentUser?.role === 'admin' || currentUser?.role === 'direction');
       
-      if (!shouldSkipUserIdFilter) {
-        query = query.eq('user_id', session!.user.id);
+      if (!shouldSkipUserIdFilter && session?.user) {
+        // Apply user_id filter only if not skipping and session user is available
+        query = query.eq('user_id', session.user.id);
+      } else if (!shouldSkipUserIdFilter && !session?.user) {
+        // This case should ideally be caught by the early return above, but as a fallback
+        setData([]);
+        setIsLoading(false);
+        return;
       }
+      // If shouldSkipUserIdFilter is true, no user_id filter is applied, which is correct.
 
       if (filters) {
         query = filters(query);
@@ -52,11 +61,13 @@ export const useSupabaseData = <T>(
 
       const { data: fetchedData, error: fetchError } = await query;
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        throw fetchError;
+      }
 
-      setData(fetchedData as T[]);
+      setData((fetchedData || []) as T[]); // Ensure it's always an array, even if fetchedData is null/undefined
     } catch (err: unknown) {
-      console.error(`Error fetching data from ${tableName}:`, err instanceof Error ? err.message : String(err));
+      console.error(`Erreur lors du chargement des données de ${tableName}:`, err instanceof Error ? err.message : String(err));
       setError(`Erreur lors du chargement des données de ${tableName}.`);
       showError(`Erreur lors du chargement des données de ${tableName}.`);
       setData([]);
