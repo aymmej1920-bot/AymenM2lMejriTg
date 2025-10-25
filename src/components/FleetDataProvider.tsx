@@ -10,13 +10,13 @@ export const FleetDataProvider: React.FC<{ children: ReactNode }> = ({ children 
   const { currentUser, isLoading: isSessionLoading } = useSession();
   const isMounted = useRef(false);
 
-  // Use useSupabaseData for each resource, with manualFetch and skipUserIdFilter for admin/direction
-  // The `enabled` prop will ensure data is only fetched if a user is logged in.
+  // Options communes pour les hooks useSupabaseData
   const commonOptions = {
-    manualFetch: true, // Prevent automatic fetching by individual hooks
+    manualFetch: true, // Empêche le fetch automatique par les hooks individuels
     skipUserIdFilter: currentUser?.role === 'admin' || currentUser?.role === 'direction',
   };
 
+  // Utilisation de useSupabaseData pour chaque ressource
   const { data: vehicles, isLoading: isLoadingVehicles, refetch: refetchVehicles } = useSupabaseData<Vehicle>('vehicles', { enabled: !!currentUser, ...commonOptions });
   const { data: drivers, isLoading: isLoadingDrivers, refetch: refetchDrivers } = useSupabaseData<Driver>('drivers', { enabled: !!currentUser, ...commonOptions });
   const { data: tours, isLoading: isLoadingTours, refetch: refetchTours } = useSupabaseData<Tour>('tours', { enabled: !!currentUser, ...commonOptions });
@@ -29,7 +29,7 @@ export const FleetDataProvider: React.FC<{ children: ReactNode }> = ({ children 
     vehicles,
     drivers,
     tours,
-    fuel_entries: fuelEntries, // Corrected from 'fuel' to 'fuel_entries'
+    fuel_entries: fuelEntries,
     documents,
     maintenance,
     pre_departure_checklists: preDepartureChecklists,
@@ -37,51 +37,66 @@ export const FleetDataProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   const isLoadingFleet = isLoadingVehicles || isLoadingDrivers || isLoadingTours || isLoadingFuel || isLoadingDocuments || isLoadingMaintenance || isLoadingChecklists || isSessionLoading;
 
-  // Map of refetch functions for individual resources
+  // Map des fonctions de refetch pour les ressources individuelles
   const refetchMap = useRef<Record<Resource, () => Promise<void>>>({
-    vehicles: refetchVehicles,
-    drivers: refetchDrivers,
-    tours: refetchTours,
-    fuel_entries: refetchFuel,
-    documents: refetchDocuments,
-    maintenance_entries: refetchMaintenance,
-    pre_departure_checklists: refetchChecklists,
-    users: async () => {}, // UserManagement will handle its own refetch for 'users'
-    profile: async () => {}, // Profile page handles its own refetch
-    permissions: async () => {}, // PermissionsOverview handles its own refetch
-    dashboard: async () => {}, // Dashboard doesn't have a direct refetchable resource
+    vehicles: async () => {},
+    drivers: async () => {},
+    tours: async () => {},
+    fuel_entries: async () => {},
+    documents: async () => {},
+    maintenance_entries: async () => {},
+    pre_departure_checklists: async () => {},
+    users: async () => {}, // UserManagement gère son propre refetch pour 'users'
+    profile: async () => {}, // La page Profile gère son propre refetch
+    permissions: async () => {}, // PermissionsOverview gère son propre refetch
+    dashboard: async () => {}, // Le tableau de bord n'a pas de ressource directement refetchable
   });
 
-  // Function to refetch all data
+  // Effet pour maintenir refetchMap.current à jour avec les dernières fonctions de refetch
+  useEffect(() => {
+    refetchMap.current = {
+      vehicles: refetchVehicles,
+      drivers: refetchDrivers,
+      tours: refetchTours,
+      fuel_entries: refetchFuel,
+      documents: refetchDocuments,
+      maintenance_entries: refetchMaintenance,
+      pre_departure_checklists: refetchChecklists,
+      users: async () => {},
+      profile: async () => {},
+      permissions: async () => {},
+      dashboard: async () => {},
+    };
+  }, [refetchVehicles, refetchDrivers, refetchTours, refetchFuel, refetchDocuments, refetchMaintenance, refetchChecklists]);
+
+  // Fonction pour refetcher toutes les données
   const refetchFleetData = useCallback(async () => {
-    if (!currentUser) return; // Only refetch if a user is logged in
+    if (!currentUser) return; // Ne refetch que si un utilisateur est connecté
     const refetchPromises = Object.values(refetchMap.current).map(refetchFn => refetchFn());
     await Promise.all(refetchPromises);
   }, [currentUser]);
 
-  // Function to refetch a specific resource
+  // Fonction pour refetcher une ressource spécifique
   const refetchResource = useCallback(async (resource: Resource) => {
     if (!currentUser) return;
     const refetchFn = refetchMap.current[resource];
     if (refetchFn) {
       await refetchFn();
     } else {
-      console.warn(`No refetch function registered for resource: ${resource}`);
+      console.warn(`Aucune fonction de refetch enregistrée pour la ressource : ${resource}`);
     }
   }, [currentUser]);
 
-  // Initial fetch when user session is loaded
+  // Fetch initial lorsque la session utilisateur est chargée
   useEffect(() => {
     if (!isSessionLoading && currentUser && !isMounted.current) {
       refetchFleetData();
       isMounted.current = true;
     } else if (!isSessionLoading && !currentUser) {
-      // Clear data if user logs out
-      Object.keys(fleetData).forEach(key => {
-        (fleetData as any)[key] = [];
-      });
+      // Les hooks useSupabaseData individuels gèrent déjà la suppression de leurs données si !enabled.
+      // Donc, pas besoin de vider explicitement fleetData ici.
     }
-  }, [isSessionLoading, currentUser, refetchFleetData, fleetData]);
+  }, [isSessionLoading, currentUser, refetchFleetData]);
 
   if (isSessionLoading || (currentUser && isLoadingFleet && !isMounted.current)) {
     return (
