@@ -37,8 +37,14 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
   const documents = fleetData.documents;
   const vehicles = fleetData.vehicles;
 
-  // Get and set pagination/sorting states from FleetDataProvider
-  const { currentPage, itemsPerPage, sortColumn, sortDirection, totalCount } = getResourcePaginationState('documents');
+  // Get and set pagination/sorting states from FleetDataProvider with default values
+  const {
+    currentPage = 1,
+    itemsPerPage = 10,
+    sortColumn = 'expiration',
+    sortDirection = 'asc',
+    totalCount = 0
+  } = getResourcePaginationState('documents') || {};
 
   const onPageChange = useCallback((page: number) => setResourcePaginationState('documents', { currentPage: page }), [setResourcePaginationState]);
   const onItemsPerPageChange = useCallback((count: number) => setResourcePaginationState('documents', { itemsPerPage: count }), [setResourcePaginationState]);

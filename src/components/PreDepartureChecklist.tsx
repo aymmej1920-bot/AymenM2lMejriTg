@@ -29,8 +29,14 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
   const vehicles = fleetData.vehicles;
   const drivers = fleetData.drivers;
 
-  // Get and set pagination/sorting states from FleetDataProvider
-  const { currentPage, itemsPerPage, sortColumn, sortDirection, totalCount } = getResourcePaginationState('pre_departure_checklists');
+  // Get and set pagination/sorting states from FleetDataProvider with default values
+  const {
+    currentPage = 1,
+    itemsPerPage = 10,
+    sortColumn = 'date',
+    sortDirection = 'desc',
+    totalCount = 0
+  } = getResourcePaginationState('pre_departure_checklists') || {};
 
   const onPageChange = useCallback((page: number) => setResourcePaginationState('pre_departure_checklists', { currentPage: page }), [setResourcePaginationState]);
   const onItemsPerPageChange = useCallback((count: number) => setResourcePaginationState('pre_departure_checklists', { itemsPerPage: count }), [setResourcePaginationState]);
@@ -209,6 +215,9 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
 
     return matchesVehicle && matchesDriver && matchesDateRange;
   }, [selectedVehicle, selectedDriver, startDate, endDate]);
+
+  const canAddChecklist = canAccess('pre_departure_checklists', 'add');
+  const canDeleteChecklist = canAccess('pre_departure_checklists', 'delete');
 
   return (
     <div className="space-y-6">

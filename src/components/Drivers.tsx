@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Phone, AlertTriangle, Upload, Download, Loader2 } from 'lucide-react'; // Import Loader2
 import { Driver, DataTableColumn, DriverImportData, Resource, Action, OperationResult, DbImportResult } from '../types';
 import { showSuccess, showLoading, updateToast } from '../utils/toast';
@@ -43,8 +43,14 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
   const { fleetData, isLoadingFleet, getResourcePaginationState, setResourcePaginationState } = useFleetData();
   const drivers = fleetData.drivers;
 
-  // Get and set pagination/sorting states from FleetDataProvider
-  const { currentPage, itemsPerPage, sortColumn, sortDirection, totalCount } = getResourcePaginationState('drivers');
+  // Get and set pagination/sorting states from FleetDataProvider with default values
+  const {
+    currentPage = 1,
+    itemsPerPage = 10,
+    sortColumn = 'name',
+    sortDirection = 'asc',
+    totalCount = 0
+  } = getResourcePaginationState('drivers') || {};
 
   const onPageChange = useCallback((page: number) => setResourcePaginationState('drivers', { currentPage: page }), [setResourcePaginationState]);
   const onItemsPerPageChange = useCallback((count: number) => setResourcePaginationState('drivers', { itemsPerPage: count }), [setResourcePaginationState]);

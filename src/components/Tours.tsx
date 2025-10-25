@@ -38,8 +38,14 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
   const vehicles = fleetData.vehicles;
   const drivers = fleetData.drivers;
 
-  // Get and set pagination/sorting states from FleetDataProvider
-  const { currentPage, itemsPerPage, sortColumn, sortDirection, totalCount } = getResourcePaginationState('tours');
+  // Get and set pagination/sorting states from FleetDataProvider with default values
+  const {
+    currentPage = 1,
+    itemsPerPage = 10,
+    sortColumn = 'date',
+    sortDirection = 'desc',
+    totalCount = 0
+  } = getResourcePaginationState('tours') || {};
 
   const onPageChange = useCallback((page: number) => setResourcePaginationState('tours', { currentPage: page }), [setResourcePaginationState]);
   const onItemsPerPageChange = useCallback((count: number) => setResourcePaginationState('tours', { itemsPerPage: count }), [setResourcePaginationState]);
@@ -288,7 +294,7 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full glass border border-gray-300 rounded-lg pl-4 pr-10 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder="Date de début"
           />
           <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />

@@ -121,11 +121,31 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
   const { vehicles, drivers } = fleetData;
 
   // Get and set pagination/sorting states from FleetDataProvider for the selected data source
-  const { currentPage, itemsPerPage, sortColumn, sortDirection, totalCount } = getResourcePaginationState(selectedDataSource as Resource);
+  const {
+    currentPage = 1,
+    itemsPerPage = 10,
+    sortColumn = '', // Default to empty string, will be set dynamically
+    sortDirection = 'asc',
+    totalCount = 0
+  } = getResourcePaginationState(selectedDataSource as Resource) || {};
 
-  const onPageChange = useCallback((page: number) => setResourcePaginationState(selectedDataSource as Resource, { currentPage: page }), [setResourcePaginationState, selectedDataSource]);
-  const onItemsPerPageChange = useCallback((count: number) => setResourcePaginationState(selectedDataSource as Resource, { itemsPerPage: count }), [setResourcePaginationState, selectedDataSource]);
-  const onSortChange = useCallback((column: string, direction: 'asc' | 'desc') => setResourcePaginationState(selectedDataSource as Resource, { sortColumn: column, sortDirection: direction }), [setResourcePaginationState, selectedDataSource]);
+  const onPageChange = useCallback((page: number) => {
+    if (selectedDataSource) {
+      setResourcePaginationState(selectedDataSource as Resource, { currentPage: page });
+    }
+  }, [setResourcePaginationState, selectedDataSource]);
+
+  const onItemsPerPageChange = useCallback((count: number) => {
+    if (selectedDataSource) {
+      setResourcePaginationState(selectedDataSource as Resource, { itemsPerPage: count });
+    }
+  }, [setResourcePaginationState, selectedDataSource]);
+
+  const onSortChange = useCallback((column: string, direction: 'asc' | 'desc') => {
+    if (selectedDataSource) {
+      setResourcePaginationState(selectedDataSource as Resource, { sortColumn: column, sortDirection: direction });
+    }
+  }, [setResourcePaginationState, selectedDataSource]);
 
 
   const dataSources = [
@@ -147,6 +167,14 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
     if (!selectedDataSource) return [];
     return getColumnConfigs(selectedDataSource as Resource, vehicles, drivers);
   }, [selectedDataSource, vehicles, drivers]);
+
+  // Effect to set default sortColumn when selectedDataSource changes
+  useEffect(() => {
+    if (selectedDataSource && columns.length > 0 && !sortColumn) {
+      setResourcePaginationState(selectedDataSource as Resource, { sortColumn: columns[0].key as string });
+    }
+  }, [selectedDataSource, columns, sortColumn, setResourcePaginationState]);
+
 
   const customFilter = useCallback((item: any) => {
     let matchesDateRange = true;
@@ -238,12 +266,18 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
             id="dataSource"
             value={selectedDataSource}
             onChange={(e) => {
-              setSelectedDataSource(e.target.value as keyof FleetData);
+              const newDataSource = e.target.value as keyof FleetData;
+              setSelectedDataSource(newDataSource);
               setStartDate('');
               setEndDate('');
               setViewMode('table'); // Reset to table view on data source change
               // Reset pagination and sorting for the new data source
-              setResourcePaginationState(e.target.value as Resource, { currentPage: 1, sortColumn: columns[0]?.key as string || '', sortDirection: 'asc' });
+              const newColumns = getColumnConfigs(newDataSource as Resource, vehicles, drivers);
+              setResourcePaginationState(newDataSource as Resource, { 
+                currentPage: 1, 
+                sortColumn: newColumns[0]?.key as string || 'id', // Ensure a default sortColumn
+                sortDirection: 'asc' 
+              });
             }}
             className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >

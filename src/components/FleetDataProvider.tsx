@@ -15,7 +15,7 @@ interface ResourcePaginationState {
 
 // Extend FleetContextType to include setters for pagination and sorting
 interface FleetContextTypeWithPagination extends FleetContextType {
-  getResourcePaginationState: (resource: Resource) => ResourcePaginationState;
+  getResourcePaginationState: (resource: Resource) => ResourcePaginationState | undefined;
   setResourcePaginationState: (resource: Resource, newState: Partial<ResourcePaginationState>) => void;
 }
 
@@ -35,9 +35,9 @@ export const FleetDataProvider: React.FC<{ children: ReactNode }> = ({ children 
     maintenance_entries: { currentPage: 1, itemsPerPage: 10, sortColumn: 'date', sortDirection: 'desc', totalCount: 0 },
     pre_departure_checklists: { currentPage: 1, itemsPerPage: 10, sortColumn: 'date', sortDirection: 'desc', totalCount: 0 },
     users: { currentPage: 1, itemsPerPage: 10, sortColumn: 'first_name', sortDirection: 'asc', totalCount: 0 }, // For UserManagement
-    profile: { currentPage: 1, itemsPerPage: 10, sortColumn: '', sortDirection: 'asc', totalCount: 0 },
-    permissions: { currentPage: 1, itemsPerPage: 10, sortColumn: '', sortDirection: 'asc', totalCount: 0 },
-    dashboard: { currentPage: 1, itemsPerPage: 10, sortColumn: '', sortDirection: 'asc', totalCount: 0 },
+    profile: { currentPage: 1, itemsPerPage: 10, sortColumn: 'id', sortDirection: 'asc', totalCount: 0 }, // Added default sortColumn
+    permissions: { currentPage: 1, itemsPerPage: 10, sortColumn: 'role', sortDirection: 'asc', totalCount: 0 }, // Added default sortColumn
+    dashboard: { currentPage: 1, itemsPerPage: 10, sortColumn: 'id', sortDirection: 'asc', totalCount: 0 }, // Added default sortColumn
   });
 
   const getResourcePaginationState = useCallback((resource: Resource) => resourceStates[resource], [resourceStates]);
@@ -50,16 +50,19 @@ export const FleetDataProvider: React.FC<{ children: ReactNode }> = ({ children 
   }, []);
 
   // Options communes pour les hooks useSupabaseData
-  const commonOptions = (resource: Resource) => ({
-    manualFetch: true, // Empêche le fetch automatique par les hooks individuels
-    skipUserIdFilter: currentUser?.role === 'admin' || currentUser?.role === 'direction',
-    page: resourceStates[resource].currentPage,
-    pageSize: resourceStates[resource].itemsPerPage,
-    sortBy: {
-      column: resourceStates[resource].sortColumn,
-      direction: resourceStates[resource].sortDirection,
-    },
-  });
+  const commonOptions = (resource: Resource) => {
+    const state = getResourcePaginationState(resource);
+    return {
+      manualFetch: true, // Empêche le fetch automatique par les hooks individuels
+      skipUserIdFilter: currentUser?.role === 'admin' || currentUser?.role === 'direction',
+      page: state?.currentPage,
+      pageSize: state?.itemsPerPage,
+      sortBy: state?.sortColumn ? {
+        column: state.sortColumn,
+        direction: state.sortDirection,
+      } : undefined,
+    };
+  };
 
   // Utilisation de useSupabaseData pour chaque ressource
   const { data: vehicles, isLoading: isLoadingVehicles, refetch: refetchVehicles, totalCount: totalVehiclesCount } = useSupabaseData<Vehicle>('vehicles', { enabled: !!currentUser, ...commonOptions('vehicles') });

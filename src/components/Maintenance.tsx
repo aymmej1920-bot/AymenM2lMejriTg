@@ -40,13 +40,25 @@ const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete }) 
   const preDepartureChecklists = fleetData.pre_departure_checklists;
 
   // Get and set pagination/sorting states from FleetDataProvider for vehicles
-  const { currentPage: vehiclesCurrentPage, itemsPerPage: vehiclesItemsPerPage, sortColumn: vehiclesSortColumn, sortDirection: vehiclesSortDirection, totalCount: totalVehiclesCount } = getResourcePaginationState('vehicles');
+  const {
+    currentPage: vehiclesCurrentPage = 1,
+    itemsPerPage: vehiclesItemsPerPage = 10,
+    sortColumn: vehiclesSortColumn = 'plate',
+    sortDirection: vehiclesSortDirection = 'asc',
+    totalCount: totalVehiclesCount = 0
+  } = getResourcePaginationState('vehicles') || {};
   const onVehiclesPageChange = useCallback((page: number) => setResourcePaginationState('vehicles', { currentPage: page }), [setResourcePaginationState]);
   const onVehiclesItemsPerPageChange = useCallback((count: number) => setResourcePaginationState('vehicles', { itemsPerPage: count }), [setResourcePaginationState]);
   const onVehiclesSortChange = useCallback((column: string, direction: 'asc' | 'desc') => setResourcePaginationState('vehicles', { sortColumn: column, sortDirection: direction }), [setResourcePaginationState]);
 
   // Get and set pagination/sorting states from FleetDataProvider for maintenance_entries
-  const { currentPage: maintenanceCurrentPage, itemsPerPage: maintenanceItemsPerPage, sortColumn: maintenanceSortColumn, sortDirection: maintenanceSortDirection, totalCount: totalMaintenanceEntriesCount } = getResourcePaginationState('maintenance_entries');
+  const {
+    currentPage: maintenanceCurrentPage = 1,
+    itemsPerPage: maintenanceItemsPerPage = 10,
+    sortColumn: maintenanceSortColumn = 'date',
+    sortDirection: maintenanceSortDirection = 'desc',
+    totalCount: totalMaintenanceEntriesCount = 0
+  } = getResourcePaginationState('maintenance_entries') || {};
   const onMaintenancePageChange = useCallback((page: number) => setResourcePaginationState('maintenance_entries', { currentPage: page }), [setResourcePaginationState]);
   const onMaintenanceItemsPerPageChange = useCallback((count: number) => setResourcePaginationState('maintenance_entries', { itemsPerPage: count }), [setResourcePaginationState]);
   const onMaintenanceSortChange = useCallback((column: string, direction: 'asc' | 'desc') => setResourcePaginationState('maintenance_entries', { sortColumn: column, sortDirection: direction }), [setResourcePaginationState]);

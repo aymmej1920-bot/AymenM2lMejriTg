@@ -37,8 +37,14 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
   const fuelEntries = fleetData.fuel_entries; // Updated to fuel_entries
   const vehicles = fleetData.vehicles;
 
-  // Get and set pagination/sorting states from FleetDataProvider
-  const { currentPage, itemsPerPage, sortColumn, sortDirection, totalCount } = getResourcePaginationState('fuel_entries');
+  // Get and set pagination/sorting states from FleetDataProvider with default values
+  const {
+    currentPage = 1,
+    itemsPerPage = 10,
+    sortColumn = 'date',
+    sortDirection = 'desc',
+    totalCount = 0
+  } = getResourcePaginationState('fuel_entries') || {};
 
   const onPageChange = useCallback((page: number) => setResourcePaginationState('fuel_entries', { currentPage: page }), [setResourcePaginationState]);
   const onItemsPerPageChange = useCallback((count: number) => setResourcePaginationState('fuel_entries', { itemsPerPage: count }), [setResourcePaginationState]);
