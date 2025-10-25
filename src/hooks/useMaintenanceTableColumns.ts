@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { MaintenanceEntry, DataTableColumn, Vehicle } from '../types';
 import { formatDate } from '../utils/date';
 import { getDaysSinceEntry } from '../utils/date'; // Assuming this utility exists

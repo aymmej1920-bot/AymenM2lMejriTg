@@ -1,10 +1,10 @@
-import React from 'react'; // Removed useState, useMemo, useCallback as they are now in hooks
+import React from 'react';
 import DataTable from '../DataTable';
-import { Resource, Action, OperationResult, Vehicle, MaintenanceEntry } from '../../types'; // Keep only necessary types
+import { Resource, Action, OperationResult, Vehicle, MaintenanceEntry } from '../../types';
 import { usePermissions } from '../../hooks/usePermissions';
 import { showLoading, updateToast } from '../../utils/toast';
-import { useMaintenanceFilters } from '../../hooks/useMaintenanceFilters'; // Import the hook
-import { useMaintenanceTableColumns } from '../../hooks/useMaintenanceTableColumns'; // Import the hook
+import { useMaintenanceFilters } from '../../hooks/useMaintenanceFilters';
+import { useMaintenanceTableColumns } from '../../hooks/useMaintenanceTableColumns';
 
 interface MaintenanceHistoryTableProps {
   maintenanceEntries: MaintenanceEntry[];
@@ -39,10 +39,8 @@ const MaintenanceHistoryTable: React.FC<MaintenanceHistoryTableProps> = ({
 }) => {
   const { canAccess } = usePermissions();
 
-  const {
-    renderFilters,
-    customFilter,
-  } = useMaintenanceFilters({ vehicles, maintenanceEntries });
+  // Destructure renderFilters and customFilter from the hook
+  const { renderFilters, customFilter } = useMaintenanceFilters({ vehicles, maintenanceEntries });
 
   const { maintenanceHistoryColumns } = useMaintenanceTableColumns({ vehicles, onAddMaintenance, canAddForm: canAccess('maintenance_entries', 'add') });
 
@@ -68,8 +66,8 @@ const MaintenanceHistoryTable: React.FC<MaintenanceHistoryTableProps> = ({
       searchPlaceholder="Rechercher une entrée de maintenance..."
       exportFileName="historique_maintenance"
       isLoading={isLoadingFleet}
-      renderFilters={renderFilters}
-      customFilter={customFilter}
+      renderFilters={renderFilters} // Pass the renderFilters function directly
+      customFilter={customFilter} // Pass the custom filter function
       resourceType="maintenance_entries"
       currentPage={maintenanceCurrentPage}
       onPageChange={onMaintenancePageChange}

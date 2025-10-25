@@ -1,7 +1,6 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Search, Calendar } from 'lucide-react';
 import { MaintenanceEntry, Vehicle } from '../types';
-import { formatDate } from '../utils/date';
 
 interface UseMaintenanceFiltersProps {
   vehicles: Vehicle[];
@@ -9,7 +8,6 @@ interface UseMaintenanceFiltersProps {
 }
 
 export const useMaintenanceFilters = ({ vehicles, maintenanceEntries }: UseMaintenanceFiltersProps) => {
-  const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedVehicleFilter, setSelectedVehicleFilter] = useState<string>('');
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('');
   const [startDate, setStartDate] = useState<string>('');
@@ -20,7 +18,9 @@ export const useMaintenanceFilters = ({ vehicles, maintenanceEntries }: UseMaint
     return Array.from(types);
   }, [maintenanceEntries]);
 
-  const renderFilters = useCallback((currentSearchTerm: string, currentSetSearchTerm: (term: string) => void) => {
+  // This renderFilters will now return JSX directly, using the hook's internal states
+  // It also accepts DataTable's searchTerm and setSearchTerm for the general search input
+  const renderFilters = useCallback((searchTerm: string, setSearchTerm: (term: string) => void) => {
     return (
       <>
         <div className="relative">
@@ -28,8 +28,8 @@ export const useMaintenanceFilters = ({ vehicles, maintenanceEntries }: UseMaint
           <input
             type="text"
             placeholder="Rechercher une entrée de maintenance..."
-            value={currentSearchTerm}
-            onChange={(e) => currentSetSearchTerm(e.target.value)}
+            value={searchTerm} // Use DataTable's searchTerm
+            onChange={(e) => setSearchTerm(e.target.value)} // Use DataTable's setSearchTerm
             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all glass"
           />
         </div>
@@ -91,7 +91,7 @@ export const useMaintenanceFilters = ({ vehicles, maintenanceEntries }: UseMaint
     const start = startDate ? new Date(startDate) : null;
     const end = endDate ? new Date(endDate) : null;
 
-    const matchesDateRange = 
+    const matchesDateRange =
       (!start || entryDate >= start) &&
       (!end || entryDate <= end);
 
@@ -99,17 +99,7 @@ export const useMaintenanceFilters = ({ vehicles, maintenanceEntries }: UseMaint
   }, [selectedVehicleFilter, selectedTypeFilter, startDate, endDate]);
 
   return {
-    searchTerm,
-    setSearchTerm,
-    selectedVehicleFilter,
-    setSelectedVehicleFilter,
-    selectedTypeFilter,
-    setSelectedTypeFilter,
-    startDate,
-    setStartDate,
-    endDate,
-    setEndDate,
-    renderFilters,
+    renderFilters, // This now returns JSX directly, and takes searchTerm/setSearchTerm as args
     customFilter,
   };
 };
