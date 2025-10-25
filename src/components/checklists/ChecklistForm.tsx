@@ -93,17 +93,19 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
   }, [watch]);
 
   const onSubmit = async (formData: PreDepartureChecklistFormData) => {
-    console.log("onSubmit called with formData:", formData); // ADDED LOG
+    console.log("[ChecklistForm] onSubmit called with formData:", formData);
     if (!canAdd) {
       showError('Vous n\'avez pas la permission d\'ajouter une checklist.');
       return;
     }
 
-    if (Object.keys(errors).length > 0) {
-      console.log('Form validation errors:', errors);
-      showError('Veuillez corriger les erreurs dans le formulaire.');
-      return;
-    }
+    // The handleSubmit wrapper already prevents onSubmit from being called if there are Zod errors.
+    // This check is redundant and can be removed.
+    // if (Object.keys(errors).length > 0) {
+    //   console.log('Form validation errors:', errors);
+    //   showError('Veuillez corriger les erreurs dans le formulaire.');
+    //   return;
+    // }
 
     const { vehicle_id, date } = formData;
 
@@ -111,10 +113,13 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
     const submissionMonth = checklistDate.getMonth();
     const submissionYear = checklistDate.getFullYear();
 
+    console.log(`[ChecklistForm] Checking for existing checklist for vehicle_id: ${vehicle_id}, month: ${submissionMonth}, year: ${submissionYear}`);
     if (hasChecklistForMonth(vehicle_id, submissionMonth, submissionYear)) {
+      console.log("[ChecklistForm] Existing checklist found for this vehicle and month.");
       showError('Une checklist pour ce véhicule a déjà été soumise ce mois-ci. Une seule checklist par véhicule par mois est autorisée.');
       return;
     }
+    console.log("[ChecklistForm] No existing checklist found for this vehicle and month. Proceeding with submission.");
 
     const dataToSubmit = {
       ...formData,
@@ -126,7 +131,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
 
     try {
       const result = await onAdd('pre_departure_checklists', dataToSubmit, 'add');
-      console.log("onAdd result:", result); // ADDED LOG
+      console.log("[ChecklistForm] onAdd result:", result);
       if (result.success) {
         showSuccess('Checklist ajoutée avec succès !');
         onClose();
@@ -135,7 +140,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
         throw new Error(result.error || 'Erreur lors de l\'ajout de la checklist.');
       }
     } catch (error: unknown) {
-      console.error("Erreur lors de l'ajout de la checklist:", error instanceof Error ? error.message : String(error));
+      console.error("[ChecklistForm] Erreur lors de l'ajout de la checklist:", error instanceof Error ? error.message : String(error));
       showError(`Erreur lors de l'ajout de la checklist: ${error instanceof Error ? error.message : 'Une erreur inconnue est survenue.'}`);
     }
   };
