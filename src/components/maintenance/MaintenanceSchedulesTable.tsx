@@ -183,9 +183,10 @@ const MaintenanceSchedulesTable: React.FC<MaintenanceSchedulesTableProps> = ({
     const start = startDate ? new Date(startDate) : null;
     const end = endDate ? new Date(endDate) : null;
 
-    const matchesDateRange =
-      (!start || (scheduleDueDate && scheduleDueDate >= start)) &&
-      (!end || (scheduleDueDate && scheduleDueDate <= end));
+    // Ensure matchesDateRange is always a boolean
+    const matchesDateRange = 
+      (!start || (scheduleDueDate !== null && scheduleDueDate >= start)) &&
+      (!end || (scheduleDueDate !== null && scheduleDueDate <= end));
 
     return matchesVehicle && matchesType && matchesDateRange;
   }, [selectedVehicleFilter, selectedTypeFilter, startDate, endDate]);
