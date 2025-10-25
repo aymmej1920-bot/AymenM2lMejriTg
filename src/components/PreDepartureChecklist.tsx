@@ -10,7 +10,7 @@ import {
   DialogDescription,
 } from './ui/dialog';
 import DataTable from './DataTable';
-import { usePermissions } from '../hooks/usePermissions';
+// import { usePermissions } from '../hooks/usePermissions'; // Removed import
 import ChecklistForm from './checklists/ChecklistForm';
 import ChecklistStatusIcon from './checklists/ChecklistStatusIcon';
 import { useFleetData } from '../components/FleetDataProvider';
@@ -22,7 +22,7 @@ interface PreDepartureChecklistProps {
 }
 
 const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ onAdd, onDelete }) => {
-  const { canAccess } = usePermissions();
+  // const { canAccess } = usePermissions(); // Removed usePermissions
   
   const { fleetData, isLoadingFleet, getResourcePaginationState, setResourcePaginationState } = useFleetData();
   const preDepartureChecklists = fleetData.pre_departure_checklists;
@@ -46,8 +46,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
   const [showModal, setShowModal] = useState(false);
 
   // Permissions check once at the top level
-  const canAddChecklist = canAccess('pre_departure_checklists', 'add');
-  const canDeleteChecklist = canAccess('pre_departure_checklists', 'delete');
+  const canAddChecklist = true; // All authenticated users can add their own data
+  const canDeleteChecklist = true; // All authenticated users can delete their own data
 
   // State for filtering
   const [selectedVehicle, setSelectedVehicle] = useState<string>('');
@@ -257,7 +257,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
           <DialogHeader>
             <DialogTitle>Nouvelle Checklist Avant Départ</DialogTitle>
             <DialogDescription>
-              Remplissez les détails de la checklist avant le départ du véhicule.
+              Remplissez les détails de la checklist avant le départ
             </DialogDescription>
           </DialogHeader>
           <ChecklistForm
