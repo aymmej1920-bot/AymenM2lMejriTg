@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { FleetData, Vehicle, Driver, DataTableColumn, Resource } from '../types';
-import { Calendar, Search, Table, BarChart2 } from 'lucide-react';
+import { FleetData, Vehicle, Driver, DataTableColumn, Resource, ReportGroupingOption, ReportAggregationType, ReportAggregationField, ReportChartType, ReportOption, ProcessedReportData } from '../types';
+import { Calendar, Search, Table, BarChart2, LineChart, PieChart } from 'lucide-react';
 import { formatDate, getDaysUntilExpiration, getDaysSinceEntry } from '../utils/date';
 import DataTable from '../components/DataTable';
 import { useFleetData } from '../components/FleetDataProvider';
-import { Button } from '../components/ui/button'; // Import Button
-import ReportCharts from '../components/reports/ReportCharts'; // Import new component
+import { Button } from '../components/ui/button';
+import ReportCharts from '../components/reports/ReportCharts';
+import moment from 'moment';
 
 interface ReportsProps {
   userRole: 'admin' | 'direction' | 'utilisateur';
@@ -115,16 +116,21 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
   const [selectedDataSource, setSelectedDataSource] = useState<keyof FleetData | ''>('');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
-  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table'); // New state for view mode
+  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
+
+  // New states for dynamic reporting
+  const [groupByColumn, setGroupByColumn] = useState<ReportGroupingOption>('none');
+  const [aggregationType, setAggregationType] = useState<ReportAggregationType>('none');
+  const [aggregationField, setAggregationField] = useState<ReportAggregationField | ''>('');
+  const [chartType, setChartType] = useState<ReportChartType>('BarChart');
 
   const { fleetData, isLoadingFleet, getResourcePaginationState, setResourcePaginationState } = useFleetData();
   const { vehicles, drivers } = fleetData;
 
-  // Get and set pagination/sorting states from FleetDataProvider for the selected data source
   const {
     currentPage = 1,
     itemsPerPage = 10,
-    sortColumn = '', // Default to empty string, will be set dynamically
+    sortColumn = '',
     sortDirection = 'asc',
     totalCount = 0
   } = getResourcePaginationState(selectedDataSource as Resource) || {};
@@ -147,38 +153,122 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
     }
   }, [setResourcePaginationState, selectedDataSource]);
 
-
-  const dataSources = [
-    { id: 'vehicles', name: 'Véhicules' },
-    { id: 'drivers', name: 'Conducteurs' },
-    { id: 'tours', name: 'Tournées' },
-    { id: 'fuel_entries', name: 'Carburant' },
-    { id: 'documents', name: 'Documents' },
-    { id: 'maintenance_entries', name: 'Maintenance' },
-    { id: 'pre_departure_checklists', name: 'Checklists Pré-départ' },
+  const dataSources: { id: keyof FleetData; name: string; groupableColumns: ReportOption[]; aggregatableFields: ReportOption[]; chartTypes: ReportChartType[] }[] = [
+    {
+      id: 'vehicles',
+      name: 'Véhicules',
+      groupableColumns: [
+        { label: 'Aucun', value: 'none' },
+        { label: 'Type', value: 'type' },
+        { label: 'Statut', value: 'status' },
+      ],
+      aggregatableFields: [
+        { label: 'Nombre de véhicules', value: 'count' },
+        { label: 'Kilométrage moyen', value: 'mileage' },
+      ],
+      chartTypes: ['BarChart', 'PieChart'],
+    },
+    {
+      id: 'drivers',
+      name: 'Conducteurs',
+      groupableColumns: [
+        { label: 'Aucun', value: 'none' },
+        { label: 'Statut', value: 'status' },
+      ],
+      aggregatableFields: [
+        { label: 'Nombre de conducteurs', value: 'count' },
+      ],
+      chartTypes: ['BarChart', 'PieChart'],
+    },
+    {
+      id: 'tours',
+      name: 'Tournées',
+      groupableColumns: [
+        { label: 'Aucun', value: 'none' },
+        { label: 'Date (Mois)', value: 'date_month' },
+        { label: 'Date (Année)', value: 'date_year' },
+        { label: 'Véhicule', value: 'vehicle_id' },
+        { label: 'Conducteur', value: 'driver_id' },
+        { label: 'Statut', value: 'status' },
+      ],
+      aggregatableFields: [
+        { label: 'Nombre de tournées', value: 'count' },
+        { label: 'Distance totale', value: 'distance' },
+      ],
+      chartTypes: ['BarChart', 'LineChart'],
+    },
+    {
+      id: 'fuel_entries',
+      name: 'Carburant',
+      groupableColumns: [
+        { label: 'Aucun', value: 'none' },
+        { label: 'Date (Mois)', value: 'date_month' },
+        { label: 'Date (Année)', value: 'date_year' },
+        { label: 'Véhicule', value: 'vehicle_id' },
+      ],
+      aggregatableFields: [
+        { label: 'Nombre d\'entrées', value: 'count' },
+        { label: 'Litres totaux', value: 'liters' },
+        { label: 'Coût total', value: 'total_cost' },
+        { label: 'Kilométrage moyen', value: 'mileage' },
+      ],
+      chartTypes: ['BarChart', 'LineChart', 'PieChart'],
+    },
+    {
+      id: 'documents',
+      name: 'Documents',
+      groupableColumns: [
+        { label: 'Aucun', value: 'none' },
+        { label: 'Type', value: 'type' },
+        { label: 'Véhicule', value: 'vehicle_id' },
+      ],
+      aggregatableFields: [
+        { label: 'Nombre de documents', value: 'count' },
+      ],
+      chartTypes: ['BarChart', 'PieChart'],
+    },
+    {
+      id: 'maintenance_entries',
+      name: 'Maintenance',
+      groupableColumns: [
+        { label: 'Aucun', value: 'none' },
+        { label: 'Date (Mois)', value: 'date_month' },
+        { label: 'Date (Année)', value: 'date_year' },
+        { label: 'Véhicule', value: 'vehicle_id' },
+        { label: 'Type', value: 'type' },
+      ],
+      aggregatableFields: [
+        { label: 'Nombre d\'entrées', value: 'count' },
+        { label: 'Coût total', value: 'cost' },
+        { label: 'Kilométrage moyen', value: 'mileage' },
+      ],
+      chartTypes: ['BarChart', 'LineChart', 'PieChart'],
+    },
+    {
+      id: 'pre_departure_checklists',
+      name: 'Checklists Pré-départ',
+      groupableColumns: [
+        { label: 'Aucun', value: 'none' },
+        { label: 'Date (Mois)', value: 'date_month' },
+        { label: 'Date (Année)', value: 'date_year' },
+        { label: 'Véhicule', value: 'vehicle_id' },
+        { label: 'Conducteur', value: 'driver_id' },
+      ],
+      aggregatableFields: [
+        { label: 'Nombre de checklists', value: 'count' },
+      ],
+      chartTypes: ['BarChart'],
+    },
   ];
+
+  const currentDataSourceConfig = useMemo(() => {
+    return dataSources.find(ds => ds.id === selectedDataSource);
+  }, [selectedDataSource]);
 
   const currentData = useMemo(() => {
     if (!selectedDataSource) return [];
     return fleetData[selectedDataSource] || [];
   }, [fleetData, selectedDataSource]);
-
-  const columns = useMemo(() => {
-    if (!selectedDataSource) return [];
-    return getColumnConfigs(selectedDataSource as Resource, vehicles, drivers);
-  }, [selectedDataSource, vehicles, drivers]);
-
-  // Effect to set default sortColumn when selectedDataSource changes
-  useEffect(() => {
-    if (selectedDataSource && columns.length > 0 && !sortColumn) {
-      setResourcePaginationState(selectedDataSource as Resource, { 
-        currentPage: 1, 
-        sortColumn: columns[0]?.key as string || 'id', // Ensure a default sortColumn
-        sortDirection: 'asc' 
-      });
-    }
-  }, [selectedDataSource, columns, sortColumn, setResourcePaginationState]);
-
 
   const customFilter = useCallback((item: any) => {
     let matchesDateRange = true;
@@ -196,9 +286,122 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
     return matchesDateRange;
   }, [startDate, endDate]);
 
-  const filteredDataForDisplay = useMemo(() => {
-    return currentData.filter(customFilter);
-  }, [currentData, customFilter]);
+  const processedReportData = useMemo(() => {
+    let filtered = currentData.filter(customFilter);
+
+    if (groupByColumn === 'none' || aggregationType === 'none' || !aggregationField) {
+      return filtered; // Return raw filtered data if no aggregation/grouping
+    }
+
+    const groupedData: Record<string, any[]> = {};
+
+    filtered.forEach((item: any) => {
+      let groupKey: string;
+      let dateValue: Date | null = null;
+
+      if (item.date) {
+        dateValue = new Date(item.date);
+      } else if (item.expiration) {
+        dateValue = new Date(item.expiration);
+      } else if (item.created_at) {
+        dateValue = new Date(item.created_at);
+      }
+
+      if (groupByColumn === 'date_month' && dateValue) {
+        groupKey = moment(dateValue).format('YYYY-MM');
+      } else if (groupByColumn === 'date_year' && dateValue) {
+        groupKey = moment(dateValue).format('YYYY');
+      } else if (groupByColumn === 'vehicle_id') {
+        groupKey = vehicles.find(v => v.id === item.vehicle_id)?.plate || 'Inconnu';
+      } else if (groupByColumn === 'driver_id') {
+        groupKey = drivers.find(d => d.id === item.driver_id)?.name || 'Inconnu';
+      } else if (groupByColumn === 'type' && item.type) {
+        groupKey = item.type;
+      } else if (groupByColumn === 'status' && item.status) {
+        groupKey = item.status;
+      } else {
+        groupKey = 'Non groupé';
+      }
+
+      if (!groupedData[groupKey]) {
+        groupedData[groupKey] = [];
+      }
+      groupedData[groupKey].push(item);
+    });
+
+    const aggregatedData: ProcessedReportData[] = Object.keys(groupedData).map(key => {
+      const groupItems = groupedData[key];
+      let aggregatedValue: number | string = 0;
+
+      if (aggregationType === 'count') {
+        aggregatedValue = groupItems.length;
+      } else if (aggregationType === 'sum' || aggregationType === 'avg') {
+        let sum = 0;
+        groupItems.forEach(item => {
+          let valueToAdd = 0;
+          if (aggregationField === 'total_cost') {
+            if (selectedDataSource === 'fuel_entries') {
+              valueToAdd = (item.liters || 0) * (item.price_per_liter || 0);
+            } else if (selectedDataSource === 'maintenance_entries') {
+              valueToAdd = item.cost || 0;
+            }
+          } else if (aggregationField === 'distance' && selectedDataSource === 'tours') {
+            valueToAdd = item.distance || 0;
+          } else if (aggregationField === 'mileage' && (selectedDataSource === 'vehicles' || selectedDataSource === 'fuel_entries' || selectedDataSource === 'maintenance_entries')) {
+            valueToAdd = item.mileage || 0;
+          } else if (aggregationField === 'liters' && selectedDataSource === 'fuel_entries') {
+            valueToAdd = item.liters || 0;
+          } else if (aggregationField === 'cost' && selectedDataSource === 'maintenance_entries') {
+            valueToAdd = item.cost || 0;
+          }
+          sum += valueToAdd;
+        });
+
+        if (aggregationType === 'sum') {
+          aggregatedValue = sum;
+        } else if (aggregationType === 'avg') {
+          aggregatedValue = groupItems.length > 0 ? sum / groupItems.length : 0;
+        }
+      }
+
+      return {
+        name: key, // The group key (e.g., '2023-01', 'Camionnette', 'John Doe')
+        value: aggregatedValue,
+        rawItems: groupItems, // Keep raw items for potential drill-down or detailed table view
+      };
+    });
+
+    return aggregatedData.sort((a, b) => a.name.localeCompare(b.name)); // Sort by group key
+  }, [currentData, customFilter, groupByColumn, aggregationType, aggregationField, selectedDataSource, vehicles, drivers]);
+
+  const columns = useMemo(() => {
+    if (groupByColumn !== 'none' && aggregationType !== 'none' && aggregationField) {
+      // Columns for aggregated data
+      return [
+        { key: 'name', label: currentDataSourceConfig?.groupableColumns.find(opt => opt.value === groupByColumn)?.label || 'Groupe', sortable: true, defaultVisible: true },
+        { key: 'value', label: currentDataSourceConfig?.aggregatableFields.find(opt => opt.value === aggregationField)?.label || 'Valeur', sortable: true, defaultVisible: true, render: (item: ProcessedReportData) => typeof item.value === 'number' ? item.value.toFixed(2) : item.value },
+      ];
+    }
+    // Columns for raw data
+    return getColumnConfigs(selectedDataSource as Resource, vehicles, drivers);
+  }, [selectedDataSource, vehicles, drivers, groupByColumn, aggregationType, aggregationField, currentDataSourceConfig]);
+
+  // Effect to reset aggregation/grouping/chart options when data source changes
+  useEffect(() => {
+    if (selectedDataSource) {
+      setGroupByColumn('none');
+      setAggregationType('none');
+      setAggregationField('');
+      setChartType(currentDataSourceConfig?.chartTypes[0] || 'BarChart'); // Default to first available chart type
+      // Reset pagination and sorting for the new data source
+      const newColumns = getColumnConfigs(selectedDataSource as Resource, vehicles, drivers);
+      setResourcePaginationState(selectedDataSource as Resource, { 
+        currentPage: 1, 
+        sortColumn: newColumns[0]?.key as string || 'id', // Ensure a default sortColumn
+        sortDirection: 'asc' 
+      });
+    }
+  }, [selectedDataSource, currentDataSourceConfig, vehicles, drivers, setResourcePaginationState]);
 
   const renderFilters = useCallback((searchTerm: string, setSearchTerm: (term: string) => void) => {
     return (
@@ -256,7 +459,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
           <Button
             variant={viewMode === 'chart' ? 'default' : 'outline'}
             onClick={() => setViewMode('chart')}
-            disabled={!selectedDataSource || (selectedDataSource !== 'vehicles' && selectedDataSource !== 'fuel_entries')} // Disable if no chart available
+            disabled={!selectedDataSource || !currentDataSourceConfig?.chartTypes.length || groupByColumn === 'none' || aggregationType === 'none' || aggregationField === ''}
             className="hover-lift"
           >
             <BarChart2 className="w-4 h-4 mr-2" /> Vue Graphique
@@ -274,14 +477,7 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
               setSelectedDataSource(newDataSource);
               setStartDate('');
               setEndDate('');
-              setViewMode('table'); // Reset to table view on data source change
-              // Reset pagination and sorting for the new data source
-              const newColumns = getColumnConfigs(newDataSource as Resource, vehicles, drivers);
-              setResourcePaginationState(newDataSource as Resource, { 
-                currentPage: 1, 
-                sortColumn: newColumns[0]?.key as string || 'id', // Ensure a default sortColumn
-                sortDirection: 'asc' 
-              });
+              setViewMode('table');
             }}
             className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
@@ -291,22 +487,87 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
             ))}
           </select>
         </div>
-        {renderFilters('', () => {})} {/* Pass empty functions as DataTable handles search internally */}
+        {renderFilters('', () => {})}
+        
+        {selectedDataSource && (
+          <>
+            <div>
+              <select
+                id="groupByColumn"
+                value={groupByColumn}
+                onChange={(e) => setGroupByColumn(e.target.value as ReportGroupingOption)}
+                className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                disabled={!selectedDataSource}
+              >
+                {currentDataSourceConfig?.groupableColumns.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <select
+                id="aggregationType"
+                value={aggregationType}
+                onChange={(e) => setAggregationType(e.target.value as ReportAggregationType)}
+                className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled={!selectedDataSource || groupByColumn === 'none'}
+              >
+                <option value="none" disabled>Sélectionner l'agrégation</option>
+                <option value="count">Compter</option>
+                {(selectedDataSource === 'fuel_entries' || selectedDataSource === 'maintenance_entries' || selectedDataSource === 'tours' || selectedDataSource === 'vehicles') && (
+                  <>
+                    <option value="sum">Somme</option>
+                    <option value="avg">Moyenne</option>
+                  </>
+                )}
+              </select>
+            </div>
+            {aggregationType !== 'none' && aggregationType !== 'count' && (
+              <div>
+                <select
+                  id="aggregationField"
+                  value={aggregationField}
+                  onChange={(e) => setAggregationField(e.target.value as ReportAggregationField)}
+                  className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={!selectedDataSource || aggregationType === 'none' || aggregationType === 'count'}
+                >
+                  <option value="" disabled>Sélectionner le champ</option>
+                  {currentDataSourceConfig?.aggregatableFields
+                    .filter(f => f.value !== 'count') // Exclude 'count' as it's an aggregation type, not a field
+                    .map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                </select>
+              </div>
+            )}
+            {viewMode === 'chart' && currentDataSourceConfig?.chartTypes.length && (
+              <div>
+                <select
+                  id="chartType"
+                  value={chartType}
+                  onChange={(e) => setChartType(e.target.value as ReportChartType)}
+                  className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={!selectedDataSource || groupByColumn === 'none' || aggregationType === 'none' || aggregationField === ''}
+                >
+                  {currentDataSourceConfig.chartTypes.map(type => (
+                    <option key={type} value={type}>{type === 'BarChart' ? 'Graphique à barres' : type === 'LineChart' ? 'Graphique linéaire' : 'Graphique à secteurs'}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {selectedDataSource ? (
         viewMode === 'table' ? (
           <DataTable
-            title={`Rapport: ${dataSources.find(ds => ds.id === selectedDataSource)?.name || ''}`}
-            data={filteredDataForDisplay}
+            title={`Rapport: ${currentDataSourceConfig?.name || ''}`}
+            data={processedReportData}
             columns={columns}
             exportFileName={`rapport_${selectedDataSource}`}
             isLoading={isLoadingFleet}
             resourceType={selectedDataSource as Resource}
-            // Filters are now rendered above the DataTable, so we don't pass renderFilters here
-            // DataTable will still handle its internal search based on the searchTerm state if we were to pass it.
-            // For now, the search input above is the primary filter.
-            // Pagination and sorting props
             currentPage={currentPage}
             onPageChange={onPageChange}
             itemsPerPage={itemsPerPage}
@@ -319,7 +580,13 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
         ) : (
           <ReportCharts
             dataSource={selectedDataSource as Resource}
-            data={filteredDataForDisplay}
+            data={processedReportData}
+            groupByColumn={groupByColumn}
+            aggregationType={aggregationType}
+            aggregationField={aggregationField}
+            chartType={chartType}
+            vehicles={vehicles}
+            drivers={drivers}
           />
         )
       ) : (

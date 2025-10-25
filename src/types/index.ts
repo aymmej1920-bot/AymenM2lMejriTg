@@ -196,3 +196,18 @@ export interface DbImportResult {
   message?: string;
   error?: string;
 }
+
+// New types for reporting features
+export type ReportGroupingOption = 'none' | 'date_month' | 'date_year' | 'vehicle_id' | 'driver_id' | 'type' | 'status';
+export type ReportAggregationType = 'none' | 'count' | 'sum' | 'avg';
+export type ReportAggregationField = keyof Vehicle | keyof Driver | keyof Tour | keyof FuelEntry | keyof Document | keyof MaintenanceEntry | keyof PreDepartureChecklist | 'total_cost' | 'distance';
+export type ReportChartType = 'BarChart' | 'LineChart' | 'PieChart';
+
+export interface ReportOption {
+  label: string;
+  value: string;
+}
+
+export interface ProcessedReportData {
+  [key: string]: any;
+}
