@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { AlertTriangle, Calendar } from 'lucide-react';
+import { AlertTriangle, Calendar, Search } from 'lucide-react';
 import { PreDepartureChecklist, DataTableColumn, Resource, Action, OperationResult } from '../types';
 import { formatDate } from '../utils/date';
 import {
@@ -11,18 +11,19 @@ import {
 } from './ui/dialog';
 import DataTable from './DataTable';
 import { usePermissions } from '../hooks/usePermissions';
-import ChecklistForm from './checklists/ChecklistForm'; // Import the new form component
-import ChecklistStatusIcon from './checklists/ChecklistStatusIcon'; // Import the new status icon component
-import { useFleetData } from '../components/FleetDataProvider'; // Import useFleetData
+import ChecklistForm from './checklists/ChecklistForm';
+import ChecklistStatusIcon from './checklists/ChecklistStatusIcon';
+import { useFleetData } from '../components/FleetDataProvider';
+import { showLoading, updateToast } from '../utils/toast';
 
 interface PreDepartureChecklistProps {
   onAdd: (tableName: Resource, checklist: Omit<PreDepartureChecklist, 'id' | 'user_id' | 'created_at'>, action: Action) => Promise<OperationResult>;
+  onDelete: (tableName: Resource, data: { id: string }, action: Action) => Promise<OperationResult>;
 }
 
-const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ onAdd }) => {
+const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ onAdd, onDelete }) => {
   const { canAccess } = usePermissions();
   
-  // Consume data from FleetContext
   const { fleetData, isLoadingFleet } = useFleetData();
   const preDepartureChecklists = fleetData.pre_departure_checklists;
   const vehicles = fleetData.vehicles;
@@ -30,7 +31,8 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
 
   const [showModal, setShowModal] = useState(false);
 
-  const canAddChecklist = canAccess('pre_departure_checklists', 'add'); // Renamed to avoid redeclaration
+  const canAddChecklist = canAccess('pre_departure_checklists', 'add');
+  const canDeleteChecklist = canAccess('pre_departure_checklists', 'delete');
 
   // State for filtering
   const [selectedVehicle, setSelectedVehicle] = useState<string>('');
@@ -117,6 +119,7 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
     return (
       <>
         <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
             placeholder="Rechercher une checklist..."
@@ -203,9 +206,18 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
     <div className="space-y-6">
       <DataTable
         title="Checklists Avant Départ"
-        data={preDepartureChecklists} // Pass all data, DataTable will handle filtering
+        data={preDepartureChecklists}
         columns={columns}
         onAdd={canAddChecklist ? handleAddChecklist : undefined}
+        onDelete={canDeleteChecklist ? async (id) => {
+          const loadingToastId = showLoading('Suppression de la checklist...');
+          const result = await onDelete('pre_departure_checklists', { id }, 'delete');
+          if (result.success) {
+            updateToast(loadingToastId, result.message || 'Checklist supprimée avec succès !', 'success');
+          } else {
+            updateToast(loadingToastId, result.error || 'Erreur lors de la suppression de la checklist.', 'error');
+          }
+        } : undefined}
         addLabel="Nouvelle Checklist"
         searchPlaceholder="Rechercher une checklist par date, véhicule, conducteur, observations ou problèmes..."
         exportFileName="checklists_avant_depart"

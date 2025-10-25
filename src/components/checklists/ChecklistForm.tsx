@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
-import { useForm, FormProvider, FieldErrors } from 'react-hook-form'; // Import FieldErrors
+import { useForm, FormProvider, Controller, FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '../ui/button';
@@ -46,7 +46,7 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
     }
   });
 
-  const { handleSubmit, reset, watch, formState: { errors } } = methods;
+  const { handleSubmit, reset, watch, control, formState: { errors } } = methods;
 
   const resetFormAndClearStorage = useCallback(() => {
     reset({
@@ -115,7 +115,6 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
 
     const dataToSubmit = {
       ...formData,
-      // Convert empty strings to null for nullable database fields
       driver_id: formData.driver_id === '' ? null : formData.driver_id,
       observations: formData.observations === '' ? null : formData.observations,
       issues_to_address: formData.issues_to_address === '' ? null : formData.issues_to_address,
@@ -146,28 +145,38 @@ const ChecklistForm: React.FC<ChecklistFormProps> = ({ onAdd, onClose, canAdd, h
     <div className="flex items-center justify-between">
       <label className="text-sm font-semibold text-gray-900">{label}</label>
       <div className="flex space-x-4">
-        <div className="flex items-center space-x-1">
-          <input
-            type="radio"
-            id={`${name}_ok`}
-            value="true" // Explicitly set string value
-            {...methods.register(name, { setValueAs: v => v === 'true' })}
-            className="h-4 w-4 text-green-600 bg-white border border-gray-300 shadow-sm focus:ring-green-500"
-            disabled={!canAdd}
-          />
-          <label htmlFor={`${name}_ok`} className="text-sm font-semibold text-gray-900">OK</label>
-        </div>
-        <div className="flex items-center space-x-1">
-          <input
-            type="radio"
-            id={`${name}_nok`}
-            value="false" // Explicitly set string value
-            {...methods.register(name, { setValueAs: v => v === 'true' })}
-            className="h-4 w-4 text-red-600 bg-white border border-gray-300 shadow-sm focus:ring-red-500"
-            disabled={!canAdd}
-          />
-          <label htmlFor={`${name}_nok`} className="text-sm font-semibold text-gray-900">NOK</label>
-        </div>
+        <Controller
+          name={name}
+          control={control}
+          render={({ field }) => (
+            <>
+              <div className="flex items-center space-x-1">
+                <input
+                  type="radio"
+                  id={`${name}_ok`}
+                  value="true"
+                  checked={field.value === true}
+                  onChange={() => field.onChange(true)}
+                  className="h-4 w-4 text-green-600 bg-white border border-gray-300 shadow-sm focus:ring-green-500"
+                  disabled={!canAdd}
+                />
+                <label htmlFor={`${name}_ok`} className="text-sm font-semibold text-gray-900">OK</label>
+              </div>
+              <div className="flex items-center space-x-1">
+                <input
+                  type="radio"
+                  id={`${name}_nok`}
+                  value="false"
+                  checked={field.value === false}
+                  onChange={() => field.onChange(false)}
+                  className="h-4 w-4 text-red-600 bg-white border border-gray-300 shadow-sm focus:ring-red-500"
+                  disabled={!canAdd}
+                />
+                <label htmlFor={`${name}_nok`} className="text-sm font-semibold text-gray-900">NOK</label>
+              </div>
+            </>
+          )}
+        />
       </div>
     </div>
   );

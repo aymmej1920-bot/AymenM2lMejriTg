@@ -91,7 +91,7 @@ export interface PreDepartureChecklist {
   id: string;
   user_id: string;
   vehicle_id: string;
-  driver_id?: string | null; // Updated to allow null and be optional
+  driver_id?: string | null;
   date: string;
   tire_pressure_ok: boolean;
   lights_ok: boolean;
@@ -103,8 +103,8 @@ export interface PreDepartureChecklist {
   mirrors_ok: boolean;
   ac_working_ok: boolean;
   windows_working_ok: boolean;
-  observations?: string | null; // Updated to allow null and be optional
-  issues_to_address?: string | null; // Updated to allow null and be optional
+  observations?: string | null;
+  issues_to_address?: string | null;
   created_at?: string;
 }
 
@@ -112,44 +112,41 @@ export interface FleetData {
   vehicles: Vehicle[];
   drivers: Driver[];
   tours: Tour[];
-  fuel_entries: FuelEntry[]; // Renamed from 'fuel' to 'fuel_entries'
+  fuel_entries: FuelEntry[];
   documents: Document[];
   maintenance: MaintenanceEntry[];
-  pre_departure_checklists: PreDepartureChecklist[]; // New field
+  pre_departure_checklists: PreDepartureChecklist[];
 }
 
 export interface AuthUser {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'direction' | 'utilisateur'; // Added role property
-  avatar_url?: string | null; // Added avatar_url
+  role: 'admin' | 'direction' | 'utilisateur';
+  avatar_url?: string | null;
 }
 
 export interface DashboardWidgetConfig {
   id: string;
   title: string;
-  componentKey: string; // A key to identify the component to render
+  componentKey: string;
   isVisible: boolean;
 }
 
-// New interface for reusable DataTable columns
 export interface DataTableColumn<T> {
-  key: keyof T | string; // Key to access the data, or a custom string for derived values
-  label: string; // Display label for the column header
-  render?: (item: T) => React.ReactNode; // Optional custom render function for cell content
-  sortable?: boolean; // Whether the column can be sorted
-  filterable?: boolean; // Whether the column can be filtered (not implemented in generic search yet)
-  defaultVisible?: boolean; // Whether the column is visible by default
+  key: keyof T | string;
+  label: string;
+  render?: (item: T) => React.ReactNode;
+  sortable?: boolean;
+  filterable?: boolean;
+  defaultVisible?: boolean;
 }
 
-// New type for columns after initial processing in DataTable
 export type ProcessedDataTableColumn<T> = DataTableColumn<T> & {
   key: string;
   defaultVisible: boolean;
 };
 
-// Types for dynamic permissions
 export type UserRole = 
   'admin' | 
   'direction' | 
@@ -158,14 +155,14 @@ export type Resource =
   'vehicles' | 
   'drivers' | 
   'tours' | 
-  'fuel_entries' | // Updated resource name
+  'fuel_entries' |
   'documents' | 
   'maintenance_entries' | 
   'pre_departure_checklists' |
-  'users' | // For user management
-  'profile' | // For user's own profile
-  'permissions' | // New resource for managing permissions
-  'dashboard'; // Added dashboard as a resource
+  'users' |
+  'profile' |
+  'permissions' |
+  'dashboard';
 
 export type Action = 'view' | 'add' | 'edit' | 'delete';
 
@@ -179,7 +176,6 @@ export interface Permission {
   updated_at?: string;
 }
 
-// New interface for FleetContext
 export interface FleetContextType {
   fleetData: FleetData;
   isLoadingFleet: boolean;
@@ -187,17 +183,15 @@ export interface FleetContextType {
   refetchResource: (resource: Resource) => Promise<void>;
 }
 
-// New interface for operation results (add, edit, delete)
 export interface OperationResult {
   success: boolean;
   message?: string;
   error?: string;
-  id?: string; // For add operations, if an ID is returned
+  id?: string;
 }
 
-// New interface for results of database import operations
 export interface DbImportResult {
-  originalData: any; // The data that was attempted to be imported (e.g., a row from Excel)
+  originalData: any;
   success: boolean;
   message?: string;
   error?: string;

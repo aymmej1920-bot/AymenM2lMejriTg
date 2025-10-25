@@ -264,6 +264,7 @@ export default function App() {
                 <Route path="/checklists" element={<ProtectedRoute><PreDepartureChecklistComponent 
                   key="checklists-view" 
                   onAdd={handleUpdateData} 
+                  onDelete={handleUpdateData}
                 /></ProtectedRoute>} />
                 <Route path="/reports" element={<ProtectedRoute><Reports key="reports-view" userRole={userRole} /></ProtectedRoute>} />
                 <Route path="/summary" element={<ProtectedRoute><Summary key="summary-view" /></ProtectedRoute>} />

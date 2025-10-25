@@ -102,7 +102,7 @@ export const fuelEntrySchema = z.object({
   date: z.string().min(1, "La date est requise."),
   vehicle_id: z.string().min(1, "Le véhicule est requis."),
   liters: z.number().min(0.01, "Les litres doivent être positifs."),
-  price_per_liter: z.number().min(0.01, "Le prix par litre doit être positif."),
+  price_per_per_liter: z.number().min(0.01, "Le prix par litre doit être positif."),
   mileage: z.number().min(0, "Le kilométrage est requis et doit être positif."),
 });
 
