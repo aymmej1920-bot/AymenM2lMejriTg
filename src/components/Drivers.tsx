@@ -40,8 +40,16 @@ interface DriversProps {
 const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
   const { canAccess } = usePermissions();
 
-  const { fleetData, isLoadingFleet } = useFleetData();
+  const { fleetData, isLoadingFleet, getResourcePaginationState, setResourcePaginationState } = useFleetData();
   const drivers = fleetData.drivers;
+
+  // Get and set pagination/sorting states from FleetDataProvider
+  const { currentPage, itemsPerPage, sortColumn, sortDirection, totalCount } = getResourcePaginationState('drivers');
+
+  const onPageChange = useCallback((page: number) => setResourcePaginationState('drivers', { currentPage: page }), [setResourcePaginationState]);
+  const onItemsPerPageChange = useCallback((count: number) => setResourcePaginationState('drivers', { itemsPerPage: count }), [setResourcePaginationState]);
+  const onSortChange = useCallback((column: string, direction: 'asc' | 'desc') => setResourcePaginationState('drivers', { sortColumn: column, sortDirection: direction }), [setResourcePaginationState]);
+
 
   const [showModal, setShowModal] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
@@ -295,6 +303,15 @@ const Drivers: React.FC<DriversProps> = ({ onAdd, onUpdate, onDelete }) => {
         renderAlerts={renderAlerts}
         resourceType="drivers"
         renderCustomHeaderButtons={renderCustomHeaderButtons}
+        // Pagination and sorting props
+        currentPage={currentPage}
+        onPageChange={onPageChange}
+        itemsPerPage={itemsPerPage}
+        onItemsPerPageChange={onItemsPerPageChange}
+        totalCount={totalCount}
+        sortColumn={sortColumn}
+        onSortChange={onSortChange}
+        sortDirection={sortDirection}
       />
 
       <Dialog open={showModal} onOpenChange={handleCloseModal}>

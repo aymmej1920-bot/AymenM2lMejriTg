@@ -83,32 +83,79 @@ serve(async (req: Request) => {
 
   try {
     if (req.method === 'GET') {
-      const { data: authUsersData, error: authUsersError }: { data: { users: User[] }, error: AuthError | null } = await supabaseAdmin.auth.admin.listUsers();
-      if (authUsersError) throw authUsersError;
-      const allAuthUsers = authUsersData.users;
+      const url = new URL(req.url);
+      const page = parseInt(url.searchParams.get('page') || '1');
+      const pageSize = parseInt(url.searchParams.get('pageSize') || '10');
+      const sortByColumn = url.searchParams.get('sortByColumn') || 'first_name';
+      const sortByDirection = url.searchParams.get('sortByDirection') === 'desc' ? false : true; // true for asc, false for desc
+      const searchTerm = url.searchParams.get('searchTerm') || '';
+      const roleFilter = url.searchParams.get('roleFilter') || '';
 
-      const { data: profilesData, error: profilesError }: { data: DbProfile[] | null, error: PostgrestError | null } = await supabaseAdmin
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+
+      // Fetch all profiles first to apply filters and sorting
+      let profilesQuery = supabaseAdmin
         .from('profiles')
-        .select('id, first_name, last_name, role, updated_at');
-      if (profilesError) throw profilesError;
-      const allProfiles = profilesData || [];
+        .select('id, first_name, last_name, role, updated_at', { count: 'exact' });
 
-      const profilesMap = new Map<string, DbProfile>();
-      allProfiles.forEach((p: DbProfile) => profilesMap.set(p.id, p));
+      if (roleFilter) {
+        profilesQuery = profilesQuery.eq('role', roleFilter);
+      }
 
-      const usersToDisplay = allAuthUsers.map((user: User) => {
-        const profile = profilesMap.get(user.id);
+      // Apply search term to first_name, last_name, email (requires joining with auth.users or fetching all auth users)
+      // For simplicity and to avoid complex joins in Edge Functions, we'll fetch all profiles and filter in memory for search term
+      // A more robust solution for large user bases would involve a full-text search index or a more complex SQL query.
+      const { data: allProfilesData, error: allProfilesError, count: totalCount } = await profilesQuery;
+      if (allProfilesError) throw allProfilesError;
+
+      let filteredProfiles = allProfilesData || [];
+
+      if (searchTerm) {
+        const lowerCaseSearchTerm = searchTerm.toLowerCase();
+        // To filter by email, we need to fetch auth.users as well.
+        // For now, we'll filter by first_name and last_name from profiles.
+        // A full server-side search including email would require a different approach (e.g., a database view or a more complex query joining auth.users).
+        filteredProfiles = filteredProfiles.filter(profile =>
+          (profile.first_name?.toLowerCase().includes(lowerCaseSearchTerm) ||
+           profile.last_name?.toLowerCase().includes(lowerCaseSearchTerm))
+        );
+      }
+
+      // Apply sorting to the filtered profiles
+      filteredProfiles.sort((a, b) => {
+        const aValue = (a as any)[sortByColumn];
+        const bValue = (b as any)[sortByColumn];
+
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+          return sortByDirection ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+        }
+        return 0;
+      });
+
+      const paginatedProfiles = filteredProfiles.slice(from, to + 1);
+
+      // Now, enrich with email from auth.users for the paginated profiles
+      const userIds = paginatedProfiles.map(p => p.id);
+      const { data: authUsersData, error: authUsersError } = await supabaseAdmin.auth.admin.listUsers({
+        perPage: 1000, // Fetch a reasonable number to cover potential gaps, or fetch only specific IDs
+      });
+      if (authUsersError) throw authUsersError;
+      const authUsersMap = new Map(authUsersData.users.map(u => [u.id, u]));
+
+      const usersToDisplay = paginatedProfiles.map(profile => {
+        const authUser = authUsersMap.get(profile.id);
         return {
-          id: user.id,
-          email: user.email || 'N/A',
-          first_name: profile?.first_name || user.user_metadata?.first_name || 'N/A',
-          last_name: profile?.last_name || user.user_metadata?.last_name || 'N/A',
-          role: profile?.role || 'utilisateur',
-          updated_at: profile?.updated_at || user.created_at,
+          id: profile.id,
+          email: authUser?.email || 'N/A',
+          first_name: profile.first_name || authUser?.user_metadata?.first_name || 'N/A',
+          last_name: profile.last_name || authUser?.user_metadata?.last_name || 'N/A',
+          role: profile.role,
+          updated_at: profile.updated_at,
         };
       });
 
-      return new Response(JSON.stringify(usersToDisplay), {
+      return new Response(JSON.stringify({ users: usersToDisplay, totalCount: filteredProfiles.length }), { // Return filteredProfiles.length as totalCount for client-side pagination logic
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

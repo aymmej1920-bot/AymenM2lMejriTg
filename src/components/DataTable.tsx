@@ -20,13 +20,24 @@ interface DataTableProps<T extends { id: string }> {
   searchPlaceholder?: string;
   exportFileName?: string;
   isLoading?: boolean;
+  // Props for server-side pagination
+  currentPage: number;
+  onPageChange: (page: number) => void;
+  itemsPerPage: number;
+  onItemsPerPageChange: (count: number) => void;
+  totalCount: number; // Total number of items across all pages
   itemsPerPageOptions?: number[];
+  // Props for server-side sorting
+  sortColumn: string;
+  onSortChange: (column: string, direction: 'asc' | 'desc') => void;
+  sortDirection: 'asc' | 'desc';
+
   renderFilters?: (searchTerm: string, setSearchTerm: (term: string) => void) => React.ReactNode;
   renderAlerts?: () => React.ReactNode;
   renderRowActions?: (item: T) => React.ReactNode;
-  customFilter?: (item: T) => boolean;
+  customFilter?: (item: T) => boolean; // This will now only filter the *current page* data if used
   resourceType: Resource;
-  renderCustomHeaderButtons?: () => React.ReactNode; // New prop for custom buttons
+  renderCustomHeaderButtons?: () => React.ReactNode;
 }
 
 const DataTable = <T extends { id: string }>({
@@ -40,22 +51,29 @@ const DataTable = <T extends { id: string }>({
   searchPlaceholder = 'Rechercher...',
   exportFileName = 'data',
   isLoading = false,
+  // Server-side pagination props
+  currentPage,
+  onPageChange,
+  itemsPerPage,
+  onItemsPerPageChange,
+  totalCount,
   itemsPerPageOptions = [10, 25, 50],
+  // Server-side sorting props
+  sortColumn,
+  onSortChange,
+  sortDirection,
+
   renderFilters,
   renderAlerts,
   renderRowActions,
   customFilter,
   resourceType,
-  renderCustomHeaderButtons, // Destructure new prop
+  renderCustomHeaderButtons,
 }: React.PropsWithChildren<DataTableProps<T>>) => {
   const { canAccess } = usePermissions();
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortColumn, setSortColumn] = useState<keyof T | string>(initialColumns.find((col: DataTableColumn<T>) => col.sortable)?.key || '');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(itemsPerPageOptions[0]);
-
+  const [searchTerm, setSearchTerm] = useState(''); // Search remains client-side for current page
+  
   const [showColumnCustomizeDialog, setShowColumnCustomizeDialog] = useState(false);
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
   const [columnOrder, setColumnOrder] = useState<string[]>([]);
@@ -72,12 +90,49 @@ const DataTable = <T extends { id: string }>({
   }, [initialColumns]);
 
   useEffect(() => {
-    if (sortColumn && !columnVisibility[sortColumn as string] && columnOrder.length > 0) {
-      const firstVisibleColumnKey = columnOrder.find(key => columnVisibility[key]);
-      setSortColumn(firstVisibleColumnKey || '');
-    }
-  }, [columnVisibility, columnOrder, sortColumn]);
+    // Initialize column visibility and order from localStorage or defaults
+    const storageKeyVisibility = `dataTable_${exportFileName}_columnsVisibility`;
+    const storageKeyOrder = `dataTable_${exportFileName}_columnsOrder`;
 
+    const savedVisibilityRaw = localStorage.getItem(storageKeyVisibility);
+    const savedOrderRaw = localStorage.getItem(storageKeyOrder);
+
+    const defaultVisibility = allColumns.reduce((acc, col) => {
+      acc[col.key] = col.defaultVisible;
+      return acc;
+    }, {} as Record<string, boolean>);
+
+    const defaultOrder = allColumns.map(col => col.key);
+
+    let initialColumnVisibility = defaultVisibility;
+    if (savedVisibilityRaw) {
+      try {
+        const parsed = JSON.parse(savedVisibilityRaw);
+        if (typeof parsed === 'object' && parsed !== null) {
+          initialColumnVisibility = { ...defaultVisibility, ...parsed };
+        }
+      } catch (e) {
+        console.error("Error parsing saved column visibility from localStorage", e);
+      }
+    }
+
+    let initialColumnOrder = defaultOrder;
+    if (savedOrderRaw) {
+      try {
+        const parsed = JSON.parse(savedOrderRaw);
+        if (Array.isArray(parsed)) {
+          const validParsedOrder = parsed.filter(key => allColumns.some(col => col.key === key));
+          const newKeys = allColumns.map(col => col.key).filter(key => !validParsedOrder.includes(key));
+          initialColumnOrder = [...validParsedOrder, ...newKeys];
+        }
+      } catch (e) {
+        console.error("Error parsing saved column order from localStorage", e);
+      }
+    }
+
+    setColumnVisibility(initialColumnVisibility);
+    setColumnOrder(initialColumnOrder);
+  }, [allColumns, exportFileName]);
 
   const visibleColumns = useMemo(() => {
     return columnOrder
@@ -85,7 +140,8 @@ const DataTable = <T extends { id: string }>({
       .filter((col): col is ProcessedDataTableColumn<T> => col !== undefined && columnVisibility[col.key]);
   }, [columnVisibility, columnOrder, allColumns]);
 
-  const filteredAndSortedData = useMemo(() => {
+  // Client-side filtering for the current page's data based on searchTerm
+  const filteredDataForDisplay = useMemo(() => {
     let filtered = data.filter((item: T) => {
       const lowerCaseSearchTerm = searchTerm.toLowerCase();
       const matchesSearch = Object.values(item).some(value =>
@@ -97,48 +153,17 @@ const DataTable = <T extends { id: string }>({
 
       return matchesSearch && matchesCustomFilter;
     });
-
-    if (sortColumn) {
-      filtered.sort((a: T, b: T) => {
-        const aValue = (a as any)[sortColumn];
-        const bValue = (b as any)[sortColumn];
-
-        if (aValue == null && bValue == null) return 0;
-        if (aValue == null) return sortDirection === 'asc' ? -1 : 1;
-        if (bValue == null) return sortDirection === 'asc' ? 1 : -1;
-
-        if (typeof aValue === 'string' && typeof bValue === 'string') {
-          return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-        }
-        if (typeof aValue === 'number' && typeof bValue === 'number') {
-          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
-        }
-        if (typeof aValue === 'boolean' && typeof bValue === 'boolean') {
-          return sortDirection === 'asc' ? (aValue === bValue ? 0 : aValue ? 1 : -1) : (aValue === bValue ? 0 : aValue ? -1 : 1);
-        }
-        return 0;
-      });
-    }
     return filtered;
-  }, [data, searchTerm, sortColumn, sortDirection, customFilter]);
+  }, [data, searchTerm, customFilter]);
 
-  const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
-  const currentItems = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return filteredAndSortedData.slice(startIndex, endIndex);
-  }, [filteredAndSortedData, currentPage, itemsPerPage]);
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
 
-  const handleSort = (columnKey: keyof T | string) => {
-    if (sortColumn === columnKey) {
-      setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortColumn(columnKey);
-      setSortDirection('asc');
-    }
+  const handleSort = (columnKey: string) => {
+    const newDirection = sortColumn === columnKey && sortDirection === 'asc' ? 'desc' : 'asc';
+    onSortChange(columnKey, newDirection);
   };
 
-  const renderSortIcon = (columnKey: keyof T | string) => {
+  const renderSortIcon = (columnKey: string) => {
     if (sortColumn === columnKey) {
       return sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />;
     }
@@ -146,13 +171,13 @@ const DataTable = <T extends { id: string }>({
   };
 
   const handleExport = () => {
-    if (filteredAndSortedData.length === 0) {
+    if (data.length === 0) {
       showError('Aucune donnée à exporter.');
       return;
     }
 
     const headers = visibleColumns.map(col => col.label);
-    const dataToExport = filteredAndSortedData.map((item: T) => {
+    const dataToExport = data.map((item: T) => {
       const exportedRow: { [key: string]: any } = {};
       visibleColumns.forEach(col => {
         exportedRow[col.label] = col.render ? col.render(item) : (item as any)[col.key];
@@ -198,7 +223,7 @@ const DataTable = <T extends { id: string }>({
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-bold text-gray-800">{title}</h2>
         <div className="flex space-x-4">
-          {renderCustomHeaderButtons && renderCustomHeaderButtons()} {/* Render custom buttons here */}
+          {renderCustomHeaderButtons && renderCustomHeaderButtons()}
           <Button
             onClick={handleExport}
             className="bg-gradient-success text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300 hover-lift"
@@ -239,7 +264,6 @@ const DataTable = <T extends { id: string }>({
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
-                setCurrentPage(1);
               }}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all glass"
             />
@@ -269,14 +293,14 @@ const DataTable = <T extends { id: string }>({
               </tr>
             </thead>
             <tbody className="bg-white/10 divide-y divide-gray-200">
-              {currentItems.length === 0 ? (
+              {filteredDataForDisplay.length === 0 ? (
                 <tr>
                   <td colSpan={visibleColumns.length + (canPerformAnyAction ? 1 : 0)} className="px-6 py-4 text-center text-gray-600">
                     Aucune donnée trouvée.
                   </td>
                 </tr>
               ) : (
-                currentItems.map((item: T) => (
+                filteredDataForDisplay.map((item: T) => (
                   <tr key={item.id} className="hover:bg-white/20 transition-colors">
                     {visibleColumns.map((col) => (
                       <td key={col.key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -322,7 +346,7 @@ const DataTable = <T extends { id: string }>({
         <div className="flex justify-center items-center space-x-2 mt-4">
           <Button
             variant="outline"
-            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            onClick={() => onPageChange(Math.max(1, currentPage - 1))}
             disabled={currentPage === 1}
             className="px-4 py-2 bg-white/20 rounded-lg hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed glass"
           >
@@ -332,7 +356,7 @@ const DataTable = <T extends { id: string }>({
             <Button
               key={page}
               variant={currentPage === page ? 'default' : 'outline'}
-              onClick={() => setCurrentPage(page)}
+              onClick={() => onPageChange(page)}
               className={`px-4 py-2 rounded-lg ${
                 currentPage === page ? 'bg-gradient-brand text-white shadow-md' : 'bg-white/20 hover:bg-white/30 text-gray-800 glass'
               }`}
@@ -342,7 +366,7 @@ const DataTable = <T extends { id: string }>({
           ))}
           <Button
             variant="outline"
-            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
             disabled={currentPage === totalPages}
             className="px-4 py-2 bg-white/20 rounded-lg hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed glass"
           >
@@ -351,8 +375,8 @@ const DataTable = <T extends { id: string }>({
           <select
             value={itemsPerPage}
             onChange={(e) => {
-              setItemsPerPage(Number(e.target.value));
-              setCurrentPage(1);
+              onItemsPerPageChange(Number(e.target.value));
+              onPageChange(1); // Reset to first page when items per page changes
             }}
             className="ml-4 bg-white/20 border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm glass"
           >

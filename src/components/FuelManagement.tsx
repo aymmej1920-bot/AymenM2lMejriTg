@@ -33,9 +33,17 @@ interface FuelManagementProps {
 const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDelete }) => {
   const { canAccess } = usePermissions();
 
-  const { fleetData, isLoadingFleet } = useFleetData();
+  const { fleetData, isLoadingFleet, getResourcePaginationState, setResourcePaginationState } = useFleetData();
   const fuelEntries = fleetData.fuel_entries; // Updated to fuel_entries
   const vehicles = fleetData.vehicles;
+
+  // Get and set pagination/sorting states from FleetDataProvider
+  const { currentPage, itemsPerPage, sortColumn, sortDirection, totalCount } = getResourcePaginationState('fuel_entries');
+
+  const onPageChange = useCallback((page: number) => setResourcePaginationState('fuel_entries', { currentPage: page }), [setResourcePaginationState]);
+  const onItemsPerPageChange = useCallback((count: number) => setResourcePaginationState('fuel_entries', { itemsPerPage: count }), [setResourcePaginationState]);
+  const onSortChange = useCallback((column: string, direction: 'asc' | 'desc') => setResourcePaginationState('fuel_entries', { sortColumn: column, sortDirection: direction }), [setResourcePaginationState]);
+
 
   const [showModal, setShowModal] = useState(false);
   const [editingFuel, setEditingFuel] = useState<FuelEntry | null>(null);
@@ -300,6 +308,15 @@ const FuelManagement: React.FC<FuelManagementProps> = ({ onAdd, onUpdate, onDele
             renderFilters={renderFilters}
             customFilter={customFilter}
             resourceType="fuel_entries"
+            // Pagination and sorting props
+            currentPage={currentPage}
+            onPageChange={onPageChange}
+            itemsPerPage={itemsPerPage}
+            onItemsPerPageChange={onItemsPerPageChange}
+            totalCount={totalCount}
+            sortColumn={sortColumn}
+            onSortChange={onSortChange}
+            sortDirection={sortDirection}
           />
     
           <Dialog open={showModal} onOpenChange={handleCloseModal}>

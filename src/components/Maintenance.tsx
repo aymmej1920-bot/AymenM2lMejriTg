@@ -33,10 +33,23 @@ interface MaintenanceProps {
 const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete }) => {
   const { canAccess } = usePermissions();
 
-  const { fleetData, isLoadingFleet } = useFleetData();
+  const { fleetData, isLoadingFleet, getResourcePaginationState, setResourcePaginationState } = useFleetData();
   const maintenanceEntries = fleetData.maintenance;
   const vehicles = fleetData.vehicles;
   const preDepartureChecklists = fleetData.pre_departure_checklists;
+
+  // Get and set pagination/sorting states from FleetDataProvider for vehicles
+  const { currentPage: vehiclesCurrentPage, itemsPerPage: vehiclesItemsPerPage, sortColumn: vehiclesSortColumn, sortDirection: vehiclesSortDirection, totalCount: totalVehiclesCount } = getResourcePaginationState('vehicles');
+  const onVehiclesPageChange = useCallback((page: number) => setResourcePaginationState('vehicles', { currentPage: page }), [setResourcePaginationState]);
+  const onVehiclesItemsPerPageChange = useCallback((count: number) => setResourcePaginationState('vehicles', { itemsPerPage: count }), [setResourcePaginationState]);
+  const onVehiclesSortChange = useCallback((column: string, direction: 'asc' | 'desc') => setResourcePaginationState('vehicles', { sortColumn: column, sortDirection: direction }), [setResourcePaginationState]);
+
+  // Get and set pagination/sorting states from FleetDataProvider for maintenance_entries
+  const { currentPage: maintenanceCurrentPage, itemsPerPage: maintenanceItemsPerPage, sortColumn: maintenanceSortColumn, sortDirection: maintenanceSortDirection, totalCount: totalMaintenanceEntriesCount } = getResourcePaginationState('maintenance_entries');
+  const onMaintenancePageChange = useCallback((page: number) => setResourcePaginationState('maintenance_entries', { currentPage: page }), [setResourcePaginationState]);
+  const onMaintenanceItemsPerPageChange = useCallback((count: number) => setResourcePaginationState('maintenance_entries', { itemsPerPage: count }), [setResourcePaginationState]);
+  const onMaintenanceSortChange = useCallback((column: string, direction: 'asc' | 'desc') => setResourcePaginationState('maintenance_entries', { sortColumn: column, sortDirection: direction }), [setResourcePaginationState]);
+
 
   const [showModal, setShowModal] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
@@ -305,7 +318,7 @@ const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete }) 
           <select
             value={selectedVehicleFilter}
             onChange={(e) => setSelectedVehicleFilter(e.target.value)}
-            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Tous les véhicules</option>
             {vehicles.map(vehicle => (
@@ -393,6 +406,15 @@ const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete }) 
             <Wrench className="w-4 h-4" />
           </Button>
         )}
+        // Pagination and sorting props for vehicles
+        currentPage={vehiclesCurrentPage}
+        onPageChange={onVehiclesPageChange}
+        itemsPerPage={vehiclesItemsPerPage}
+        onItemsPerPageChange={onVehiclesItemsPerPageChange}
+        totalCount={totalVehiclesCount}
+        sortColumn={vehiclesSortColumn}
+        onSortChange={onVehiclesSortChange}
+        sortDirection={vehiclesSortDirection}
       />
 
       <DataTable
@@ -417,6 +439,15 @@ const Maintenance: React.FC<MaintenanceProps> = ({ onAdd, onUpdate, onDelete }) 
         renderFilters={renderFilters}
         customFilter={customFilter}
         resourceType="maintenance_entries"
+        // Pagination and sorting props for maintenance entries
+        currentPage={maintenanceCurrentPage}
+        onPageChange={onMaintenancePageChange}
+        itemsPerPage={maintenanceItemsPerPage}
+        onItemsPerPageChange={onMaintenanceItemsPerPageChange}
+        totalCount={totalMaintenanceEntriesCount}
+        sortColumn={maintenanceSortColumn}
+        onSortChange={onMaintenanceSortChange}
+        sortDirection={maintenanceSortDirection}
       />
 
       <Dialog open={showModal} onOpenChange={handleCloseModal}>

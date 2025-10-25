@@ -26,6 +26,7 @@ export const useUserManagement = (onUpdateUserRole: (userId: string, newRole: Us
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [totalUsersCount, setTotalUsersCount] = useState<number>(0); // New state for total count
 
   // Dialog states
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
@@ -58,7 +59,17 @@ export const useUserManagement = (onUpdateUserRole: (userId: string, newRole: Us
         throw new Error('No session token found. Please log in.');
       }
 
-      const response = await fetch('https://iqaymjchscdvlofvuacn.supabase.co/functions/v1/manage-users', {
+      // Construct query parameters for pagination and sorting
+      const queryParams = new URLSearchParams();
+      queryParams.append('page', currentPage.toString());
+      queryParams.append('pageSize', itemsPerPage.toString());
+      queryParams.append('sortByColumn', sortColumn);
+      queryParams.append('sortByDirection', sortDirection);
+      if (searchTerm) queryParams.append('searchTerm', searchTerm);
+      if (selectedRoleFilter) queryParams.append('roleFilter', selectedRoleFilter);
+
+
+      const response = await fetch(`https://iqaymjchscdvlofvuacn.supabase.co/functions/v1/manage-users?${queryParams.toString()}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -72,7 +83,8 @@ export const useUserManagement = (onUpdateUserRole: (userId: string, newRole: Us
         throw new Error(result.error || 'Failed to fetch users.');
       }
 
-      setUsers(result as Profile[]);
+      setUsers(result.users as Profile[]);
+      setTotalUsersCount(result.totalCount); // Set total count from API response
     } catch (err: unknown) {
       console.error('Error fetching users:', err instanceof Error ? err.message : String(err));
       setError('Erreur lors du chargement des utilisateurs: ' + (err instanceof Error ? err.message : String(err)));
@@ -80,7 +92,7 @@ export const useUserManagement = (onUpdateUserRole: (userId: string, newRole: Us
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [canAccess, currentPage, itemsPerPage, sortColumn, sortDirection, searchTerm, selectedRoleFilter]); // Add pagination/sorting/filter dependencies
 
   useEffect(() => {
     if (canAccess('users', 'view')) {
@@ -91,38 +103,12 @@ export const useUserManagement = (onUpdateUserRole: (userId: string, newRole: Us
     }
   }, [canAccess, fetchUsers]);
 
-  const filteredAndSortedUsers = useMemo(() => {
-    let filtered = users.filter(user => {
-      const lowerCaseSearchTerm = searchTerm.toLowerCase();
-      const matchesSearch =
-        (user.first_name || '').toLowerCase().includes(lowerCaseSearchTerm) ||
-        (user.last_name || '').toLowerCase().includes(lowerCaseSearchTerm) ||
-        user.email.toLowerCase().includes(lowerCaseSearchTerm) ||
-        user.role.toLowerCase().includes(lowerCaseSearchTerm);
+  // filteredAndSortedUsers is no longer needed as filtering/sorting/pagination is done on server
+  // We will just use `users` directly from the state, which is already the paginated/sorted data.
+  const filteredAndSortedUsers = users; // Renamed for clarity in components
 
-      const matchesRole = selectedRoleFilter ? user.role === selectedRoleFilter : true;
-
-      return matchesSearch && matchesRole;
-    });
-
-    filtered.sort((a, b) => {
-      const aValue = a[sortColumn];
-      const bValue = b[sortColumn];
-
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-      }
-      return 0;
-    });
-    return filtered;
-  }, [users, searchTerm, selectedRoleFilter, sortColumn, sortDirection]);
-
-  const totalPages = Math.ceil(filteredAndSortedUsers.length / itemsPerPage);
-  const currentUsers = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return filteredAndSortedUsers.slice(startIndex, endIndex);
-  }, [filteredAndSortedUsers, currentPage, itemsPerPage]);
+  const totalPages = Math.ceil(totalUsersCount / itemsPerPage); // Use totalUsersCount for total pages
+  const currentUsers = users; // The `users` state already holds the current page's data
 
   const handleEditRole = useCallback((user: Profile) => {
     setEditingUser(user);
@@ -180,6 +166,8 @@ export const useUserManagement = (onUpdateUserRole: (userId: string, newRole: Us
       console.error('Error deleting user:', err instanceof Error ? err.message : String(err));
       dismissToast(loadingToastId);
       showError(`Erreur lors de la suppression de l'utilisateur : ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setShowConfirmDeleteDialog(false); // Ensure dialog closes even on error
     }
   }, [userToDelete, fetchUsers]);
 
@@ -260,6 +248,7 @@ export const useUserManagement = (onUpdateUserRole: (userId: string, newRole: Us
       setSortColumn(column);
       setSortDirection('asc');
     }
+    setCurrentPage(1); // Reset to first page on sort change
   }, [sortColumn]);
 
   const canInvite = canAccess('users', 'add');
@@ -272,9 +261,9 @@ export const useUserManagement = (onUpdateUserRole: (userId: string, newRole: Us
     loading,
     error,
     currentUser,
-    filteredAndSortedUsers,
+    filteredAndSortedUsers, // This is now just `users`
     totalPages,
-    currentUsers,
+    currentUsers, // This is now just `users`
     itemsPerPageOptions,
     searchTerm,
     setSearchTerm,

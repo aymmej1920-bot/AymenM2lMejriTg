@@ -35,8 +35,16 @@ interface VehiclesProps {
 const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
   const { canAccess } = usePermissions();
 
-  const { fleetData, isLoadingFleet } = useFleetData();
+  const { fleetData, isLoadingFleet, getResourcePaginationState, setResourcePaginationState } = useFleetData();
   const vehicles = fleetData.vehicles;
+
+  // Get and set pagination/sorting states from FleetDataProvider
+  const { currentPage, itemsPerPage, sortColumn, sortDirection, totalCount } = getResourcePaginationState('vehicles');
+
+  const onPageChange = useCallback((page: number) => setResourcePaginationState('vehicles', { currentPage: page }), [setResourcePaginationState]);
+  const onItemsPerPageChange = useCallback((count: number) => setResourcePaginationState('vehicles', { itemsPerPage: count }), [setResourcePaginationState]);
+  const onSortChange = useCallback((column: string, direction: 'asc' | 'desc') => setResourcePaginationState('vehicles', { sortColumn: column, sortDirection: direction }), [setResourcePaginationState]);
+
 
   const [showModal, setShowModal] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
@@ -274,6 +282,15 @@ const Vehicles: React.FC<VehiclesProps> = ({ onAdd, onUpdate, onDelete }) => {
         isLoading={isLoadingFleet}
         resourceType="vehicles"
         renderCustomHeaderButtons={renderCustomHeaderButtons}
+        // Pagination and sorting props
+        currentPage={currentPage}
+        onPageChange={onPageChange}
+        itemsPerPage={itemsPerPage}
+        onItemsPerPageChange={onItemsPerPageChange}
+        totalCount={totalCount}
+        sortColumn={sortColumn}
+        onSortChange={onSortChange}
+        sortDirection={sortDirection}
       />
 
       <Dialog open={showModal} onOpenChange={handleCloseModal}>

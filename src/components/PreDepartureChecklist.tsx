@@ -24,10 +24,18 @@ interface PreDepartureChecklistProps {
 const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ onAdd, onDelete }) => {
   const { canAccess } = usePermissions();
   
-  const { fleetData, isLoadingFleet } = useFleetData();
+  const { fleetData, isLoadingFleet, getResourcePaginationState, setResourcePaginationState } = useFleetData();
   const preDepartureChecklists = fleetData.pre_departure_checklists;
   const vehicles = fleetData.vehicles;
   const drivers = fleetData.drivers;
+
+  // Get and set pagination/sorting states from FleetDataProvider
+  const { currentPage, itemsPerPage, sortColumn, sortDirection, totalCount } = getResourcePaginationState('pre_departure_checklists');
+
+  const onPageChange = useCallback((page: number) => setResourcePaginationState('pre_departure_checklists', { currentPage: page }), [setResourcePaginationState]);
+  const onItemsPerPageChange = useCallback((count: number) => setResourcePaginationState('pre_departure_checklists', { itemsPerPage: count }), [setResourcePaginationState]);
+  const onSortChange = useCallback((column: string, direction: 'asc' | 'desc') => setResourcePaginationState('pre_departure_checklists', { sortColumn: column, sortDirection: direction }), [setResourcePaginationState]);
+
 
   const [showModal, setShowModal] = useState(false);
 
@@ -223,9 +231,17 @@ const PreDepartureChecklistComponent: React.FC<PreDepartureChecklistProps> = ({ 
         exportFileName="checklists_avant_depart"
         isLoading={isLoadingFleet}
         renderFilters={renderFilters}
-        renderAlerts={renderAlerts}
         customFilter={customFilter}
         resourceType="pre_departure_checklists"
+        // Pagination and sorting props
+        currentPage={currentPage}
+        onPageChange={onPageChange}
+        itemsPerPage={itemsPerPage}
+        onItemsPerPageChange={onItemsPerPageChange}
+        totalCount={totalCount}
+        sortColumn={sortColumn}
+        onSortChange={onSortChange}
+        sortDirection={sortDirection}
       />
 
       <Dialog open={showModal} onOpenChange={handleCloseModal}>

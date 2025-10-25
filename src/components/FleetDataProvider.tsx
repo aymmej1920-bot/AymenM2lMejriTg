@@ -1,29 +1,89 @@
-import React, { useEffect, createContext, useContext, useCallback, ReactNode, useRef } from 'react';
+import React, { useEffect, createContext, useContext, useCallback, ReactNode, useRef, useState } from 'react';
 import { useSession } from './SessionContextProvider';
 import { useSupabaseData } from '../hooks/useSupabaseData';
 import { FleetData, FleetContextType, Resource, Vehicle, Driver, Tour, FuelEntry, Document, MaintenanceEntry, PreDepartureChecklist } from '../types';
 import SkeletonLoader from './SkeletonLoader';
 
-const FleetContext = createContext<FleetContextType | undefined>(undefined);
+// Define types for pagination and sorting states
+interface ResourcePaginationState {
+  currentPage: number;
+  itemsPerPage: number;
+  sortColumn: string;
+  sortDirection: 'asc' | 'desc';
+  totalCount: number;
+}
+
+// Extend FleetContextType to include setters for pagination and sorting
+interface FleetContextTypeWithPagination extends FleetContextType {
+  getResourcePaginationState: (resource: Resource) => ResourcePaginationState;
+  setResourcePaginationState: (resource: Resource, newState: Partial<ResourcePaginationState>) => void;
+}
+
+const FleetContext = createContext<FleetContextTypeWithPagination | undefined>(undefined);
 
 export const FleetDataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { currentUser, isLoading: isSessionLoading } = useSession();
   const isMounted = useRef(false);
 
+  // State to hold pagination and sorting for each resource
+  const [resourceStates, setResourceStates] = useState<Record<Resource, ResourcePaginationState>>({
+    vehicles: { currentPage: 1, itemsPerPage: 10, sortColumn: 'plate', sortDirection: 'asc', totalCount: 0 },
+    drivers: { currentPage: 1, itemsPerPage: 10, sortColumn: 'name', sortDirection: 'asc', totalCount: 0 },
+    tours: { currentPage: 1, itemsPerPage: 10, sortColumn: 'date', sortDirection: 'desc', totalCount: 0 },
+    fuel_entries: { currentPage: 1, itemsPerPage: 10, sortColumn: 'date', sortDirection: 'desc', totalCount: 0 },
+    documents: { currentPage: 1, itemsPerPage: 10, sortColumn: 'expiration', sortDirection: 'asc', totalCount: 0 },
+    maintenance_entries: { currentPage: 1, itemsPerPage: 10, sortColumn: 'date', sortDirection: 'desc', totalCount: 0 },
+    pre_departure_checklists: { currentPage: 1, itemsPerPage: 10, sortColumn: 'date', sortDirection: 'desc', totalCount: 0 },
+    users: { currentPage: 1, itemsPerPage: 10, sortColumn: 'first_name', sortDirection: 'asc', totalCount: 0 }, // For UserManagement
+    profile: { currentPage: 1, itemsPerPage: 10, sortColumn: '', sortDirection: 'asc', totalCount: 0 },
+    permissions: { currentPage: 1, itemsPerPage: 10, sortColumn: '', sortDirection: 'asc', totalCount: 0 },
+    dashboard: { currentPage: 1, itemsPerPage: 10, sortColumn: '', sortDirection: 'asc', totalCount: 0 },
+  });
+
+  const getResourcePaginationState = useCallback((resource: Resource) => resourceStates[resource], [resourceStates]);
+
+  const setResourcePaginationState = useCallback((resource: Resource, newState: Partial<ResourcePaginationState>) => {
+    setResourceStates(prevStates => ({
+      ...prevStates,
+      [resource]: { ...prevStates[resource], ...newState },
+    }));
+  }, []);
+
   // Options communes pour les hooks useSupabaseData
-  const commonOptions = {
+  const commonOptions = (resource: Resource) => ({
     manualFetch: true, // Empêche le fetch automatique par les hooks individuels
     skipUserIdFilter: currentUser?.role === 'admin' || currentUser?.role === 'direction',
-  };
+    page: resourceStates[resource].currentPage,
+    pageSize: resourceStates[resource].itemsPerPage,
+    sortBy: {
+      column: resourceStates[resource].sortColumn,
+      direction: resourceStates[resource].sortDirection,
+    },
+  });
 
   // Utilisation de useSupabaseData pour chaque ressource
-  const { data: vehicles, isLoading: isLoadingVehicles, refetch: refetchVehicles } = useSupabaseData<Vehicle>('vehicles', { enabled: !!currentUser, ...commonOptions });
-  const { data: drivers, isLoading: isLoadingDrivers, refetch: refetchDrivers } = useSupabaseData<Driver>('drivers', { enabled: !!currentUser, ...commonOptions });
-  const { data: tours, isLoading: isLoadingTours, refetch: refetchTours } = useSupabaseData<Tour>('tours', { enabled: !!currentUser, ...commonOptions });
-  const { data: fuelEntries, isLoading: isLoadingFuel, refetch: refetchFuel } = useSupabaseData<FuelEntry>('fuel_entries', { enabled: !!currentUser, ...commonOptions });
-  const { data: documents, isLoading: isLoadingDocuments, refetch: refetchDocuments } = useSupabaseData<Document>('documents', { enabled: !!currentUser, ...commonOptions });
-  const { data: maintenance, isLoading: isLoadingMaintenance, refetch: refetchMaintenance } = useSupabaseData<MaintenanceEntry>('maintenance_entries', { enabled: !!currentUser, ...commonOptions });
-  const { data: preDepartureChecklists, isLoading: isLoadingChecklists, refetch: refetchChecklists } = useSupabaseData<PreDepartureChecklist>('pre_departure_checklists', { enabled: !!currentUser, ...commonOptions });
+  const { data: vehicles, isLoading: isLoadingVehicles, refetch: refetchVehicles, totalCount: totalVehiclesCount } = useSupabaseData<Vehicle>('vehicles', { enabled: !!currentUser, ...commonOptions('vehicles') });
+  const { data: drivers, isLoading: isLoadingDrivers, refetch: refetchDrivers, totalCount: totalDriversCount } = useSupabaseData<Driver>('drivers', { enabled: !!currentUser, ...commonOptions('drivers') });
+  const { data: tours, isLoading: isLoadingTours, refetch: refetchTours, totalCount: totalToursCount } = useSupabaseData<Tour>('tours', { enabled: !!currentUser, ...commonOptions('tours') });
+  const { data: fuelEntries, isLoading: isLoadingFuel, refetch: refetchFuel, totalCount: totalFuelEntriesCount } = useSupabaseData<FuelEntry>('fuel_entries', { enabled: !!currentUser, ...commonOptions('fuel_entries') });
+  const { data: documents, isLoading: isLoadingDocuments, refetch: refetchDocuments, totalCount: totalDocumentsCount } = useSupabaseData<Document>('documents', { enabled: !!currentUser, ...commonOptions('documents') });
+  const { data: maintenance, isLoading: isLoadingMaintenance, refetch: refetchMaintenance, totalCount: totalMaintenanceCount } = useSupabaseData<MaintenanceEntry>('maintenance_entries', { enabled: !!currentUser, ...commonOptions('maintenance_entries') });
+  const { data: preDepartureChecklists, isLoading: isLoadingChecklists, refetch: refetchChecklists, totalCount: totalChecklistsCount } = useSupabaseData<PreDepartureChecklist>('pre_departure_checklists', { enabled: !!currentUser, ...commonOptions('pre_departure_checklists') });
+
+  // Update total counts in resourceStates
+  useEffect(() => {
+    setResourceStates(prevStates => ({
+      ...prevStates,
+      vehicles: { ...prevStates.vehicles, totalCount: totalVehiclesCount },
+      drivers: { ...prevStates.drivers, totalCount: totalDriversCount },
+      tours: { ...prevStates.tours, totalCount: totalToursCount },
+      fuel_entries: { ...prevStates.fuel_entries, totalCount: totalFuelEntriesCount },
+      documents: { ...prevStates.documents, totalCount: totalDocumentsCount },
+      maintenance_entries: { ...prevStates.maintenance_entries, totalCount: totalMaintenanceCount },
+      pre_departure_checklists: { ...prevStates.pre_departure_checklists, totalCount: totalChecklistsCount },
+    }));
+  }, [totalVehiclesCount, totalDriversCount, totalToursCount, totalFuelEntriesCount, totalDocumentsCount, totalMaintenanceCount, totalChecklistsCount]);
+
 
   const fleetData: FleetData = {
     vehicles,
@@ -108,7 +168,7 @@ export const FleetDataProvider: React.FC<{ children: ReactNode }> = ({ children 
   }
 
   return (
-    <FleetContext.Provider value={{ fleetData, isLoadingFleet, refetchFleetData, refetchResource }}>
+    <FleetContext.Provider value={{ fleetData, isLoadingFleet, refetchFleetData, refetchResource, getResourcePaginationState, setResourcePaginationState }}>
       {children}
     </FleetContext.Provider>
   );

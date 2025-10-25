@@ -33,9 +33,17 @@ interface DocumentsProps {
 const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
   const { canAccess } = usePermissions();
 
-  const { fleetData, isLoadingFleet } = useFleetData();
+  const { fleetData, isLoadingFleet, getResourcePaginationState, setResourcePaginationState } = useFleetData();
   const documents = fleetData.documents;
   const vehicles = fleetData.vehicles;
+
+  // Get and set pagination/sorting states from FleetDataProvider
+  const { currentPage, itemsPerPage, sortColumn, sortDirection, totalCount } = getResourcePaginationState('documents');
+
+  const onPageChange = useCallback((page: number) => setResourcePaginationState('documents', { currentPage: page }), [setResourcePaginationState]);
+  const onItemsPerPageChange = useCallback((count: number) => setResourcePaginationState('documents', { itemsPerPage: count }), [setResourcePaginationState]);
+  const onSortChange = useCallback((column: string, direction: 'asc' | 'desc') => setResourcePaginationState('documents', { sortColumn: column, sortDirection: direction }), [setResourcePaginationState]);
+
 
   const [showModal, setShowModal] = useState(false);
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
@@ -335,9 +343,17 @@ const Documents: React.FC<DocumentsProps> = ({ onAdd, onUpdate, onDelete }) => {
         exportFileName="documents"
         isLoading={isLoadingFleet}
         renderFilters={renderFilters}
-        renderAlerts={renderAlerts}
         customFilter={customFilter}
         resourceType="documents"
+        // Pagination and sorting props
+        currentPage={currentPage}
+        onPageChange={onPageChange}
+        itemsPerPage={itemsPerPage}
+        onItemsPerPageChange={onItemsPerPageChange}
+        totalCount={totalCount}
+        sortColumn={sortColumn}
+        onSortChange={onSortChange}
+        sortDirection={sortDirection}
       />
 
       <Dialog open={showModal} onOpenChange={handleCloseModal}>

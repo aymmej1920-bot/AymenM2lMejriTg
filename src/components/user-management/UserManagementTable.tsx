@@ -2,8 +2,6 @@ import React from 'react';
 import { Edit2, Trash2, ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { Button } from '../ui/button';
 import { UserRole } from '../../types';
-// import { exportToXLSX } from '../../utils/export'; // Removed
-// import { showSuccess } from '../../utils/toast'; // Removed
 
 interface Profile {
   id: string;
@@ -15,7 +13,7 @@ interface Profile {
 }
 
 interface UserManagementTableProps {
-  users: Profile[];
+  users: Profile[]; // Now represents the current page's data
   searchTerm: string;
   setSearchTerm: (term: string) => void;
   selectedRoleFilter: string;
@@ -24,14 +22,13 @@ interface UserManagementTableProps {
   sortDirection: 'asc' | 'desc';
   handleSort: (column: keyof Profile) => void;
   currentPage: number;
-  setCurrentPage: React.Dispatch<React.SetStateAction<number>>; // Corrected type
+  setCurrentPage: (page: number) => void; // Changed to accept number directly
   itemsPerPage: number;
   setItemsPerPage: (count: number) => void;
   totalPages: number;
   itemsPerPageOptions: number[];
   onEditRole: (user: Profile) => void;
   onDeleteUser: (userId: string) => void;
-  // onExportUsers: (usersToExport: Profile[]) => void; // Removed as export is handled by parent
   canEditRole: boolean;
   canDeleteUser: boolean;
 }
@@ -53,7 +50,6 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({
   itemsPerPageOptions,
   onEditRole,
   onDeleteUser,
-  // onExportUsers, // Removed
   canEditRole,
   canDeleteUser,
 }) => {
@@ -64,8 +60,6 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({
     }
     return null;
   };
-
-  // Removed local handleExport function as export is handled by parent
 
   return (
     <>
@@ -78,7 +72,6 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              setCurrentPage(1);
             }}
             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all glass"
           />
@@ -89,7 +82,6 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({
             value={selectedRoleFilter}
             onChange={(e) => {
               setSelectedRoleFilter(e.target.value);
-              setCurrentPage(1);
             }}
             className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
@@ -185,7 +177,7 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({
         <div className="flex justify-center items-center space-x-2 mt-4">
           <Button
             variant="outline"
-            onClick={() => setCurrentPage((prev: number) => Math.max(1, prev - 1))}
+            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
             disabled={currentPage === 1}
             className="px-4 py-2 bg-white/20 rounded-lg hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed glass"
           >
@@ -205,7 +197,7 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({
           ))}
           <Button
             variant="outline"
-            onClick={() => setCurrentPage((prev: number) => Math.min(totalPages, prev + 1))}
+            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
             disabled={currentPage === totalPages}
             className="px-4 py-2 bg-white/20 rounded-lg hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed glass"
           >
@@ -215,7 +207,7 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({
             value={itemsPerPage}
             onChange={(e) => {
               setItemsPerPage(Number(e.target.value));
-              setCurrentPage(1);
+              setCurrentPage(1); // Reset to first page when items per page changes
             }}
             className="ml-4 bg-white/20 border border-gray-300 rounded-lg px-3 py-2 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm glass"
           >

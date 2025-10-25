@@ -103,7 +103,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole }) => 
         <h2 className="text-4xl font-bold text-gray-800">Gestion des Utilisateurs</h2>
         <div className="flex space-x-4">
           <Button
-            onClick={() => handleExportUsers(filteredAndSortedUsers)} // Pass filtered data for export
+            onClick={() => handleExportUsers(users)} // Pass the full list of users for export
             className="bg-gradient-success text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-all duration-300 hover-lift"
           >
             <Download className="w-5 h-5" />
@@ -131,7 +131,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole }) => 
       </div>
 
       <UserManagementTable
-        users={currentUsers}
+        users={currentUsers} // Pass current page users
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
         selectedRoleFilter={selectedRoleFilter}
@@ -147,7 +147,6 @@ const UserManagement: React.FC<UserManagementProps> = ({ onUpdateUserRole }) => 
         itemsPerPageOptions={itemsPerPageOptions}
         onEditRole={handleEditRole}
         onDeleteUser={confirmDeleteUser}
-        // onExportUsers={handleExportUsers} // Removed as export button is in parent
         canEditRole={canEditRole}
         canDeleteUser={canDeleteUser}
       />

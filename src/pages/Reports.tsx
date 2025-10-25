@@ -117,8 +117,16 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
   const [endDate, setEndDate] = useState<string>('');
   const [viewMode, setViewMode] = useState<'table' | 'chart'>('table'); // New state for view mode
 
-  const { fleetData, isLoadingFleet } = useFleetData();
+  const { fleetData, isLoadingFleet, getResourcePaginationState, setResourcePaginationState } = useFleetData();
   const { vehicles, drivers } = fleetData;
+
+  // Get and set pagination/sorting states from FleetDataProvider for the selected data source
+  const { currentPage, itemsPerPage, sortColumn, sortDirection, totalCount } = getResourcePaginationState(selectedDataSource as Resource);
+
+  const onPageChange = useCallback((page: number) => setResourcePaginationState(selectedDataSource as Resource, { currentPage: page }), [setResourcePaginationState, selectedDataSource]);
+  const onItemsPerPageChange = useCallback((count: number) => setResourcePaginationState(selectedDataSource as Resource, { itemsPerPage: count }), [setResourcePaginationState, selectedDataSource]);
+  const onSortChange = useCallback((column: string, direction: 'asc' | 'desc') => setResourcePaginationState(selectedDataSource as Resource, { sortColumn: column, sortDirection: direction }), [setResourcePaginationState, selectedDataSource]);
+
 
   const dataSources = [
     { id: 'vehicles', name: 'Véhicules' },
@@ -234,6 +242,8 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
               setStartDate('');
               setEndDate('');
               setViewMode('table'); // Reset to table view on data source change
+              // Reset pagination and sorting for the new data source
+              setResourcePaginationState(e.target.value as Resource, { currentPage: 1, sortColumn: columns[0]?.key || '', sortDirection: 'asc' });
             }}
             className="w-full glass border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
@@ -258,6 +268,15 @@ const Reports: React.FC<ReportsProps> = ({ userRole }) => {
             // Filters are now rendered above the DataTable, so we don't pass renderFilters here
             // DataTable will still handle its internal search based on the searchTerm state if we were to pass it.
             // For now, the search input above is the primary filter.
+            // Pagination and sorting props
+            currentPage={currentPage}
+            onPageChange={onPageChange}
+            itemsPerPage={itemsPerPage}
+            onItemsPerPageChange={onItemsPerPageChange}
+            totalCount={totalCount}
+            sortColumn={sortColumn}
+            onSortChange={onSortChange}
+            sortDirection={sortDirection}
           />
         ) : (
           <ReportCharts

@@ -33,10 +33,18 @@ interface ToursProps {
 const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
   const { canAccess } = usePermissions();
 
-  const { fleetData, isLoadingFleet } = useFleetData();
+  const { fleetData, isLoadingFleet, getResourcePaginationState, setResourcePaginationState } = useFleetData();
   const tours = fleetData.tours;
   const vehicles = fleetData.vehicles;
   const drivers = fleetData.drivers;
+
+  // Get and set pagination/sorting states from FleetDataProvider
+  const { currentPage, itemsPerPage, sortColumn, sortDirection, totalCount } = getResourcePaginationState('tours');
+
+  const onPageChange = useCallback((page: number) => setResourcePaginationState('tours', { currentPage: page }), [setResourcePaginationState]);
+  const onItemsPerPageChange = useCallback((count: number) => setResourcePaginationState('tours', { itemsPerPage: count }), [setResourcePaginationState]);
+  const onSortChange = useCallback((column: string, direction: 'asc' | 'desc') => setResourcePaginationState('tours', { sortColumn: column, sortDirection: direction }), [setResourcePaginationState]);
+
 
   const [showModal, setShowModal] = useState(false);
   const [editingTour, setEditingTour] = useState<Tour | null>(null);
@@ -338,6 +346,15 @@ const Tours: React.FC<ToursProps> = ({ onAdd, onUpdate, onDelete }) => {
         renderFilters={renderFilters}
         customFilter={filterData}
         resourceType="tours"
+        // Pagination and sorting props
+        currentPage={currentPage}
+        onPageChange={onPageChange}
+        itemsPerPage={itemsPerPage}
+        onItemsPerPageChange={onItemsPerPageChange}
+        totalCount={totalCount}
+        sortColumn={sortColumn}
+        onSortChange={onSortChange}
+        sortDirection={sortDirection}
       />
 
       <Dialog open={showModal} onOpenChange={handleCloseModal}>
